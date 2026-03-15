@@ -7,7 +7,7 @@
   "directories": {
     "doc": "docs"
   },
-  "author": "",
+  "author": "Rey-der",
   "license": "ISC",
   "repository": {
     "type": "git",
@@ -29,7 +29,10 @@
     "start": "electron .",
     "dev": "electron .",
     "lint": "echo \"No lint configured yet\"",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --mac --win"
   },
   "build": {
     "appId": "com.automatahub.app",
@@ -42,6 +45,9 @@
       "modules/**",
       "logs/.gitkeep"
     ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
     "directories": {
       "buildResources": "resources"
     },
@@ -52,6 +58,20 @@
     },
     "dmg": {
       "title": "AutomataHub"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "installerHeaderIcon": "resources/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AutomataHub"
     }
   },
   "dependencies": {},
