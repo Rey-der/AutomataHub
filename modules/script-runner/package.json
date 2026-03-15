@@ -1,0 +1,16 @@
+{
+  "name": "automatahub-script-runner",
+  "version": "1.0.0",
+  "description": "Script Runner module for AutomataHub — execute and manage local automation scripts with live terminal output",
+  "keywords": ["automatahub", "module", "script-runner", "automation", "electron"],
+  "license": "MIT",
+  "main": "main-handlers.js",
+  "files": [
+    "manifest.json",
+    "main-handlers.js",
+    "renderer/"
+  ],
+  "peerDependencies": {
+    "automata-hub": ">=1.0.0"
+  }
+}

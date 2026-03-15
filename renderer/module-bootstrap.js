@@ -1,0 +1,73 @@
+/**
+ * Module Bootstrap — loads module renderer scripts dynamically.
+ * Runs after core scripts (ui.js, tab-manager.js, home-tab.js) are loaded.
+ *
+ * Flow:
+ * 1. Init allowed channels from main process
+ * 2. Fetch module list from main process
+ * 3. Load each module's renderer scripts
+ * 4. Boot the tab manager (show home)
+ */
+
+(async function bootstrap() {
+  // Wait for DOM
+  if (document.readyState === 'loading') {
+    await new Promise((r) => document.addEventListener('DOMContentLoaded', r));
+  }
+
+  try {
+    // 1. Initialize dynamic IPC channels
+    await window.api.initChannels();
+
+    // 2. Fetch modules
+    const modules = await window.api.getModules();
+    window._hub = window._hub || {};
+    window._hub.modules = modules;
+
+    // 3. Load renderer styles and scripts for each module
+    for (const mod of modules) {
+      // Load styles first so they're available when scripts render
+      if (Array.isArray(mod.rendererStyles)) {
+        for (const stylePath of mod.rendererStyles) {
+          loadStyle(stylePath);
+        }
+      }
+
+      // Load scripts sequentially to respect order
+      if (Array.isArray(mod.rendererScripts)) {
+        for (const scriptPath of mod.rendererScripts) {
+          await loadScript(scriptPath);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[bootstrap] Failed to load modules:', err);
+  }
+
+  // 4. Boot tab manager and show home
+  window.tabManager = new TabManager();
+  window.tabManager.switchTab('home');
+})();
+
+function loadStyle(absolutePath) {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `file://${absolutePath}`;
+  link.onerror = () => {
+    console.warn(`[bootstrap] Failed to load style: ${absolutePath}`);
+  };
+  document.head.appendChild(link);
+}
+
+function loadScript(absolutePath) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `file://${absolutePath}`;
+    script.onload = resolve;
+    script.onerror = () => {
+      console.warn(`[bootstrap] Failed to load script: ${absolutePath}`);
+      resolve(); // Don't block other modules
+    };
+    document.body.appendChild(script);
+  });
+}

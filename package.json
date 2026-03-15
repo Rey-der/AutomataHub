@@ -1,0 +1,62 @@
+{
+  "name": "automata-hub",
+  "productName": "AutomataHub",
+  "version": "1.0.0",
+  "description": "Modular Electron desktop hub for automation tools with plugin system",
+  "main": "app/main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/automata-hub.git"
+  },
+  "homepage": "https://github.com/your-org/automata-hub#readme",
+  "keywords": [
+    "electron",
+    "automation",
+    "script-runner",
+    "modular",
+    "plugins",
+    "darwin"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "lint": "echo \"No lint configured yet\"",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.automatahub.app",
+    "productName": "AutomataHub",
+    "files": [
+      "app/**",
+      "renderer/**",
+      "resources/**",
+      "scripts/**",
+      "modules/**",
+      "logs/.gitkeep"
+    ],
+    "directories": {
+      "buildResources": "resources"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "resources/icon.icns",
+      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }]
+    },
+    "dmg": {
+      "title": "AutomataHub"
+    }
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^41.0.2",
+    "electron-builder": "^26.8.1"
+  }
+}

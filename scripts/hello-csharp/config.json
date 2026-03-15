@@ -1,0 +1,5 @@
+{
+  "name": "Hello C#",
+  "description": "Minimal C# script to verify .csx support in AutomataHub",
+  "mainScript": "main.csx"
+}
