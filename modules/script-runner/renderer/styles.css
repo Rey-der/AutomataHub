@@ -1,0 +1,305 @@
+/* =============================================
+ * Script Runner Module — Styles
+ * =============================================
+ * These styles are specific to the script-runner module
+ * and are loaded dynamically by the hub bootstrap.
+ * They rely on CSS variables defined in the hub's core styles.
+ * ============================================= */
+
+/* --- Script Card (card-footer extras) --- */
+
+.script-card .card-footer {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+/* --- Execution Tab --- */
+
+.execution-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.execution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.execution-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.execution-header h2 {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: 0;
+}
+
+.status-badge {
+  font-size: var(--size-sm);
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 4px;
+}
+
+.status-badge.status-idle {
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+.status-badge.status-running {
+  background: rgba(0, 122, 204, 0.15);
+  color: var(--accent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-badge.status-success {
+  background: rgba(78, 201, 176, 0.15);
+  color: var(--success);
+}
+
+.status-badge.status-error {
+  background: rgba(244, 135, 113, 0.15);
+  color: var(--error);
+}
+
+.status-badge.status-queued {
+  background: rgba(220, 220, 170, 0.15);
+  color: var(--warning);
+}
+
+/* --- Terminal --- */
+
+.terminal {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  margin: var(--space-md) var(--space-xl);
+  border-radius: 4px;
+  padding: var(--space-md);
+  font-family: var(--font-family-mono);
+  font-size: var(--size-base);
+  line-height: 1.5;
+  color: var(--text);
+  overflow-y: auto;
+  min-height: 200px;
+}
+
+.terminal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.terminal::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 4px;
+}
+
+.terminal-line {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: 1px;
+  padding: 1px 0;
+}
+
+.terminal-line .timestamp {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-size: var(--size-sm);
+}
+
+.terminal-line .content {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.terminal-line.terminal-error .content {
+  color: var(--error);
+}
+
+.terminal-line.terminal-system .content {
+  color: var(--info);
+  font-style: italic;
+}
+
+.terminal-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  padding: var(--space-2xl);
+  height: 100%;
+  min-height: 200px;
+}
+
+.terminal-placeholder-icon {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: var(--space-sm);
+  opacity: 0.4;
+}
+
+.terminal-placeholder-text {
+  font-size: var(--size-md);
+}
+
+.terminal-placeholder-hint {
+  font-size: var(--size-sm);
+  margin-top: var(--space-xs);
+  font-style: normal;
+  color: var(--muted);
+}
+
+/* --- Execution Toolbar --- */
+
+.execution-toolbar {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xl);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.execution-toolbar .toolbar-info {
+  flex: 1;
+  color: var(--muted);
+  font-size: var(--size-sm);
+}
+
+/* --- Import Zone --- */
+
+.import-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  border: 2px dashed var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  transition: all 150ms ease;
+  cursor: default;
+}
+
+.import-zone:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.import-zone-active {
+  border-color: var(--accent);
+  border-style: solid;
+  background: rgba(0, 122, 204, 0.08);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.import-zone-active .import-zone-icon {
+  transform: scale(1.15);
+  transition: transform 150ms ease;
+}
+
+.import-zone-active .import-zone-label {
+  color: var(--accent);
+}
+
+.import-zone-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.import-zone-label {
+  color: var(--text-secondary);
+  font-size: var(--size-md);
+  margin: 0;
+}
+
+.import-zone-or {
+  color: var(--muted);
+  font-size: var(--size-sm);
+}
+
+/* --- Dialog Overlay (executable selection) --- */
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+}
+
+.dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: var(--space-xl);
+  min-width: 360px;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dialog-title {
+  font-size: var(--size-lg);
+  font-weight: 600;
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.dialog-description {
+  color: var(--text-secondary);
+  font-size: var(--size-base);
+  margin: 0 0 var(--space-lg) 0;
+}
+
+.dialog-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.dialog-list-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--font-family-mono);
+  font-size: var(--size-base);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.dialog-list-item:hover {
+  border-color: var(--accent);
+  background: var(--surface-3);
+  color: var(--accent);
+}
