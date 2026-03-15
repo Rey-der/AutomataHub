@@ -47,6 +47,28 @@
   // 4. Boot tab manager and show home
   window.tabManager = new TabManager();
   window.tabManager.switchTab('home');
+
+  // 5. Auto-start modules with autoStart preference
+  // Use setTimeout to let module renderer scripts finish registering their tab types
+  setTimeout(async () => {
+    try {
+      const prefs = await window.api.getPrefs();
+      const modulePrefs = (prefs && prefs.modules) || {};
+
+      for (const mod of (window._hub.modules || [])) {
+        if (modulePrefs[mod.id] && modulePrefs[mod.id].autoStart) {
+          if (mod.tabTypes && mod.tabTypes.length > 0) {
+            const typeId = mod.tabTypes[0].id || mod.tabTypes[0];
+            if (window.tabManager.hasTabType(typeId)) {
+              window.tabManager.createTab(typeId, mod.name, { moduleId: mod.id }, { target: 'main', reuseKey: `autostart-${mod.id}`, background: true });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[bootstrap] Failed to auto-start modules:', err);
+    }
+  }, 50);
 })();
 
 function loadStyle(absolutePath) {

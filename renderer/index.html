@@ -8,9 +8,14 @@
   </head>
   <body>
     <div id="app">
-      <nav id="tab-bar" class="tab-bar" role="tablist" aria-label="Module tabs">
-        <button class="tab active" data-tab-id="home" role="tab" aria-selected="true" aria-controls="tab-content">Home</button>
+      <nav id="main-tab-bar" class="tab-bar main-tab-bar" role="tablist" aria-label="Main tabs">
+        <div class="tab-bar-left">
+          <button class="tab active" data-tab-id="home" role="tab" aria-selected="true" aria-controls="tab-content">Home</button>
+        </div>
+        <div class="tab-bar-right" id="auto-start-tabs"></div>
       </nav>
+
+      <nav id="module-tab-bar" class="tab-bar module-tab-bar hidden" role="tablist" aria-label="Module tabs"></nav>
 
       <main id="tab-content" class="tab-content" role="tabpanel" aria-label="Tab content"></main>
     </div>

@@ -5,13 +5,15 @@ class TabManager {
     this._tabTypeRenderers = new Map();
     this._maxTabsPerType = new Map();
 
-    this.tabs.set('home', { id: 'home', type: 'home', title: 'Home', status: 'idle' });
+    this.tabs.set('home', { id: 'home', type: 'home', title: 'Home', status: 'idle', target: 'main' });
 
-    this.tabBar = document.getElementById('tab-bar');
+    this.mainTabBar = document.getElementById('main-tab-bar');
+    this.autoStartTabs = document.getElementById('auto-start-tabs');
+    this.moduleTabBar = document.getElementById('module-tab-bar');
     this.tabContent = document.getElementById('tab-content');
 
     // Bind Home tab click
-    const homeBtn = this.tabBar.querySelector('[data-tab-id="home"]');
+    const homeBtn = this.mainTabBar.querySelector('[data-tab-id="home"]');
     if (homeBtn) {
       homeBtn.addEventListener('click', () => this.switchTab('home'));
     }
@@ -63,6 +65,14 @@ class TabManager {
    * @param {object} opts — { reuseKey?: string } — if set, reuse existing tab with matching reuseKey
    * @returns {object|null} the tab object, or null if limit reached
    */
+  /**
+   * Create a new tab of a registered type.
+   * @param {string} type — registered tab type
+   * @param {string} title — tab display title
+   * @param {object} data — extra properties to attach to the tab object
+   * @param {object} opts — { reuseKey?: string, target?: 'main'|'module' }
+   * @returns {object|null} the tab object, or null if limit reached
+   */
   createTab(type, title, data = {}, opts = {}) {
     // Check if this type is registered
     if (!this._tabTypeRenderers.has(type)) {
@@ -89,19 +99,24 @@ class TabManager {
       return null;
     }
 
+    const target = opts.target || 'module';
     const id = `${type}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const tab = {
       id,
       type,
       title,
       status: 'idle',
+      target,
       reuseKey: opts.reuseKey || null,
       ...data,
     };
 
     this.tabs.set(id, tab);
     this._renderTabButton(tab);
-    this.switchTab(id);
+    this._updateModuleBarVisibility();
+    if (!opts.background) {
+      this.switchTab(id);
+    }
     return tab;
   }
 
@@ -110,8 +125,8 @@ class TabManager {
 
     this.activeTabId = tabId;
 
-    // Update tab bar active state and ARIA
-    this.tabBar.querySelectorAll('.tab').forEach((btn) => {
+    // Update active state across both tab bars
+    this._getAllTabButtons().forEach((btn) => {
       const isActive = btn.dataset.tabId === tabId;
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-selected', String(isActive));
@@ -135,9 +150,11 @@ class TabManager {
 
     this.tabs.delete(tabId);
 
-    // Remove tab button
-    const btn = this.tabBar.querySelector(`[data-tab-id="${tabId}"]`);
+    // Remove tab button from whichever bar it's in
+    const btn = this._findTabButton(tabId);
     if (btn) btn.remove();
+
+    this._updateModuleBarVisibility();
 
     // Switch to home if this was active
     if (this.activeTabId === tabId) {
@@ -152,7 +169,7 @@ class TabManager {
 
     tab.status = status;
 
-    const btn = this.tabBar.querySelector(`[data-tab-id="${tabId}"]`);
+    const btn = this._findTabButton(tabId);
     if (!btn) return;
 
     const indicator = btn.querySelector('.tab-status');
@@ -206,7 +223,38 @@ class TabManager {
 
     btn.addEventListener('click', () => this.switchTab(tab.id));
 
-    this.tabBar.appendChild(btn);
+    // Route to the correct tab bar
+    if (tab.target === 'main') {
+      this.autoStartTabs.appendChild(btn);
+    } else {
+      this.moduleTabBar.appendChild(btn);
+    }
+  }
+
+  /**
+   * Find a tab button across both bars.
+   */
+  _findTabButton(tabId) {
+    return this.mainTabBar.querySelector(`[data-tab-id="${tabId}"]`)
+      || this.moduleTabBar.querySelector(`[data-tab-id="${tabId}"]`);
+  }
+
+  /**
+   * Get all tab buttons from both bars.
+   */
+  _getAllTabButtons() {
+    return [
+      ...this.mainTabBar.querySelectorAll('.tab'),
+      ...this.moduleTabBar.querySelectorAll('.tab'),
+    ];
+  }
+
+  /**
+   * Show/hide the module tab bar based on whether it has tabs.
+   */
+  _updateModuleBarVisibility() {
+    const hasTabs = this.moduleTabBar.querySelectorAll('.tab').length > 0;
+    this.moduleTabBar.classList.toggle('hidden', !hasTabs);
   }
 
   _renderContent(tabId) {
