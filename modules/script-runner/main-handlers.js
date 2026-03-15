@@ -10,7 +10,7 @@ const { dialog } = require('electron');
 // Hub utilities — resolved at setup() time via paths.root
 let ScriptExecutor, ERROR_MESSAGES, friendlyError, resolveInside, ensureDir, readJsonConfig;
 
-const SCRIPTS_DIR_NAME = 'scripts';
+const SCRIPTS_DIR_NAME = 'automation_scripts';
 const LOGS_DIR_NAME = 'logs';
 
 const EXECUTABLE_EXTENSIONS = ['.sh', '.bash', '.py', '.py3', '.js', '.mjs', '.rb', '.pl', '.csx'];
@@ -147,7 +147,7 @@ function setup(ctx) {
   ({ resolveInside, ensureDir } = require(path.join(hubApp, 'core', 'path-utils')));
   ({ readJsonConfig } = require(path.join(hubApp, 'core', 'config-utils')));
 
-  const scriptsDir = path.join(paths.root, SCRIPTS_DIR_NAME);
+  const scriptsDir = path.join(__dirname, SCRIPTS_DIR_NAME);
   const logsDir = path.join(paths.root, LOGS_DIR_NAME);
 
   executor = new ScriptExecutor(scriptsDir);
