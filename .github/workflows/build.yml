@@ -1,0 +1,120 @@
+name: Build Installers
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install module dependencies
+        run: |
+          for dir in modules/*/; do
+            if [ -f "$dir/package.json" ]; then
+              echo "Installing dependencies in $dir"
+              cd "$dir"
+              npm ci || npm install
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+
+      - name: Rebuild native modules for Electron
+        run: |
+          for dir in modules/*/; do
+            if [ -d "$dir/node_modules/better-sqlite3" ]; then
+              echo "Rebuilding native modules in $dir"
+              cd "$dir"
+              npx electron-rebuild -m .
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+
+      - name: Build macOS DMG
+        run: npm run build:mac
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-installer
+          path: |
+            dist/*.dmg
+            dist/*.zip
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install module dependencies
+        shell: bash
+        run: |
+          for dir in modules/*/; do
+            if [ -f "$dir/package.json" ]; then
+              echo "Installing dependencies in $dir"
+              cd "$dir"
+              npm ci || npm install
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+
+      - name: Rebuild native modules for Electron
+        shell: bash
+        run: |
+          for dir in modules/*/; do
+            if [ -d "$dir/node_modules/better-sqlite3" ]; then
+              echo "Rebuilding native modules in $dir"
+              cd "$dir"
+              npx electron-rebuild -m .
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+
+      - name: Build Windows installer
+        run: npm run build:win
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-installer
+          path: |
+            dist/*.exe
+
+  release:
+    needs: [build-mac, build-win]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            artifacts/mac-installer/*
+            artifacts/win-installer/*
