@@ -1,10 +1,16 @@
 const HomeTab = (() => {
 
+  // Track loaded module prefs
+  let modulePrefs = {};
+
   // --- Module Card ---
 
   function createModuleCard(mod) {
+    const prefs = modulePrefs[mod.id] || { favorite: false, autoStart: false };
+
     const card = document.createElement('div');
     card.className = 'script-card';
+    card.dataset.moduleId = mod.id;
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'article');
     card.setAttribute('aria-label', `Module: ${mod.name}`);
@@ -39,6 +45,34 @@ const HomeTab = (() => {
     const footer = document.createElement('div');
     footer.className = 'card-footer';
 
+    // Preference toggles (bottom-left in footer)
+    const toggles = document.createElement('div');
+    toggles.className = 'card-toggles';
+
+    const favBtn = document.createElement('button');
+    favBtn.className = 'card-toggle toggle-favorite' + (prefs.favorite ? ' active' : '');
+    favBtn.setAttribute('aria-label', 'Toggle favorite');
+    favBtn.setAttribute('title', 'Favorite — sort to top');
+    favBtn.textContent = prefs.favorite ? '\u2665' : '\u2661';
+    favBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavorite(mod.id, favBtn);
+    });
+    toggles.appendChild(favBtn);
+
+    const autoBtn = document.createElement('button');
+    autoBtn.className = 'card-toggle toggle-autostart' + (prefs.autoStart ? ' active' : '');
+    autoBtn.setAttribute('aria-label', 'Toggle auto-start');
+    autoBtn.setAttribute('title', 'Auto-start — open with AutomataHub');
+    autoBtn.textContent = prefs.autoStart ? '\u2605' : '\u2606';
+    autoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleAutoStart(mod.id, autoBtn);
+    });
+    toggles.appendChild(autoBtn);
+
+    footer.appendChild(toggles);
+
     const openBtn = document.createElement('button');
     openBtn.className = 'btn';
     openBtn.textContent = '\u25B6 Open';
@@ -61,11 +95,70 @@ const HomeTab = (() => {
         return;
       }
 
-      // Otherwise open the module's default tab type
+      // Check if this module already has an open tab (e.g. auto-started)
+      const existing = window.tabManager.getTabsByType(typeId);
+      if (existing.length > 0) {
+        window.tabManager.switchTab(existing[0].id);
+        return;
+      }
+
+      // Otherwise open in the module (lower) tab bar
       if (window.tabManager.hasTabType(typeId)) {
-        window.tabManager.createTab(typeId, mod.name, { moduleId: mod.id });
+        window.tabManager.createTab(typeId, mod.name, { moduleId: mod.id }, { target: 'module' });
       }
     }
+  }
+
+  // --- Toggle Handlers ---
+
+  async function toggleFavorite(moduleId, btn) {
+    const current = modulePrefs[moduleId] || { favorite: false, autoStart: false };
+    const newVal = !current.favorite;
+    modulePrefs[moduleId] = { ...current, favorite: newVal };
+    await window.api.setModulePrefs(moduleId, { favorite: newVal });
+
+    btn.classList.toggle('active', newVal);
+    btn.textContent = newVal ? '\u2665' : '\u2661';
+
+    // Re-sort the grid
+    sortModuleGrid();
+  }
+
+  async function toggleAutoStart(moduleId, btn) {
+    const current = modulePrefs[moduleId] || { favorite: false, autoStart: false };
+    const newVal = !current.autoStart;
+    modulePrefs[moduleId] = { ...current, autoStart: newVal };
+    await window.api.setModulePrefs(moduleId, { autoStart: newVal });
+
+    btn.classList.toggle('active', newVal);
+    btn.textContent = newVal ? '\u2605' : '\u2606';
+  }
+
+  function sortModuleGrid() {
+    const grid = document.querySelector('.scripts-grid');
+    if (!grid) return;
+
+    const cards = [...grid.querySelectorAll('.script-card')];
+    cards.sort((a, b) => {
+      const aFav = modulePrefs[a.dataset.moduleId]?.favorite ? 1 : 0;
+      const bFav = modulePrefs[b.dataset.moduleId]?.favorite ? 1 : 0;
+      if (bFav !== aFav) return bFav - aFav;
+      // Alphabetical by aria-label as fallback
+      return a.getAttribute('aria-label').localeCompare(b.getAttribute('aria-label'));
+    });
+
+    for (const card of cards) {
+      grid.appendChild(card);
+    }
+  }
+
+  function sortModules(modules) {
+    return [...modules].sort((a, b) => {
+      const aFav = modulePrefs[a.id]?.favorite ? 1 : 0;
+      const bFav = modulePrefs[b.id]?.favorite ? 1 : 0;
+      if (bFav !== aFav) return bFav - aFav;
+      return a.name.localeCompare(b.name);
+    });
   }
 
   // --- Empty State ---
@@ -97,6 +190,14 @@ const HomeTab = (() => {
     if (!container) return;
 
     container.innerHTML = '';
+
+    // Load user preferences
+    try {
+      const prefs = await window.api.getPrefs();
+      modulePrefs = (prefs && prefs.modules) || {};
+    } catch {
+      modulePrefs = {};
+    }
 
     const wrapper = document.createElement('div');
     wrapper.className = 'home-tab';
@@ -177,16 +278,17 @@ const HomeTab = (() => {
 
     wrapper.appendChild(header);
 
-    // Module cards
+    // Module cards (sorted: favorites first, then alphabetical)
     const modules = (window._hub && window._hub.modules) || [];
+    const sorted = sortModules(modules);
 
-    if (modules.length === 0) {
+    if (sorted.length === 0) {
       renderEmpty(wrapper);
     } else {
       const grid = document.createElement('div');
       grid.className = 'scripts-grid';
 
-      for (const mod of modules) {
+      for (const mod of sorted) {
         grid.appendChild(createModuleCard(mod));
       }
 

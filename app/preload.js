@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld('api', {
 
   getModules: () => ipcRenderer.invoke('hub:get-modules'),
 
+  // --- User Preferences ---
+
+  getPrefs: () => ipcRenderer.invoke('prefs:get'),
+  getModulePrefs: (moduleId) => ipcRenderer.invoke('prefs:get-module', moduleId),
+  setModulePrefs: (moduleId, updates) => ipcRenderer.invoke('prefs:set-module', { moduleId, updates }),
+
   /**
    * Fetch the full list of allowed push channels from loaded modules.
    * Called once at renderer boot to populate the allowlist.

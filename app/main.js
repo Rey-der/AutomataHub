@@ -4,6 +4,7 @@ const { app, BrowserWindow, session, ipcMain, dialog, nativeImage, shell } = req
 const { ModuleRegistry } = require('./core/module-registry');
 const { discoverModules, discoverInstalledModules } = require('./core/module-loader');
 const { IpcBridge } = require('./core/ipc-bridge');
+const { getPrefs, getModulePrefs, setModulePrefs } = require('./core/user-prefs');
 
 // Must be set before app is ready so macOS Dock shows the correct name
 app.name = 'AutomataHub';
@@ -82,6 +83,22 @@ function setupHubIPC() {
   // Return allowed push channels for the renderer's dynamic listener setup
   ipcMain.handle('hub:get-allowed-channels', () => {
     return registry.getAllowedChannels();
+  });
+
+  // --- User Preferences ---
+
+  ipcMain.handle('prefs:get', () => {
+    return getPrefs();
+  });
+
+  ipcMain.handle('prefs:get-module', (_event, moduleId) => {
+    if (typeof moduleId !== 'string') return null;
+    return getModulePrefs(moduleId);
+  });
+
+  ipcMain.handle('prefs:set-module', (_event, { moduleId, updates }) => {
+    if (typeof moduleId !== 'string' || !updates || typeof updates !== 'object') return null;
+    return setModulePrefs(moduleId, updates);
   });
 }
 
