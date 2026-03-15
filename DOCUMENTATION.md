@@ -74,8 +74,8 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 │                     Main Process (Node.js)                   │
 │                                                              │
 │  ┌─────────────┐  ┌──────────────────────────────────────┐   │
-│  │   main.js   │  │          core/                        │   │
-│  │             │  │  module-loader.js  module-registry.js │   │
+│  │   main.js   │  │          core/                       │   │
+│  │             │  │  module-loader.js  module-registry.js│   │
 │  │ - Window    │  │  ipc-bridge.js    path-utils.js      │   │
 │  │ - Hub IPC   │  │  config-utils.js  event-bus.js       │   │
 │  │ - Module    │  │  errors.js                           │   │
@@ -98,7 +98,7 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 └─────────┼────────────────────────────────────────────────────┘
           │
 ┌─────────┼────────────────────────────────────────────────────┐
-│              Renderer Process (Chromium)                      │
+│              Renderer Process (Chromium)                     │
 │         │                                                    │
 │  ┌──────┴────────────────────────────┐                       │
 │  │      module-bootstrap.js          │                       │
@@ -115,14 +115,14 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 │  └──────┬──────────────────┘                                 │
 │         │                                                    │
 │  ┌──────┴──────┐  ┌──────────────────────────────┐           │
-│  │ home-tab.js │  │  Module renderer scripts      │           │
-│  │ (hub dash)  │  │  e.g. script-home.js          │           │
-│  │ - Module    │  │       execution-tab.js         │           │
-│  │   cards     │  │       + module CSS             │           │
+│  │ home-tab.js │  │  Module renderer scripts     │           │
+│  │ (hub dash)  │  │  e.g. script-home.js         │           │
+│  │ - Module    │  │       execution-tab.js       │           │
+│  │   cards     │  │       + module CSS           │           │
 │  └─────────────┘  └──────────────────────────────┘           │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐    │
-│  │         core.css — Hub theme & --hub-* variables      │    │
+│  │         core.css — Hub theme & --hub-* variables     │    │
 │  └──────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -1009,12 +1009,6 @@ logs/*.txt
 .env
 ```
 
-### 16.4 .npmrc
-
-```
-audit-level=high
-```
-
 Suppresses moderate-severity npm audit advisories (specifically the yauzl transitive dependency).
 
 ---
@@ -1042,33 +1036,33 @@ Suppresses moderate-severity npm audit advisories (specifically the yauzl transi
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│                    TRUST BOUNDARY 1                         │
-│               (User's Operating System)                     │
+│                    TRUST BOUNDARY 1                        │
+│               (User's Operating System)                    │
 │                                                            │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              TRUST BOUNDARY 2                        │   │
-│  │           (Electron Main Process)                    │   │
+│  │              TRUST BOUNDARY 2                       │   │
+│  │           (Electron Main Process)                   │   │
 │  │                                                     │   │
 │  │  ┌──────────────────────────────────────────────┐   │   │
-│  │  │           TRUST BOUNDARY 3                    │   │   │
-│  │  │     (Preload — contextBridge)                 │   │   │
+│  │  │           TRUST BOUNDARY 3                   │   │   │
+│  │  │     (Preload — contextBridge)                │   │   │
 │  │  │                                              │   │   │
 │  │  │  ┌───────────────────────────────────────┐   │   │   │
-│  │  │  │       TRUST BOUNDARY 4                 │   │   │   │
-│  │  │  │   (Renderer — Sandboxed Chromium)      │   │   │   │
-│  │  │  │   - No Node.js API access              │   │   │   │
-│  │  │  │   - CSP restricts resource loading     │   │   │   │
-│  │  │  │   - Can only call window.api methods   │   │   │   │
+│  │  │  │       TRUST BOUNDARY 4                │   │   │   │
+│  │  │  │   (Renderer — Sandboxed Chromium)     │   │   │   │
+│  │  │  │   - No Node.js API access             │   │   │   │
+│  │  │  │   - CSP restricts resource loading    │   │   │   │
+│  │  │  │   - Can only call window.api methods  │   │   │   │
 │  │  │  └───────────────────────────────────────┘   │   │   │
 │  │  └──────────────────────────────────────────────┘   │   │
 │  │                                                     │   │
 │  │  ┌──────────────────────────────────────────────┐   │   │
-│  │  │           TRUST BOUNDARY 5                    │   │   │
-│  │  │     (Child Processes — User Scripts)           │   │   │
-│  │  │   - Run as current OS user                    │   │   │
-│  │  │   - Full filesystem access                    │   │   │
-│  │  │   - stdin is /dev/null                        │   │   │
-│  │  │   - stdout/stderr piped to main process       │   │   │
+│  │  │           TRUST BOUNDARY 5                   │   │   │
+│  │  │     (Child Processes — User Scripts)         │   │   │
+│  │  │   - Run as current OS user                   │   │   │
+│  │  │   - Full filesystem access                   │   │   │
+│  │  │   - stdin is /dev/null                       │   │   │
+│  │  │   - stdout/stderr piped to main process      │   │   │
 │  │  └──────────────────────────────────────────────┘   │   │
 │  └─────────────────────────────────────────────────────┘   │
 └────────────────────────────────────────────────────────────┘
