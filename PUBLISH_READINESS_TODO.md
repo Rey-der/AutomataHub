@@ -130,7 +130,7 @@
 
 **Problem:** This committed log file contains:
 - Old branding: "Hello from Script Runner!" (pre-rebranding text)
-- Absolute local filesystem path: `/Users/hyperion.mw/Desktop/Coding/Developer/script_runner/scripts/hello-world`
+- Absolute local filesystem path (leaks username)
 - Test output that shouldn't ship in a published product
 
 The `.gitignore` has `logs/*.txt` but this file was committed before that rule was added.
