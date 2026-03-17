@@ -4,6 +4,7 @@ class TabManager {
     this.activeTabId = 'home';
     this._tabTypeRenderers = new Map();
     this._maxTabsPerType = new Map();
+    this._tabHistory = ['home'];
 
     this.tabs.set('home', { id: 'home', type: 'home', title: 'Home', status: 'idle', target: 'main' });
 
@@ -96,6 +97,9 @@ class TabManager {
     const typeTabs = this.getTabsByType(type);
     if (typeTabs.length >= maxForType) {
       window.ui.showNotification(`Maximum of ${maxForType} ${type} tabs reached. Close a tab first.`, 'warning');
+      // Switch to the most recent existing tab of this type
+      const last = typeTabs[typeTabs.length - 1];
+      if (last) this.switchTab(last.id);
       return null;
     }
 
@@ -124,6 +128,13 @@ class TabManager {
     if (!this.tabs.has(tabId)) return false;
 
     this.activeTabId = tabId;
+
+    // Track tab history (avoid consecutive duplicates)
+    if (this._tabHistory[this._tabHistory.length - 1] !== tabId) {
+      this._tabHistory.push(tabId);
+      // Keep history bounded
+      if (this._tabHistory.length > 50) this._tabHistory.splice(0, this._tabHistory.length - 50);
+    }
 
     // Update active state across both tab bars
     this._getAllTabButtons().forEach((btn) => {
@@ -156,9 +167,19 @@ class TabManager {
 
     this._updateModuleBarVisibility();
 
-    // Switch to home if this was active
+    // Switch to the last visited tab that still exists
     if (this.activeTabId === tabId) {
-      this.switchTab('home');
+      let target = 'home';
+      for (let i = this._tabHistory.length - 1; i >= 0; i--) {
+        const candidate = this._tabHistory[i];
+        if (candidate !== tabId && this.tabs.has(candidate)) {
+          target = candidate;
+          break;
+        }
+      }
+      // Clean closed tabs from history
+      this._tabHistory = this._tabHistory.filter((id) => this.tabs.has(id));
+      this.switchTab(target);
     }
     return true;
   }

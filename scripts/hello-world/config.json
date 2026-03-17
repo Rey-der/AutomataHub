@@ -1,5 +1,0 @@
-{
-  "name": "Hello World",
-  "description": "A simple test script that prints messages with 1-second delays",
-  "mainScript": "main.sh"
-}

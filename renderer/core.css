@@ -118,7 +118,8 @@ body {
 #app {
   display: grid;
   grid-template-rows: auto auto 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* --- Tab Bar (shared) --- */
@@ -131,6 +132,7 @@ body {
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
   user-select: none;
+  flex-shrink: 0;
 }
 
 /* --- Main Tab Bar (upper, always visible) --- */
@@ -566,6 +568,8 @@ button:disabled {
 
 .script-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
