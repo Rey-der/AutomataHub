@@ -51,7 +51,9 @@
 
 | Module | Provides |
 |---|---|
-| Script Runner (`automatahub-script-runner`) | Script discovery, live terminal, execution queue, log saving, drag-and-drop import |
+| Script Runner (`script-runner`) | Script discovery, live terminal, execution queue, topic organization, log saving, drag-and-drop import |
+| NetOps Monitor (`netops`) | Host scanning, port checking, latency measurement, alert rules, metrics collection, status tracking |
+| SQL Visualizer (`sql-visualizer`) | Database browsing, query editor, execution timeline, RPA analytics, data export |
 
 ### Supported Script Types
 
@@ -153,7 +155,6 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 |---|---|
 | `app/main.js` | App entry: window, hub IPC, module bootstrap, lifecycle |
 | `app/preload.js` | Secure IPC bridge with dynamic channel allowlisting |
-| `app/script-executor.js` | Execution queue, process spawning, stream routing |
 | `app/core/module-loader.js` | Discovers modules from `modules/` and `node_modules/automatahub-*` |
 | `app/core/module-registry.js` | In-memory module metadata store |
 | `app/core/ipc-bridge.js` | Safe IPC handler registration with cleanup tracking |
@@ -177,11 +178,53 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 
 | File | Purpose |
 |---|---|
-| `modules/script-runner/manifest.json` | Module metadata: channels, tab types, scripts, styles |
-| `modules/script-runner/main-handlers.js` | All script-related main-process IPC handlers |
-| `modules/script-runner/renderer/script-home.js` | Script list + import zone tab |
-| `modules/script-runner/renderer/execution-tab.js` | Live terminal view tab |
-| `modules/script-runner/renderer/styles.css` | Module-specific CSS |
+| `modules/script_runner/manifest.json` | Module metadata: channels, tab types, scripts, styles |
+| `modules/script_runner/main-handlers.js` | Main-process IPC handlers for script operations |
+| `modules/script_runner/script-executor.js` | Execution queue, process spawning, stream routing |
+| `modules/script_runner/renderer/script-app.js` | Module entry point and tab registration |
+| `modules/script_runner/renderer/script-home.js` | Script list, topic browser, and import zone |
+| `modules/script_runner/renderer/script-browser.js` | Script browsing and filtering |
+| `modules/script_runner/renderer/script-topics.js` | Topic organization UI |
+| `modules/script_runner/renderer/execution-tab.js` | Live terminal view tab |
+| `modules/script_runner/renderer/styles.css` | Module-specific CSS |
+
+### NetOps Monitor Module
+
+| File | Purpose |
+|---|---|
+| `modules/netops/manifest.json` | Module metadata: channels, tab types, scripts, styles |
+| `modules/netops/main-handlers.js` | Main-process IPC handlers for network operations |
+| `modules/netops/core/alert-engine.js` | Alert rule evaluation and triggering |
+| `modules/netops/core/data-store.js` | In-memory data management |
+| `modules/netops/core/persistence.js` | SQLite persistence layer |
+| `modules/netops/monitoring/host-monitor.js` | Background host status monitoring |
+| `modules/netops/monitoring/metrics-collector.js` | System and network metrics collection |
+| `modules/netops/monitoring/network-scanner.js` | Network discovery and scanning |
+| `modules/netops/renderer/net-app.js` | Module entry point and navigation |
+| `modules/netops/renderer/net-overview.js` | Dashboard overview with KPIs |
+| `modules/netops/renderer/net-host-list.js` | Host list and management |
+| `modules/netops/renderer/net-host-detail.js` | Individual host detail view |
+| `modules/netops/renderer/net-discovery.js` | Network discovery UI |
+| `modules/netops/renderer/net-history.js` | Status history timeline |
+| `modules/netops/renderer/net-alerts.js` | Alert rules and triggered alerts |
+| `modules/netops/renderer/chart-config.js` | Chart rendering configuration |
+| `modules/netops/renderer/styles.css` | Module-specific CSS |
+
+### SQL Visualizer Module
+
+| File | Purpose |
+|---|---|
+| `modules/sql_visualizer/manifest.json` | Module metadata: channels, tab types, scripts, styles |
+| `modules/sql_visualizer/main-handlers.js` | Main-process IPC handlers for database operations |
+| `modules/sql_visualizer/db-bridge.js` | Database access layer (SQLite wrapper) |
+| `modules/sql_visualizer/query-analyzer.js` | Error pattern grouping, performance stats, integrity checks |
+| `modules/sql_visualizer/renderer/db-connection-manager.js` | Database connection UI |
+| `modules/sql_visualizer/renderer/sql-home.js` | Dashboard with health cards and stats |
+| `modules/sql_visualizer/renderer/sql-table-view.js` | Table browser with pagination and sorting |
+| `modules/sql_visualizer/renderer/sql-query.js` | Query editor with result grid |
+| `modules/sql_visualizer/renderer/sql-timeline.js` | Execution timeline visualization |
+| `modules/sql_visualizer/renderer/sql-analytics.js` | RPA analytics and performance stats |
+| `modules/sql_visualizer/renderer/styles.css` | Module-specific CSS |
 
 ### Configuration & Meta Files
 
@@ -189,7 +232,7 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 |---|---|
 | `package.json` | npm manifest, electron-builder config, scripts |
 | `package-lock.json` | Dependency lockfile (4,517 lines, 379 packages) |
-| `.gitignore` | Ignores `node_modules/`, `dist/`, `.DS_Store`, `logs/*.txt`, `*.log`, `.env` |
+| `.gitignore` | Ignores `node_modules/`, `dist/`, `.DS_Store`, `logs/`, `*.log`, `.env` |
 | `.editorconfig` | UTF-8, LF, 2-space indent, trim trailing whitespace |
 | `.npmrc` | `audit-level=high` — suppresses moderate-severity npm audit advisories |
 
@@ -198,17 +241,10 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 | File | Purpose |
 |---|---|
 | `README.md` | Setup, usage, project structure, security summary |
-| `SECURITY.md` | AI-assisted development security policy, threat model, review checklists |
-| `TODO.md` | Development plan (all 10 chunks marked complete) |
-| `docs/PROJECT_OVERVIEW.md` | High-level product description |
-| `docs/ARCHITECTURE.md` | System design, data flow, IPC protocol |
-| `docs/FEATURES.md` | Feature specifications |
-| `docs/COMPONENT_SPECS.md` | Component-level specs |
-| `docs/API_INTERFACE.md` | Full IPC API documentation |
-| `docs/FILE_STRUCTURE.md` | Directory layout |
-| `docs/STYLING_GUIDE.md` | CSS design system reference |
-| `docs/DEVELOPMENT_PLAN.md` | Chunk-based build plan |
-| `docs/SCRIPT_FOLDER_SYSTEM.md` | Script folder conventions |
+| `DOCUMENTATION.md` | Comprehensive technical reference |
+| `docs/ARCHITECTURE.md` | Module system design and data flow |
+| `docs/archive/` | Archived MVP v1.0.0 documentation (pre-module architecture) |
+| `modules/MODULES.md` | Module index |
 
 ### Resources
 
@@ -1004,7 +1040,7 @@ The hub uses only Node.js built-in modules at runtime:
 node_modules/
 dist/
 .DS_Store
-logs/*.txt
+logs/
 *.log
 .env
 ```

@@ -1,0 +1,1801 @@
+/* =============================================
+ * SQL Visualizer Module — Styles
+ * =============================================
+ * Loaded dynamically by the hub bootstrap.
+ * Uses CSS variables defined in the hub's core styles.
+ * ============================================= */
+
+/* --- Dashboard (sql-home) --- */
+
+.sql-home {
+  padding: var(--space-xl);
+}
+
+.sql-connection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+.sql-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sql-dot-connected {
+  background: var(--success);
+}
+
+.sql-dot-disconnected {
+  background: var(--error);
+}
+
+.sql-connection-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Quick Stats --- */
+
+.sql-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.sql-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-align: center;
+  transition: border-color 150ms ease;
+}
+
+.sql-stat-item:hover {
+  border-color: var(--accent);
+}
+
+.sql-stat-value {
+  font-size: var(--size-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sql-stat-label {
+  font-size: var(--size-sm);
+  color: var(--muted);
+}
+
+/* --- Table Cards Grid --- */
+
+.sql-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-md);
+}
+
+.sql-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.sql-card:hover,
+.sql-card:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.sql-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-sm);
+}
+
+.sql-card-name {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.sql-card-count {
+  font-size: var(--size-sm);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.sql-card-meta {
+  font-size: var(--size-sm);
+  color: var(--muted);
+  margin: 0 0 var(--space-sm) 0;
+  flex: 1;
+}
+
+.sql-card .card-footer {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+/* --- Home Header Actions --- */
+
+.home-header-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* --- Table View --- */
+
+.sql-table-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sql-tv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.sql-tv-header h2 {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: 0;
+  font-family: var(--font-family-mono);
+}
+
+.sql-tv-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.sql-page-size-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+.sql-page-size {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: var(--size-sm);
+}
+
+/* --- Filter Bar --- */
+
+.sql-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  align-items: center;
+}
+
+.sql-filter-row {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.sql-filter-col,
+.sql-filter-op {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: var(--size-sm);
+}
+
+.sql-filter-col {
+  max-width: 150px;
+}
+
+.sql-filter-op {
+  width: 60px;
+}
+
+.sql-filter-value {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: var(--size-sm);
+  min-width: 120px;
+}
+
+.sql-filter-value:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* --- Data Table (shared by table-view and query-editor) --- */
+
+.sql-table-container {
+  flex: 1;
+  overflow: auto;
+  margin: 0 var(--space-xl);
+}
+
+.sql-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-sm);
+  font-family: var(--font-family-mono);
+}
+
+.sql-data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.sql-th {
+  background: var(--surface-2);
+  color: var(--text);
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background 100ms;
+}
+
+.sql-th:hover {
+  background: var(--surface-3);
+}
+
+.sql-th.sort-asc::after {
+  content: ' ▲';
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.sql-th.sort-desc::after {
+  content: ' ▼';
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.sql-data-table td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border);
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.sql-data-table tbody tr:nth-child(even) {
+  background: var(--surface);
+}
+
+.sql-data-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.sql-null {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.sql-table-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --- JSON Cell --- */
+
+.sql-json-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.sql-json-preview {
+  color: var(--accent);
+}
+
+.sql-json-toggle {
+  font-size: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.sql-json-toggle:hover {
+  color: var(--accent);
+}
+
+.sql-json-expanded {
+  display: block;
+  margin-top: var(--space-xs);
+  padding: var(--space-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: var(--size-sm);
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text);
+}
+
+/* --- Pagination Footer --- */
+
+.sql-tv-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-xl);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.sql-pagination-info {
+  font-size: var(--size-sm);
+  color: var(--muted);
+}
+
+.sql-pagination-controls {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.sql-page-info {
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+  min-width: 80px;
+  text-align: center;
+}
+
+/* --- Query Editor --- */
+
+.sql-query-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sql-query-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.sql-query-header h2 {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* --- Preset Buttons --- */
+
+.sql-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sql-preset-btn {
+  font-size: var(--size-sm) !important;
+  padding: 2px 8px !important;
+}
+
+/* --- SQL Editor Textarea --- */
+
+.sql-editor-container {
+  padding: var(--space-md) var(--space-xl);
+  flex-shrink: 0;
+}
+
+.sql-editor {
+  width: 100%;
+  min-height: 120px;
+  max-height: 300px;
+  resize: vertical;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: var(--space-md);
+  font-family: var(--font-family-mono);
+  font-size: var(--size-base);
+  line-height: 1.5;
+  tab-size: 2;
+  box-sizing: border-box;
+}
+
+.sql-editor:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.sql-editor::placeholder {
+  color: var(--muted);
+}
+
+/* --- Query Toolbar --- */
+
+.sql-query-toolbar {
+  display: flex;
+  gap: var(--space-sm);
+  padding: 0 var(--space-xl) var(--space-md);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sql-shortcut-hint {
+  font-size: var(--size-sm);
+  color: var(--muted);
+}
+
+.sql-result-info {
+  margin-left: auto;
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+/* --- Error Box --- */
+
+.sql-error-box {
+  margin: 0 var(--space-xl) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(244, 135, 113, 0.1);
+  border: 1px solid var(--error);
+  border-radius: 4px;
+  color: var(--error);
+  font-family: var(--font-family-mono);
+  font-size: var(--size-sm);
+  white-space: pre-wrap;
+}
+
+/* --- Result Container --- */
+
+.sql-result-container {
+  flex: 1;
+  min-height: 0;
+}
+
+/* --- Query History --- */
+
+.sql-history {
+  padding: var(--space-md) var(--space-xl);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sql-history h3 {
+  font-size: var(--size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.sql-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sql-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 100ms;
+}
+
+.sql-history-item:hover {
+  background: var(--surface-2);
+}
+
+.sql-history-sql {
+  font-family: var(--font-family-mono);
+  font-size: var(--size-sm);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.sql-history-time {
+  font-size: var(--size-sm);
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* --- Scrollbar styling for table containers --- */
+
+.sql-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.sql-table-container::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.sql-table-container::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 4px;
+}
+
+/* --- Inline button used inside cells --- */
+
+.btn-inline {
+  display: inline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* =============================================
+ * Phase 2 — RPA Analytics Styles
+ * ============================================= */
+
+/* --- Section headings on dashboard --- */
+
+.sql-section-heading {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: var(--space-lg) 0 var(--space-md) 0;
+  color: var(--text);
+}
+
+/* --- DB Health Bar --- */
+
+.sql-db-health-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+.sql-db-health-item {
+  display: inline-flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.sql-db-health-item--bad {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.sql-db-health-label {
+  color: var(--muted);
+}
+
+/* --- Script Health Cards --- */
+
+.sql-health-section {
+  margin-bottom: var(--space-lg);
+}
+
+.sql-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-md);
+}
+
+.sql-health-card {
+  padding: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  border-left: 4px solid var(--border);
+  transition: all 150ms ease;
+}
+
+.sql-health-card:hover {
+  background: var(--surface-2);
+}
+
+.sql-health-card--healthy {
+  border-left-color: var(--success);
+}
+
+.sql-health-card--degraded {
+  border-left-color: var(--warning, #e6a817);
+}
+
+.sql-health-card--critical {
+  border-left-color: var(--error);
+}
+
+.sql-health-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.sql-health-name {
+  font-weight: 600;
+  font-family: var(--font-family-mono);
+  font-size: var(--size-sm);
+  color: var(--text);
+}
+
+.sql-health-badge {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.sql-health-badge--healthy {
+  background: rgba(80, 200, 120, 0.15);
+  color: var(--success);
+}
+
+.sql-health-badge--degraded {
+  background: rgba(230, 168, 23, 0.15);
+  color: var(--warning, #e6a817);
+}
+
+.sql-health-badge--critical {
+  background: rgba(244, 135, 113, 0.15);
+  color: var(--error);
+}
+
+.sql-health-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+.sql-health-stats strong {
+  color: var(--text);
+}
+
+/* --- Integrity Panel --- */
+
+.sql-integrity-section {
+  margin-bottom: var(--space-lg);
+}
+
+.sql-integrity-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sql-integrity-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 4px;
+  font-size: var(--size-sm);
+}
+
+.sql-integrity-alert--warning {
+  background: rgba(230, 168, 23, 0.1);
+  border: 1px solid var(--warning, #e6a817);
+  color: var(--warning, #e6a817);
+}
+
+.sql-integrity-alert--info {
+  background: rgba(100, 149, 237, 0.1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.sql-integrity-alert--ok {
+  background: rgba(80, 200, 120, 0.1);
+  border: 1px solid var(--success);
+  color: var(--success);
+}
+
+/* --- Status Badges (shared) --- */
+
+.sql-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.sql-badge--success {
+  background: rgba(80, 200, 120, 0.15);
+  color: var(--success);
+}
+
+.sql-badge--fail {
+  background: rgba(244, 135, 113, 0.15);
+  color: var(--error);
+}
+
+.sql-badge--running {
+  background: rgba(100, 149, 237, 0.15);
+  color: var(--accent);
+}
+
+.sql-badge--info {
+  background: rgba(100, 149, 237, 0.15);
+  color: var(--accent);
+}
+
+.sql-badge--error {
+  background: rgba(244, 135, 113, 0.15);
+  color: var(--error);
+}
+
+/* --- Execution Timeline --- */
+
+.sql-timeline-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sql-tl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.sql-tl-header h2 {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: 0;
+}
+
+.sql-tl-range-bar {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.sql-tl-range-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.sql-tl-gantt-area {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-md) var(--space-xl);
+}
+
+.sql-tl-empty,
+.sql-tl-error {
+  padding: var(--space-2xl);
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.sql-tl-error {
+  color: var(--error);
+}
+
+/* --- Timeline axis --- */
+
+.sql-tl-axis {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-sm);
+}
+
+.sql-tl-tick-track {
+  flex: 1;
+  position: relative;
+  height: 16px;
+}
+
+.sql-tl-tick {
+  position: absolute;
+  font-size: 10px;
+  color: var(--muted);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* --- Timeline rows --- */
+
+.sql-tl-row {
+  display: flex;
+  gap: 0;
+  align-items: center;
+  min-height: 28px;
+  margin-bottom: 2px;
+}
+
+.sql-tl-label {
+  width: 160px;
+  min-width: 160px;
+  font-size: var(--size-sm);
+  font-family: var(--font-family-mono);
+  color: var(--text-secondary);
+  padding-right: var(--space-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sql-tl-track {
+  flex: 1;
+  position: relative;
+  height: 20px;
+  background: var(--surface);
+  border-radius: 2px;
+}
+
+/* --- Gantt bars --- */
+
+.sql-tl-bar {
+  position: absolute;
+  top: 2px;
+  height: 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: opacity 100ms;
+  min-width: 3px;
+}
+
+.sql-tl-bar:hover {
+  opacity: 0.85;
+  outline: 1px solid var(--text);
+}
+
+.sql-tl-bar--success {
+  background: var(--success);
+}
+
+.sql-tl-bar--fail {
+  background: var(--error);
+}
+
+.sql-tl-bar--running {
+  background: var(--accent);
+  animation: sql-tl-pulse 1.5s ease-in-out infinite;
+}
+
+.sql-tl-bar--overlap {
+  outline: 2px dashed var(--warning, #e6a817);
+  outline-offset: 1px;
+}
+
+@keyframes sql-tl-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* --- Timeline detail panel --- */
+
+.sql-tl-detail {
+  border-top: 2px solid var(--accent);
+  background: var(--surface);
+  padding: var(--space-md) var(--space-xl);
+  max-height: 40vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sql-tl-detail.hidden {
+  display: none;
+}
+
+.sql-tl-detail-close {
+  float: right;
+}
+
+.sql-tl-detail-info h3 {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--text);
+}
+
+.sql-tl-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.sql-tl-detail-section {
+  margin-top: var(--space-md);
+}
+
+.sql-tl-detail-section h4 {
+  font-size: var(--size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.sql-tl-detail-loading {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--muted);
+}
+
+/* --- Timeline log items --- */
+
+.sql-tl-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sql-tl-log-item {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 3px;
+  font-size: var(--size-sm);
+}
+
+.sql-tl-log-item:hover {
+  background: var(--surface-2);
+}
+
+.sql-tl-log-time {
+  color: var(--muted);
+  font-family: var(--font-family-mono);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.sql-tl-log-msg {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sql-tl-error-item {
+  padding: var(--space-sm);
+  border: 1px solid var(--error);
+  border-radius: 4px;
+  margin-bottom: var(--space-sm);
+}
+
+.sql-tl-error-header {
+  display: flex;
+  gap: var(--space-md);
+  font-size: var(--size-sm);
+  color: var(--error);
+}
+
+.sql-tl-stack {
+  margin: var(--space-sm) 0 0 0;
+  padding: var(--space-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+/* --- RPA Analytics Tab --- */
+
+.sql-analytics-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sql-an-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.sql-an-header h2 {
+  font-size: var(--size-md);
+  font-weight: 600;
+  margin: 0;
+}
+
+.sql-an-nav {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.sql-an-tab-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.sql-an-content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-md) var(--space-xl);
+}
+
+.sql-an-loading,
+.sql-an-empty {
+  padding: var(--space-2xl);
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.sql-an-error {
+  padding: var(--space-md);
+  color: var(--error);
+}
+
+.sql-an-filter-bar {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-bottom: var(--space-md);
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+.sql-an-section-title {
+  font-size: var(--size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: var(--space-lg) 0 var(--space-sm) 0;
+}
+
+/* --- Analytics stat cards --- */
+
+.sql-an-stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.sql-an-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-align: center;
+  transition: border-color 150ms ease;
+}
+
+.sql-an-metric:hover {
+  border-color: var(--accent);
+}
+
+.sql-an-metric-val {
+  font-size: var(--size-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sql-an-metric-label {
+  font-size: var(--size-sm);
+  color: var(--muted);
+}
+
+/* --- Activity Heatmap --- */
+
+.sql-heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-lg);
+}
+
+.sql-heatmap-row {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.sql-heatmap-header {
+  margin-bottom: var(--space-xs);
+}
+
+.sql-heatmap-label {
+  width: 40px;
+  min-width: 40px;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  padding-right: var(--space-xs);
+}
+
+.sql-heatmap-hour {
+  flex: 1;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  min-width: 20px;
+}
+
+.sql-heatmap-cell {
+  flex: 1;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  transition: opacity 100ms;
+}
+
+.sql-heatmap-cell:hover {
+  outline: 1px solid var(--text);
+}
+
+/* --- Error Pattern Cards --- */
+
+.sql-an-error-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.sql-an-error-card {
+  padding: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  border-left: 3px solid var(--error);
+  transition: border-color 150ms ease;
+}
+
+.sql-an-error-card:hover {
+  border-color: var(--error);
+}
+
+.sql-an-error-card-header {
+  display: flex;
+  gap: var(--space-md);
+  align-items: baseline;
+  margin-bottom: var(--space-sm);
+}
+
+.sql-an-error-count {
+  font-size: var(--size-lg);
+  font-weight: 700;
+  color: var(--error);
+  flex-shrink: 0;
+}
+
+.sql-an-error-pattern {
+  font-family: var(--font-family-mono);
+  font-size: var(--size-sm);
+  color: var(--text);
+  word-break: break-all;
+}
+
+.sql-an-error-card-meta {
+  display: flex;
+  gap: var(--space-md);
+  font-size: var(--size-sm);
+  color: var(--muted);
+  margin-bottom: var(--space-sm);
+}
+
+.sql-an-example-toggle {
+  margin-bottom: var(--space-sm);
+}
+
+.sql-an-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sql-an-examples.hidden {
+  display: none;
+}
+
+.sql-an-example-item {
+  display: flex;
+  gap: var(--space-md);
+  font-size: var(--size-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg);
+  border-radius: 3px;
+  color: var(--text-secondary);
+}
+
+/* --- Generic hidden helper --- */
+
+.hidden {
+  display: none !important;
+}
+
+/* ===== Phase 3 — Productivity Styles ===== */
+
+/* --- Row Detail Panel --- */
+
+.sql-detail-panel {
+  border-top: 2px solid var(--border);
+  background: var(--surface);
+  padding: var(--space-md);
+  max-height: 50vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.sql-detail-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.sql-detail-close:hover {
+  color: var(--text);
+}
+
+.sql-detail-copy {
+  position: absolute;
+  top: var(--space-sm);
+  right: 3rem;
+}
+
+.sql-detail-heading {
+  margin: 0 0 var(--space-xs) 0;
+  font-size: var(--size-lg);
+  color: var(--text);
+}
+
+.sql-breadcrumb {
+  font-size: var(--size-sm);
+  color: var(--muted);
+  margin-bottom: var(--space-md);
+}
+
+.sql-breadcrumb-link {
+  cursor: pointer;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.sql-breadcrumb-link:hover {
+  opacity: 0.8;
+}
+
+.sql-detail-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-sm);
+}
+
+.sql-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sql-detail-label {
+  font-size: var(--size-sm);
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sql-detail-label.sql-detail-pk::after {
+  content: ' PK';
+  font-size: var(--size-xs);
+  font-weight: 700;
+  color: var(--accent);
+  margin-left: var(--space-xs);
+}
+
+.sql-detail-value {
+  font-size: var(--size-md);
+  color: var(--text);
+  word-break: break-word;
+}
+
+.sql-detail-json {
+  background: var(--bg);
+  border-radius: 4px;
+  padding: var(--space-sm);
+  font-size: var(--size-sm);
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.sql-detail-drilldown {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.sql-detail-correlated {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}
+
+.sql-detail-correlated h4 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--size-md);
+}
+
+/* --- Row selection highlight --- */
+
+.sql-data-row {
+  cursor: pointer;
+}
+
+.sql-data-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sql-row-selected {
+  background: rgba(88, 166, 255, 0.12) !important;
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* --- Cross-table link cells --- */
+
+.sql-link {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sql-link:hover {
+  opacity: 0.8;
+}
+
+/* --- Auto-Refresh active state --- */
+
+.btn-active {
+  background: var(--accent) !important;
+  color: var(--bg) !important;
+  border-color: var(--accent) !important;
+}
+
+/* --- New-row highlight animation --- */
+
+.sql-row-new {
+  animation: sql-row-flash 1.5s ease-out;
+}
+
+@keyframes sql-row-flash {
+  0%   { background: rgba(88, 166, 255, 0.25); }
+  100% { background: transparent; }
+}
+
+/* --- Saved Queries Section --- */
+
+.sql-saved-queries {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.sql-saved-queries h3 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--size-md);
+}
+
+.sql-saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sql-saved-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg);
+  border-radius: 3px;
+}
+
+.sql-saved-name {
+  font-weight: 600;
+  min-width: 100px;
+  color: var(--text);
+}
+
+.sql-saved-preview {
+  flex: 1;
+  font-size: var(--size-sm);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sql-saved-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.sql-saved-date {
+  font-size: var(--size-xs);
+  color: var(--muted);
+}
+
+.btn-danger {
+  background: var(--error);
+  color: #fff;
+  border-color: var(--error);
+}
+
+.btn-danger:hover {
+  opacity: 0.85;
+}
+
+/* --- Bookmarks Section (Dashboard) --- */
+
+.sql-bookmarks-section {
+  margin-bottom: var(--space-lg);
+}
+
+.sql-bookmarks-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.sql-bookmark-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.sql-bookmark-item:hover {
+  border-color: var(--accent);
+}
+
+.sql-bookmark-icon {
+  color: var(--warning, #f5a623);
+  font-size: var(--size-md);
+}
+
+.sql-bookmark-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sql-bookmark-meta {
+  font-size: var(--size-sm);
+  color: var(--muted);
+}
+
+.sql-bookmark-delete {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 4px;
+}
+
+.sql-bookmark-delete:hover {
+  color: var(--error);
+}
+
+/* --- Sparkline Containers --- */
+
+.sql-sparkline {
+  display: inline-block;
+  vertical-align: middle;
+  width: 80px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.sql-sparkline svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sql-sparkline-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.sql-sparkline-area {
+  fill: rgba(88, 166, 255, 0.15);
+  stroke: none;
+}
+
+.sql-sparkline--danger .sql-sparkline-line {
+  stroke: var(--error);
+}
+
+.sql-sparkline--danger .sql-sparkline-area {
+  fill: rgba(238, 85, 85, 0.12);
+}
+
+.sql-sparkline--success .sql-sparkline-line {
+  stroke: var(--success);
+}
+
+.sql-sparkline--success .sql-sparkline-area {
+  fill: rgba(51, 204, 51, 0.12);
+}
+
+/* --- Zoom/Pan timeline controls --- */
+
+.sql-tl-zoom-btn {
+  margin-left: var(--space-xs);
+  font-size: 0.8rem;
+}
+
+.sql-tl-gantt-area {
+  cursor: grab;
+  user-select: none;
+}
+
+/* --- Connection Manager UI --- */
+
+.sql-retry-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sql-waiting-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  gap: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.sql-waiting-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* --- Empty State --- */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-xl);
+  text-align: center;
+  color: var(--muted);
+  gap: var(--space-sm);
+}
+
+.empty-state-title {
+  font-size: var(--size-lg);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.empty-state-hint {
+  font-size: var(--size-sm);
+  color: var(--muted);
+  margin: 0;
+}
+
+/* --- Inline Modal (Save Query / Bookmark) --- */
+
+.sql-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.sql-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-xl);
+  min-width: 340px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.sql-modal-title {
+  font-size: var(--size-lg);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.sql-modal-input {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--size-base);
+  box-sizing: border-box;
+}
+
+.sql-modal-input:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.sql-modal-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+/* --- Timeline Log Item Status Colors --- */
+
+.sql-tl-log-item--success {
+  border-left: 3px solid var(--success);
+}
+
+.sql-tl-log-item--fail,
+.sql-tl-log-item--error {
+  border-left: 3px solid var(--error);
+}
+
+.sql-tl-log-item--info {
+  border-left: 3px solid var(--accent);
+}
+
+.sql-tl-log-item--running {
+  border-left: 3px solid var(--accent);
+}
+
+/* --- Integrity icon text badges --- */
+
+.sql-integrity-icon {
+  flex-shrink: 0;
+  font-size: var(--size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

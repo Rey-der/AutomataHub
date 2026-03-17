@@ -1,0 +1,11 @@
+{
+  "name": "@automata-hub/netops",
+  "version": "1.0.0",
+  "description": "Network operations monitoring module for AutomataHub",
+  "main": "main-handlers.js",
+  "author": "",
+  "license": "ISC",
+  "peerDependencies": {
+    "better-sqlite3": "^9.0.0"
+  }
+}
