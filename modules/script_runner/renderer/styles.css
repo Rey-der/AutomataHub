@@ -660,6 +660,7 @@
   flex-direction: column;
   height: 100%;
   gap: 0;
+  position: relative;
 }
 
 .script-browser-header {
@@ -745,7 +746,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   transition: all 150ms ease;
-  cursor: default;
+  cursor: pointer;
 }
 
 .script-card:hover {
@@ -892,11 +893,6 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* Make script-browser a positioning context */
-.script-browser {
-  position: relative;
 }
 
 /* ============================================================================
@@ -1192,10 +1188,6 @@
   display: flex;
   gap: 8px;
   flex-shrink: 0;
-}
-
-.script-card {
-  cursor: pointer;
 }
 
 /* ============================================================================
@@ -1575,13 +1567,13 @@
 
 .run-status-success {
   background: rgba(39, 174, 96, 0.15);
-  color: #27ae60;
+  color: #4ade80;
   border: 1px solid rgba(39, 174, 96, 0.3);
 }
 
 .run-status-error {
   background: rgba(231, 76, 60, 0.15);
-  color: #e74c3c;
+  color: #f87171;
   border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
@@ -1605,7 +1597,7 @@
 
 .execution-toolbar .btn-retry {
   background: rgba(243, 156, 18, 0.12);
-  color: #f39c12;
+  color: #fbbf24;
   border: 1px solid rgba(243, 156, 18, 0.35);
 }
 

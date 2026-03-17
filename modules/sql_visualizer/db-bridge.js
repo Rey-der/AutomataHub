@@ -7,7 +7,7 @@
 let Database;
 try {
   Database = require('better-sqlite3');
-} catch (err) {
+} catch {
   Database = null;
 }
 
@@ -195,11 +195,7 @@ async function initSqlJsFallbackWithFile(dbPath) {
 function close() {
   if (_db) {
     try { 
-      if (_usesSqlJs) {
-        _db.close(); 
-      } else {
-        _db.close();
-      }
+      _db.close();
     } catch { /* already closed */ }
     _db = null;
     _dbPath = null;
@@ -341,11 +337,11 @@ function getTableStats() {
   for (const table of tables) {
     const count = getRowCount(table);
     const cols = _getSchema()[table];
-    const colNames = cols.map((c) => c.name);
+    const colNames = new Set(cols.map((c) => c.name));
 
     let latest = null;
     for (const tsCol of TIMESTAMP_COLS) {
-      if (colNames.includes(tsCol)) {
+      if (colNames.has(tsCol)) {
         if (_usesSqlJs) {
           const result = _db.exec(`SELECT "${tsCol}" AS ts FROM "${table}" ORDER BY "${tsCol}" DESC LIMIT 1`);
           if (result.length > 0 && result[0].values.length > 0) {
@@ -367,6 +363,76 @@ function getTableStats() {
   return stats;
 }
 
+const _ALLOWED_OPS = new Set(['LIKE', '=', '!=', '>', '<', '>=', '<=']);
+
+function _buildOrderClause(table, opts) {
+  if (!opts.sortCol) return '';
+  _assertColumn(table, opts.sortCol);
+  const dir = opts.sortDir === 'DESC' ? 'DESC' : 'ASC';
+  return ` ORDER BY "${opts.sortCol}" ${dir}`;
+}
+
+function _buildSqlJsWhere(table, filters) {
+  if (!Array.isArray(filters) || filters.length === 0) return '';
+  const conditions = [];
+  for (const f of filters) {
+    if (!f.column || f.value === undefined) continue;
+    _assertColumn(table, f.column);
+    const op = _ALLOWED_OPS.has(f.operator) ? f.operator : '=';
+    if (op === 'LIKE') {
+      const escapedVal = String(f.value).replaceAll("'", "''");
+      conditions.push(`"${f.column}" LIKE '%${escapedVal}%'`);
+    } else {
+      const val = typeof f.value === 'number' ? f.value : `'${String(f.value).replaceAll("'", "''")}'`;
+      conditions.push(`"${f.column}" ${op} ${val}`);
+    }
+  }
+  return conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+}
+
+function _sqlJsResultToObjects(result) {
+  if (result.length === 0) return [];
+  const columns = result[0].columns;
+  return result[0].values.map((row) => {
+    const obj = {};
+    columns.forEach((col, i) => { obj[col] = row[i]; });
+    return obj;
+  });
+}
+
+function _querySqlJs(table, opts, limit, offset) {
+  const orderClause = _buildOrderClause(table, opts);
+  const whereClause = _buildSqlJsWhere(table, opts.filters);
+
+  const countResult = _db.exec(`SELECT COUNT(*) AS total FROM "${table}"${whereClause}`);
+  const total = countResult.length > 0 ? countResult[0].values[0][0] : 0;
+
+  const result = _db.exec(`SELECT * FROM "${table}"${whereClause}${orderClause} LIMIT ${limit} OFFSET ${offset}`);
+  return { rows: _sqlJsResultToObjects(result), total };
+}
+
+function _buildNativeWhere(table, filters) {
+  const params = {};
+  if (!Array.isArray(filters) || filters.length === 0) return { whereClause: '', params };
+  const conditions = [];
+  for (let i = 0; i < filters.length; i++) {
+    const f = filters[i];
+    if (!f.column || f.value === undefined) continue;
+    _assertColumn(table, f.column);
+    const op = _ALLOWED_OPS.has(f.operator) ? f.operator : '=';
+    const paramKey = `filter_${i}`;
+    if (op === 'LIKE') {
+      conditions.push(`"${f.column}" LIKE @${paramKey}`);
+      params[paramKey] = `%${f.value}%`;
+    } else {
+      conditions.push(`"${f.column}" ${op} @${paramKey}`);
+      params[paramKey] = f.value;
+    }
+  }
+  const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : '';
+  return { whereClause, params };
+}
+
 /**
  * Paginated, sorted, filtered read from a table.
  *
@@ -386,91 +452,12 @@ function queryRows(table, opts = {}) {
   const offset = Math.max(0, Number.parseInt(opts.offset, 10) || 0);
   const limit = Math.min(500, Math.max(1, Number.parseInt(opts.limit, 10) || 25));
 
-  let orderClause = '';
-  if (opts.sortCol && !_usesSqlJs) {
-    _assertColumn(table, opts.sortCol);
-    const dir = opts.sortDir === 'DESC' ? 'DESC' : 'ASC';
-    orderClause = ` ORDER BY "${opts.sortCol}" ${dir}`;
-  }
-
   if (_usesSqlJs) {
-    // For sql.js, build query with sorting and filtering
-    let orderClause = '';
-    if (opts.sortCol) {
-      _assertColumn(table, opts.sortCol);
-      const dir = opts.sortDir === 'DESC' ? 'DESC' : 'ASC';
-      orderClause = ` ORDER BY "${opts.sortCol}" ${dir}`;
-    }
-
-    // Build WHERE clause from filters
-    const ALLOWED_OPS = new Set(['LIKE', '=', '!=', '>', '<', '>=', '<=']);
-    let whereClause = '';
-    if (Array.isArray(opts.filters) && opts.filters.length > 0) {
-      const conditions = [];
-      for (const f of opts.filters) {
-        if (!f.column || f.value === undefined) continue;
-        _assertColumn(table, f.column);
-        const op = ALLOWED_OPS.has(f.operator) ? f.operator : '=';
-        
-        if (op === 'LIKE') {
-          const escapedVal = String(f.value).replace(/'/g, "''");
-          conditions.push(`"${f.column}" LIKE '%${escapedVal}%'`);
-        } else {
-          const val = typeof f.value === 'number' ? f.value : `'${String(f.value).replace(/'/g, "''")}'`;
-          conditions.push(`"${f.column}" ${op} ${val}`);
-        }
-      }
-      if (conditions.length > 0) {
-        whereClause = ` WHERE ${conditions.join(' AND ')}`;
-      }
-    }
-
-    const countResult = _db.exec(`SELECT COUNT(*) AS total FROM "${table}"${whereClause}`);
-    const total = countResult.length > 0 ? countResult[0].values[0][0] : 0;
-
-    const queryStr = `SELECT * FROM "${table}"${whereClause}${orderClause} LIMIT ${limit} OFFSET ${offset}`;
-    const result = _db.exec(queryStr);
-    
-    if (result.length === 0) return { rows: [], total };
-    
-    const columns = result[0].columns;
-    const rows = result[0].values.map((row) => {
-      const obj = {};
-      columns.forEach((col, i) => {
-        obj[col] = row[i];
-      });
-      return obj;
-    });
-
-    return { rows, total };
+    return _querySqlJs(table, opts, limit, offset);
   }
 
-  // Build WHERE clause from filters
-  const ALLOWED_OPS = new Set(['LIKE', '=', '!=', '>', '<', '>=', '<=']);
-  let whereClause = '';
-  const params = {};
-  if (Array.isArray(opts.filters) && opts.filters.length > 0) {
-    const conditions = [];
-    for (let i = 0; i < opts.filters.length; i++) {
-      const f = opts.filters[i];
-      if (!f.column || !f.value === undefined) continue;
-
-      _assertColumn(table, f.column);
-      const op = ALLOWED_OPS.has(f.operator) ? f.operator : '=';
-      const paramKey = `filter_${i}`;
-
-      if (op === 'LIKE') {
-        conditions.push(`"${f.column}" LIKE @${paramKey}`);
-        params[paramKey] = `%${f.value}%`;
-      } else {
-        conditions.push(`"${f.column}" ${op} @${paramKey}`);
-        params[paramKey] = f.value;
-      }
-    }
-    if (conditions.length > 0) {
-      whereClause = ` WHERE ${conditions.join(' AND ')}`;
-    }
-  }
+  const orderClause = _buildOrderClause(table, opts);
+  const { whereClause, params } = _buildNativeWhere(table, opts.filters);
 
   const totalRow = _db.prepare(`SELECT COUNT(*) AS total FROM "${table}"${whereClause}`).get(params);
   const total = totalRow.total;
@@ -556,7 +543,7 @@ function exportCsv(sql) {
     if (val === null || val === undefined) return '';
     const s = String(val);
     if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-      return `"${s.replace(/"/g, '""')}"`;
+      return `"${s.replaceAll('"', '""')}"`;
     }
     return s;
   };

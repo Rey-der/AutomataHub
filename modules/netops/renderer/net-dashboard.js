@@ -153,9 +153,12 @@ class NetDashboard {
     const status = cached?.status || host.last_status || 'unknown';
     const latency = cached?.latency_ms;
     const lastCheck = host.last_check || 'Never';
-    const latencyDisplay = latency != null
-      ? (latency < 1000 ? `${latency}ms` : `${(latency / 1000).toFixed(1)}s`)
-      : '\u2014';
+    let latencyDisplay;
+    if (latency == null) {
+      latencyDisplay = '\u2014';
+    } else {
+      latencyDisplay = latency < 1000 ? `${latency}ms` : `${(latency / 1000).toFixed(1)}s`;
+    }
 
     return `
       <div class="host-card status-${status}" data-host-id="${host.id}">
@@ -218,13 +221,15 @@ class NetDashboard {
     if (badge) { badge.className = `status-badge status-${status}`; badge.textContent = status; }
 
     card.className = `host-card status-${status}`;
-    card.setAttribute('data-host-id', hostId);
+    card.dataset.hostId = hostId;
 
     const metricVal = card.querySelector('.metric-value');
     if (metricVal) {
-      metricVal.textContent = latency != null
-        ? (latency < 1000 ? `${latency}ms` : `${(latency / 1000).toFixed(1)}s`)
-        : '\u2014';
+      if (latency == null) {
+        metricVal.textContent = '\u2014';
+      } else {
+        metricVal.textContent = latency < 1000 ? `${latency}ms` : `${(latency / 1000).toFixed(1)}s`;
+      }
     }
   }
 
@@ -280,7 +285,7 @@ class NetDashboard {
     // Monitored host — Ping
     this.container.querySelectorAll('.btn-ping').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const hostId = Number.parseFloat(btn.dataset.hostId);
+        // Ping action placeholder
       });
     });
 
@@ -410,7 +415,7 @@ class NetDashboard {
     if (!globalThis._hub) { setTimeout(doRegister, 0); return; }
     globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
     globalThis._hub.moduleOpeners['netops'] = function openNetOps(mod) {
-      if (globalThis.tabManager && globalThis.tabManager.hasTabType('netops-dashboard')) {
+      if (globalThis.tabManager?.hasTabType('netops-dashboard')) {
         globalThis.tabManager.createTab('netops-dashboard', 'Monitor', { moduleId: mod.id }, { target: 'module' });
       }
     };
@@ -422,5 +427,5 @@ class NetDashboard {
 
 function escapeHtml(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(text || '').replace(/[&<>"']/g, c => map[c]);
+  return String(text || '').replaceAll(/[&<>"']/g, c => map[c]);
 }

@@ -164,7 +164,7 @@ async function init() {
   });
 }
 
-init();
+init().catch((err) => console.error('[hub] Fatal error:', err));
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

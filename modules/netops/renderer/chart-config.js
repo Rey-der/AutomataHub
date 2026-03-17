@@ -10,11 +10,6 @@
 function getThemeColors() {
   const root = document.documentElement;
   const computed = getComputedStyle(root);
-  
-  const hexToRgb = (hex) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? `${Number.parseInt(result[1], 16)}, ${Number.parseInt(result[2], 16)}, ${Number.parseInt(result[3], 16)}` : '200, 200, 200';
-  };
 
   return {
     text: computed.getPropertyValue('--text').trim() || '#e0e0e0',
@@ -266,7 +261,7 @@ function createMemoryChart(canvasElement, data = {}) {
           borderWidth: 1,
           callbacks: {
             afterLabel: function(context) {
-              if (data.memoryMb && data.memoryMb[context.dataIndex]) {
+              if (data.memoryMb?.[context.dataIndex]) {
                 return `${data.memoryMb[context.dataIndex]} MB`;
               }
               return '';

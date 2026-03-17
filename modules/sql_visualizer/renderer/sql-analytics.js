@@ -6,7 +6,6 @@
  */
 
 const SqlAnalytics = (() => {
-  const tabStates = new Map();
 
   const SECTIONS = [
     { id: 'performance', label: 'Performance' },
@@ -25,7 +24,6 @@ const SqlAnalytics = (() => {
     container.innerHTML = '';
 
     const state = { section: 'performance', scriptFilter: null };
-    tabStates.set(tab.id, state);
 
     const wrapper = document.createElement('div');
     wrapper.className = 'sql-analytics-tab';
@@ -105,7 +103,7 @@ const SqlAnalytics = (() => {
     sel.appendChild(allOpt);
 
     // Get unique scripts from runs
-    const scripts = [...new Set(data.runs.map((r) => r.script))].sort();
+    const scripts = [...new Set(data.runs.map((r) => r.script))].sort((a, b) => a.localeCompare(b));
     for (const s of scripts) {
       const opt = document.createElement('option');
       opt.value = s;
@@ -425,9 +423,7 @@ const SqlAnalytics = (() => {
     return div.innerHTML;
   }
 
-  function onClose(tab) {
-    tabStates.delete(tab.id);
-  }
+  function onClose() {
 
   return { render, onClose };
 })();

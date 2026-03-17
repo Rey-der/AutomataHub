@@ -72,37 +72,19 @@ const SqlTableView = (() => {
 
   // --- Rendering ---
 
-  function render(tab, container) {
-    if (!container) return;
-    container.innerHTML = '';
+  function _restoreBookmark(state, tab) {
+    if (state.tableName || !tab.tableName) return;
+    state.tableName = tab.tableName;
+    if (!tab.bookmark) return;
+    const bm = tab.bookmark;
+    if (bm.sortCol) state.sortCol = bm.sortCol;
+    if (bm.sortDir) state.sortDir = bm.sortDir;
+    if (bm.pageSize) state.pageSize = bm.pageSize;
+    if (Array.isArray(bm.filters)) state.filters = bm.filters.map((f) => ({ ...f }));
+    tab.bookmark = null;
+  }
 
-    const state = getState(tab.id);
-    if (!state.tableName && tab.tableName) {
-      state.tableName = tab.tableName;
-
-      // Restore bookmark state if provided
-      if (tab.bookmark) {
-        const bm = tab.bookmark;
-        if (bm.sortCol) state.sortCol = bm.sortCol;
-        if (bm.sortDir) state.sortDir = bm.sortDir;
-        if (bm.pageSize) state.pageSize = bm.pageSize;
-        if (Array.isArray(bm.filters)) state.filters = bm.filters.map((f) => ({ ...f }));
-        tab.bookmark = null; // consume once
-      }
-    }
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'sql-table-view';
-    wrapper.dataset.tabId = tab.id;
-
-    // Header
-    const header = document.createElement('div');
-    header.className = 'sql-tv-header';
-
-    const title = document.createElement('h2');
-    title.textContent = state.tableName || 'Table';
-    header.appendChild(title);
-
+  function _createHeaderActions(tab, state) {
     const headerActions = document.createElement('div');
     headerActions.className = 'sql-tv-actions';
 
@@ -152,8 +134,7 @@ const SqlTableView = (() => {
       setupAutoRefresh(tab, state);
       refreshToggle.className = `btn btn-sm${state.autoRefresh ? ' btn-active' : ' btn-secondary'}`;
       refreshToggle.textContent = state.autoRefresh ? 'Live' : 'Auto';
-      // Update tab header indicator
-      if (globalThis.tabManager && globalThis.tabManager.updateTabStatus) {
+      if (globalThis.tabManager?.updateTabStatus) {
         globalThis.tabManager.updateTabStatus(tab.id, state.autoRefresh ? 'running' : 'idle');
       }
     });
@@ -176,7 +157,29 @@ const SqlTableView = (() => {
     });
     headerActions.appendChild(intervalSelect);
 
-    header.appendChild(headerActions);
+    return headerActions;
+  }
+
+  function render(tab, container) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    const state = getState(tab.id);
+    _restoreBookmark(state, tab);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sql-table-view';
+    wrapper.dataset.tabId = tab.id;
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'sql-tv-header';
+
+    const title = document.createElement('h2');
+    title.textContent = state.tableName || 'Table';
+    header.appendChild(title);
+
+    header.appendChild(_createHeaderActions(tab, state));
     wrapper.appendChild(header);
 
     // Filter bar
@@ -337,6 +340,88 @@ const SqlTableView = (() => {
 
   // --- Row Detail Panel ---
 
+  function _renderDetailFields(columns, selectedRow) {
+    const fields = document.createElement('div');
+    fields.className = 'sql-detail-fields';
+
+    for (const col of columns) {
+      const field = document.createElement('div');
+      field.className = 'sql-detail-field';
+
+      const label = document.createElement('label');
+      label.className = 'sql-detail-label';
+      label.textContent = col.name;
+      if (col.pk) label.classList.add('sql-detail-pk');
+      field.appendChild(label);
+
+      const value = selectedRow[col.name];
+      const valEl = document.createElement('div');
+      valEl.className = 'sql-detail-value';
+
+      if (value == null) {
+        valEl.className += ' sql-null';
+        valEl.textContent = 'NULL';
+      } else if (typeof value === 'string' && isJsonString(value)) {
+        const pre = document.createElement('pre');
+        pre.className = 'sql-detail-json';
+        pre.textContent = JSON.stringify(JSON.parse(value), null, 2);
+        valEl.appendChild(pre);
+      } else {
+        valEl.textContent = String(value);
+      }
+
+      field.appendChild(valEl);
+      fields.appendChild(field);
+    }
+
+    return fields;
+  }
+
+  function _renderDrilldowns(panel, state) {
+    const drilldowns = document.createElement('div');
+    drilldowns.className = 'sql-detail-drilldown';
+    const row = state.selectedRow;
+
+    if (state.tableName === 'execution_tracking' && row.id) {
+      const corrBtn = document.createElement('button');
+      corrBtn.className = 'btn btn-sm';
+      corrBtn.textContent = 'View Correlated Logs & Errors';
+      corrBtn.addEventListener('click', async () => {
+        try {
+          const corr = await globalThis.api.invoke('sql-visualizer:get-correlated-records', { executionId: row.id });
+          renderCorrelatedInPanel(panel, corr);
+        } catch (err) {
+          console.error('[detail] correlated:', err);
+        }
+      });
+      drilldowns.appendChild(corrBtn);
+    }
+
+    if (state.tableName === 'errors' && row.script && row.timestamp) {
+      const execBtn = document.createElement('button');
+      execBtn.className = 'btn btn-sm';
+      execBtn.textContent = 'Find Execution';
+      execBtn.addEventListener('click', () => {
+        globalThis.tabManager.createTab('sql-table-view', 'execution_tracking', { tableName: 'execution_tracking' }, { reuseKey: 'table-execution_tracking' });
+      });
+      drilldowns.appendChild(execBtn);
+    }
+
+    if (row.script) {
+      const scriptBtn = document.createElement('button');
+      scriptBtn.className = 'btn btn-sm';
+      scriptBtn.textContent = 'All Activity for "' + escHtml(row.script) + '"';
+      scriptBtn.addEventListener('click', () => {
+        globalThis.tabManager.createTab('sql-query', 'Query', {}, { reuseKey: 'sql-query-default' });
+      });
+      drilldowns.appendChild(scriptBtn);
+    }
+
+    if (drilldowns.children.length > 0) {
+      panel.appendChild(drilldowns);
+    }
+  }
+
   function renderDetailPanel(tab, state) {
     const panel = document.getElementById(`sql-detail-${tab.id}`);
     if (!panel || !state.selectedRow) return;
@@ -385,90 +470,8 @@ const SqlTableView = (() => {
     breadcrumb.appendChild(document.createTextNode(' › Row #' + (state.selectedRow.id || '—')));
     panel.appendChild(breadcrumb);
 
-    // Field list
-    const fields = document.createElement('div');
-    fields.className = 'sql-detail-fields';
-
-    for (const col of state.columns) {
-      const field = document.createElement('div');
-      field.className = 'sql-detail-field';
-
-      const label = document.createElement('label');
-      label.className = 'sql-detail-label';
-      label.textContent = col.name;
-      if (col.pk) label.classList.add('sql-detail-pk');
-      field.appendChild(label);
-
-      const value = state.selectedRow[col.name];
-      const valEl = document.createElement('div');
-      valEl.className = 'sql-detail-value';
-
-      if (value === null || value === undefined) {
-        valEl.className += ' sql-null';
-        valEl.textContent = 'NULL';
-      } else if (typeof value === 'string' && isJsonString(value)) {
-        // Expandable JSON tree
-        const pre = document.createElement('pre');
-        pre.className = 'sql-detail-json';
-        pre.textContent = JSON.stringify(JSON.parse(value), null, 2);
-        valEl.appendChild(pre);
-      } else {
-        valEl.textContent = String(value);
-      }
-
-      field.appendChild(valEl);
-      fields.appendChild(field);
-    }
-
-    panel.appendChild(fields);
-
-    // Cross-table drill-down links
-    const drilldowns = document.createElement('div');
-    drilldowns.className = 'sql-detail-drilldown';
-
-    const row = state.selectedRow;
-
-    // If viewing execution_tracking → link to correlated errors/logs
-    if (state.tableName === 'execution_tracking' && row.id) {
-      const corrBtn = document.createElement('button');
-      corrBtn.className = 'btn btn-sm';
-      corrBtn.textContent = 'View Correlated Logs & Errors';
-      corrBtn.addEventListener('click', async () => {
-        try {
-          const corr = await globalThis.api.invoke('sql-visualizer:get-correlated-records', { executionId: row.id });
-          renderCorrelatedInPanel(panel, corr);
-        } catch (err) {
-          console.error('[detail] correlated:', err);
-        }
-      });
-      drilldowns.appendChild(corrBtn);
-    }
-
-    // If viewing errors → link to the execution that caused it
-    if (state.tableName === 'errors' && row.script && row.timestamp) {
-      const execBtn = document.createElement('button');
-      execBtn.className = 'btn btn-sm';
-      execBtn.textContent = 'Find Execution';
-      execBtn.addEventListener('click', () => {
-        globalThis.tabManager.createTab('sql-table-view', 'execution_tracking', { tableName: 'execution_tracking' }, { reuseKey: 'table-execution_tracking' });
-      });
-      drilldowns.appendChild(execBtn);
-    }
-
-    // If row has a "script" column → link to filter by that script
-    if (row.script) {
-      const scriptBtn = document.createElement('button');
-      scriptBtn.className = 'btn btn-sm';
-      scriptBtn.textContent = 'All Activity for "' + escHtml(row.script) + '"';
-      scriptBtn.addEventListener('click', () => {
-        globalThis.tabManager.createTab('sql-query', 'Query', {}, { reuseKey: 'sql-query-default' });
-      });
-      drilldowns.appendChild(scriptBtn);
-    }
-
-    if (drilldowns.children.length > 0) {
-      panel.appendChild(drilldowns);
-    }
+    panel.appendChild(_renderDetailFields(state.columns, state.selectedRow));
+    _renderDrilldowns(panel, state);
   }
 
   function renderCorrelatedInPanel(panel, corr) {

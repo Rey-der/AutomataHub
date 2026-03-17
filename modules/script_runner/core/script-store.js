@@ -23,7 +23,7 @@ class ScriptStore {
   // --- Topic Management ---
 
   addTopic(topic) {
-    if (!topic || !topic.id) throw new Error('Topic must have an id');
+    if (!topic?.id) throw new Error('Topic must have an id');
     this.topics.set(topic.id, topic);
     return topic;
   }
@@ -63,7 +63,7 @@ class ScriptStore {
   // --- Script Management ---
 
   addScript(script) {
-    if (!script || !script.id) throw new Error('Script must have an id');
+    if (!script?.id) throw new Error('Script must have an id');
     this.scripts.set(script.id, script);
     return script;
   }

@@ -77,15 +77,15 @@ function register(ipcBridge, { executor, send, paths, ensureDir, ERROR_MESSAGES 
 
   ipcBridge.handle('script-runner:save-logs', (_event, args) => {
     try {
-      const { content, scriptName, timestamp } = args || {};
+      const { content, scriptName } = args || {};
       if (!content || typeof content !== 'string') throw new Error('Missing content');
 
       const logsDir = path.join(paths.root, 'logs');
       ensureDir(logsDir);
 
       const now = new Date();
-      const datePart = now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '');
-      const safeName = String(scriptName || 'log').replace(/[^a-z0-9_-]/gi, '_');
+      const datePart = now.toISOString().replaceAll(/T/g, '_').replaceAll(/:/g, '-').replaceAll(/\..+/g, '');
+      const safeName = String(scriptName || 'log').replaceAll(/[^a-z0-9_-]/gi, '_');
       const fileName = `${safeName}_${datePart}.txt`;
       const filePath = path.join(logsDir, fileName);
 

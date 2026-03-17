@@ -185,7 +185,7 @@ const ScriptExecution = (() => {
         ta.className = 'script-edit-area';
         ta.id = `script-edit-${tab.id}`;
         ta.spellcheck = false;
-        ta.value = state.scriptOverride !== null ? state.scriptOverride : 'Loading\u2026';
+        ta.value = state.scriptOverride ?? 'Loading\u2026';
         placeholder.appendChild(ta);
         if (state.scriptOverride === null && tab.scriptPath) {
           globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
@@ -199,9 +199,9 @@ const ScriptExecution = (() => {
         setTimeout(() => { const el = document.getElementById(`script-edit-${tab.id}`); if (el) el.focus(); }, 0);
       } else {
         const codeBlock = document.createElement('pre');
-        codeBlock.className = 'script-preview' + (state.scriptOverride !== null ? ' script-preview-edited' : '');
+        codeBlock.className = 'script-preview' + (state.scriptOverride === null ? '' : ' script-preview-edited');
         codeBlock.id = `script-preview-${tab.id}`;
-        codeBlock.textContent = state.scriptOverride !== null ? state.scriptOverride : 'Loading\u2026';
+        codeBlock.textContent = state.scriptOverride ?? 'Loading\u2026';
         placeholder.appendChild(codeBlock);
         if (state.scriptOverride === null && tab.scriptPath) {
           globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
@@ -221,17 +221,17 @@ const ScriptExecution = (() => {
 
       penBtn.addEventListener('click', () => {
         const s = getState(tab.id);
-        if (!s.editMode) {
+        if (s.editMode) {
+          const taEl = document.getElementById(`script-edit-${tab.id}`);
+          if (taEl) s.scriptOverride = taEl.value;
+          s.editMode = false;
+        } else {
           if (s.scriptOverride === null) {
             const preEl = document.getElementById(`script-preview-${tab.id}`);
             const raw = preEl ? preEl.textContent : '';
             if (raw && raw !== 'Loading\u2026') s.scriptOverride = raw;
           }
           s.editMode = true;
-        } else {
-          const taEl = document.getElementById(`script-edit-${tab.id}`);
-          if (taEl) s.scriptOverride = taEl.value;
-          s.editMode = false;
         }
         if (globalThis.tabManager.getActiveTabId() === tab.id) {
           render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));

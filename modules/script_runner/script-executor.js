@@ -134,7 +134,7 @@ class ScriptExecutor extends EventEmitter {
 
     const child = spawn(command, args, {
       cwd: path.dirname(resolvedPath),
-      env: { ...process.env, ...this.extraEnv, ...(job.env || {}) },
+      env: { ...process.env, ...this.extraEnv, ...job.env },
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
       detached: false,

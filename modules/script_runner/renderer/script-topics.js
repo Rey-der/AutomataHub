@@ -614,7 +614,7 @@ class TopicList {
         this.render();
         const msg = skipped > 0
           ? `Imported ${imported}, skipped ${skipped} (duplicates or invalid)`
-          : `Imported ${imported} topic${imported !== 1 ? 's' : ''}`;
+          : `Imported ${imported} topic${imported === 1 ? '' : 's'}`;
         globalThis.ui?.showNotification?.(msg, 'success');
       } catch (err) {
         globalThis.ui?.showNotification?.('Failed to parse JSON file', 'error');

@@ -77,7 +77,7 @@ function extractAmount(text) {
   for (const pattern of patterns) {
     const m = text.match(pattern);
     if (m) {
-      const cleaned = m[1].replace(/,/g, '');
+      const cleaned = m[1].replaceAll(',', '');
       const num = Number.parseFloat(cleaned);
       if (num > 0) return num;
     }

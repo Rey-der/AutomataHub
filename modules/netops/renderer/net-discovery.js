@@ -7,7 +7,7 @@ class NetDiscovery {
   constructor(app) {
     this.app = app;
     this.scanning = false;
-    this.scanProgress = null;     // { progress, scanned, total }
+    this.scanProgress = null;
     this.scanStartTime = null;
     this.networks = [];
     this.expandedNets = new Set(); // persist collapse state across re-renders
@@ -84,7 +84,7 @@ class NetDiscovery {
 
         <!-- Saved Networks -->
         <div class="disc-networks-section">
-          <div class="disc-section-title">Discovered Networks <span class="disc-count">${this.networks.length} network${this.networks.length !== 1 ? 's' : ''}</span></div>
+          <div class="disc-section-title">Discovered Networks <span class="disc-count">${this.networks.length} network${this.networks.length === 1 ? '' : 's'}</span></div>
           ${this.networks.length === 0
             ? '<p class="disc-empty">No networks discovered yet. Run a scan to get started.</p>'
             : this.networks.map(n => this._renderNetwork(n)).join('')}
@@ -160,7 +160,7 @@ class NetDiscovery {
 
   _renderHostRow(host) {
     const status = host.status || 'unknown';
-    const lat = host.latency_ms != null ? `${host.latency_ms}ms` : '\u2014';
+    const lat = host.latency_ms == null ? '\u2014' : `${host.latency_ms}ms`;
     const monitored = this.isMonitored(host.ip, host.hostname);
     return `
       <tr class="disc-host-row disc-host-${status}">
@@ -205,7 +205,7 @@ class NetDiscovery {
 
       this.render();
       const found = result.discovered_count || 0;
-      globalThis.ui.showNotification(`Scan complete: ${found} host${found !== 1 ? 's' : ''} online out of ${result.scanned} scanned.`, 'success');
+      globalThis.ui.showNotification(`Scan complete: ${found} host${found === 1 ? '' : 's'} online out of ${result.scanned} scanned.`, 'success');
     } catch (err) {
       this.scanning = false;
       this.scanProgress = null;
@@ -389,5 +389,5 @@ class NetDiscovery {
 
 function _discEsc(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(text || '').replace(/[&<>"']/g, c => map[c]);
+  return String(text || '').replaceAll(/[&<>"']/g, c => map[c]);
 }

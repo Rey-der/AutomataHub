@@ -40,7 +40,7 @@ class ScriptBrowser {
               ✕
             </button>
           </div>
-          ${!this.app.selectedTopicId ? `<button class="btn-add-script" id="btn-browse">+ Add Script</button>` : ''}
+          ${this.app.selectedTopicId ? '' : `<button class="btn-add-script" id="btn-browse">+ Add Script</button>`}
         </div>
         
         ${this._renderLanguageFilter()}
@@ -542,7 +542,7 @@ class ScriptBrowser {
 
     return `
       <div class="language-filter-bar">
-        <button class="lang-chip ${!this.filterLanguage ? 'active' : ''}" data-lang="">All</button>
+        <button class="lang-chip ${this.filterLanguage ? '' : 'active'}" data-lang="">All</button>
         ${languages
           .map(
             (lang) =>
@@ -560,14 +560,6 @@ class ScriptBrowser {
     if (!overlay || !titleEl || !bodyEl) return;
 
     titleEl.textContent = script.name;
-
-    const topics =
-      (script.topics || [])
-        .map(
-          (t) =>
-            `<span class="script-topic-tag" style="--topic-color: ${t.color || '#4A90E2'}">${this._escapeHtml(t.name)}</span>`
-        )
-        .join('') || '<span class="detail-none">None</span>';
 
     const variants =
       (script.variants || [])
@@ -611,11 +603,11 @@ class ScriptBrowser {
     const isSuccess = run.status === 'success';
     const statusClass = isSuccess ? 'run-status-success' : 'run-status-error';
     const statusIcon = isSuccess ? 'OK' : 'ERR';
-    const duration = run.runtime != null ? this._formatRuntime(run.runtime) : '—';
+    const duration = run.runtime == null ? '—' : this._formatRuntime(run.runtime);
     const date = run.timestamp ? new Date(run.timestamp).toLocaleString(undefined, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     }) : '—';
-    const exitLabel = run.exitCode != null ? `exit ${run.exitCode}` : '';
+    const exitLabel = run.exitCode == null ? '' : `exit ${run.exitCode}`;
     return `
       <div class="run-entry">
         <span class="run-entry-status ${statusClass}" title="${exitLabel}">${statusIcon}</span>
