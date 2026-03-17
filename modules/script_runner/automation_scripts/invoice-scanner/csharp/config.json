@@ -1,0 +1,5 @@
+{
+  "name": "Invoice Scanner (C#)",
+  "description": "Scans PDF invoices, extracts vendor/amount/date, and stores in DB — C# variant",
+  "mainScript": "Program.cs"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Invoice Query",
+  "description": "Displays stored invoices, filterable by vendor or date range",
+  "mainScript": "main.js"
+}

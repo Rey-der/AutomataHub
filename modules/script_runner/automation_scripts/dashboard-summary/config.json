@@ -1,0 +1,5 @@
+{
+  "name": "Dashboard Summary",
+  "description": "Aggregated stats: files sorted, invoices, automations, errors, last backup",
+  "mainScript": "main.js"
+}

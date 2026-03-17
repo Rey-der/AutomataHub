@@ -1,0 +1,5 @@
+{
+  "name": "Backup Runner (C#)",
+  "description": "Copies configured folders to a backup location and logs results to DB — C# variant",
+  "mainScript": "Program.cs"
+}
