@@ -3,6 +3,12 @@ const HomeTab = (() => {
   // Track loaded module prefs
   let modulePrefs = {};
 
+  // Filter / sort state
+  let filterText = '';
+  let filterView = 'all'; // 'all' | 'favorites' | 'autostart'
+  let sortMode = 'default'; // 'default' | 'az' | 'za'
+  let sidebarCollapsed = false;
+
   // --- Module Card ---
 
   function createModuleCard(mod) {
@@ -52,7 +58,7 @@ const HomeTab = (() => {
     const favBtn = document.createElement('button');
     favBtn.className = 'card-toggle toggle-favorite' + (prefs.favorite ? ' active' : '');
     favBtn.setAttribute('aria-label', 'Toggle favorite');
-    favBtn.setAttribute('title', 'Favorite — sort to top');
+    favBtn.setAttribute('title', 'Favorite');
     favBtn.textContent = prefs.favorite ? '\u2665' : '\u2661';
     favBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -63,7 +69,7 @@ const HomeTab = (() => {
     const autoBtn = document.createElement('button');
     autoBtn.className = 'card-toggle toggle-autostart' + (prefs.autoStart ? ' active' : '');
     autoBtn.setAttribute('aria-label', 'Toggle auto-start');
-    autoBtn.setAttribute('title', 'Auto-start — open with AutomataHub');
+    autoBtn.setAttribute('title', 'Auto-start');
     autoBtn.textContent = prefs.autoStart ? '\u2605' : '\u2606';
     autoBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -75,7 +81,7 @@ const HomeTab = (() => {
 
     const openBtn = document.createElement('button');
     openBtn.className = 'btn';
-    openBtn.textContent = '\u25B6 Open';
+    openBtn.textContent = 'Open';
     openBtn.addEventListener('click', () => handleOpenModule(mod));
     footer.appendChild(openBtn);
 
@@ -84,25 +90,21 @@ const HomeTab = (() => {
   }
 
   function handleOpenModule(mod) {
-    // Find the module's default tab type and open it
     if (mod.tabTypes && mod.tabTypes.length > 0) {
       const defaultType = mod.tabTypes[0];
       const typeId = defaultType.id || defaultType;
 
-      // If the module provides a custom open handler, use it
       if (window._hub && window._hub.moduleOpeners && window._hub.moduleOpeners[mod.id]) {
         window._hub.moduleOpeners[mod.id](mod);
         return;
       }
 
-      // Check if this module already has an open tab (e.g. auto-started)
       const existing = window.tabManager.getTabsByType(typeId);
       if (existing.length > 0) {
         window.tabManager.switchTab(existing[0].id);
         return;
       }
 
-      // Otherwise open in the module (lower) tab bar
       if (window.tabManager.hasTabType(typeId)) {
         window.tabManager.createTab(typeId, mod.name, { moduleId: mod.id }, { target: 'module' });
       }
@@ -120,8 +122,8 @@ const HomeTab = (() => {
     btn.classList.toggle('active', newVal);
     btn.textContent = newVal ? '\u2665' : '\u2661';
 
-    // Re-sort the grid
-    sortModuleGrid();
+    updateSidebarCounts();
+    updateModuleGrid();
   }
 
   async function toggleAutoStart(moduleId, btn) {
@@ -132,55 +134,96 @@ const HomeTab = (() => {
 
     btn.classList.toggle('active', newVal);
     btn.textContent = newVal ? '\u2605' : '\u2606';
+
+    updateSidebarCounts();
+    updateModuleGrid();
   }
 
-  function sortModuleGrid() {
-    const grid = document.querySelector('.scripts-grid');
-    if (!grid) return;
+  // --- Filtering & Sorting ---
 
-    const cards = [...grid.querySelectorAll('.script-card')];
-    cards.sort((a, b) => {
-      const aFav = modulePrefs[a.dataset.moduleId]?.favorite ? 1 : 0;
-      const bFav = modulePrefs[b.dataset.moduleId]?.favorite ? 1 : 0;
-      if (bFav !== aFav) return bFav - aFav;
-      // Alphabetical by aria-label as fallback
-      return a.getAttribute('aria-label').localeCompare(b.getAttribute('aria-label'));
+  function getFilteredModules() {
+    let modules = (window._hub && window._hub.modules) || [];
+
+    // View filter
+    if (filterView === 'favorites') {
+      modules = modules.filter(m => modulePrefs[m.id]?.favorite);
+    } else if (filterView === 'autostart') {
+      modules = modules.filter(m => modulePrefs[m.id]?.autoStart);
+    }
+
+    // Text filter
+    if (filterText) {
+      const q = filterText.toLowerCase();
+      modules = modules.filter(m => {
+        const name = (m.name || '').toLowerCase();
+        const desc = (m.description || '').toLowerCase();
+        return name.includes(q) || desc.includes(q);
+      });
+    }
+
+    // Sort
+    modules = [...modules].sort((a, b) => {
+      // Favorites always float to top in 'default' mode
+      if (sortMode === 'default') {
+        const aFav = modulePrefs[a.id]?.favorite ? 1 : 0;
+        const bFav = modulePrefs[b.id]?.favorite ? 1 : 0;
+        if (bFav !== aFav) return bFav - aFav;
+        return a.name.localeCompare(b.name);
+      }
+      if (sortMode === 'az') return a.name.localeCompare(b.name);
+      if (sortMode === 'za') return b.name.localeCompare(a.name);
+      return 0;
     });
 
-    for (const card of cards) {
-      grid.appendChild(card);
+    return modules;
+  }
+
+  function updateModuleGrid() {
+    const grid = document.querySelector('.hub-modules-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    const modules = getFilteredModules();
+
+    if (modules.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'hub-empty-state';
+      const title = document.createElement('p');
+      title.className = 'hub-empty-title';
+      title.textContent = filterText || filterView !== 'all' ? 'No modules match' : 'No modules installed';
+      empty.appendChild(title);
+      const hint = document.createElement('p');
+      hint.className = 'hub-empty-hint';
+      hint.textContent = filterText || filterView !== 'all'
+        ? 'Try a different filter or view.'
+        : 'Add modules to the modules/ directory to get started.';
+      empty.appendChild(hint);
+      grid.appendChild(empty);
+    } else {
+      for (const mod of modules) {
+        grid.appendChild(createModuleCard(mod));
+      }
     }
   }
 
-  function sortModules(modules) {
-    return [...modules].sort((a, b) => {
-      const aFav = modulePrefs[a.id]?.favorite ? 1 : 0;
-      const bFav = modulePrefs[b.id]?.favorite ? 1 : 0;
-      if (bFav !== aFav) return bFav - aFav;
-      return a.name.localeCompare(b.name);
-    });
+  function updateSidebarCounts() {
+    const modules = (window._hub && window._hub.modules) || [];
+
+    const allCount = document.getElementById('hub-count-all');
+    const favCount = document.getElementById('hub-count-favorites');
+    const autoCount = document.getElementById('hub-count-autostart');
+
+    if (allCount) allCount.textContent = modules.length;
+    if (favCount) favCount.textContent = modules.filter(m => modulePrefs[m.id]?.favorite).length;
+    if (autoCount) autoCount.textContent = modules.filter(m => modulePrefs[m.id]?.autoStart).length;
   }
 
-  // --- Empty State ---
-
-  function renderEmpty(container) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state';
-
-    const icon = document.createElement('div');
-    icon.className = 'empty-state-icon';
-    icon.textContent = '\uD83D\uDD27';
-    empty.appendChild(icon);
-
-    const msg = document.createElement('p');
-    msg.textContent = 'No modules installed';
-    empty.appendChild(msg);
-
-    const hint = document.createElement('small');
-    hint.textContent = 'Add modules to the modules/ directory to get started.';
-    empty.appendChild(hint);
-
-    container.appendChild(empty);
+  function setActiveNavItem(viewId) {
+    filterView = viewId;
+    document.querySelectorAll('.hub-sidebar-nav-item').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === viewId);
+    });
+    updateModuleGrid();
   }
 
   // --- Render ---
@@ -199,42 +242,89 @@ const HomeTab = (() => {
       modulePrefs = {};
     }
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'home-tab';
+    const modules = (window._hub && window._hub.modules) || [];
 
-    const header = document.createElement('div');
-    header.className = 'home-header';
+    // --- Root layout: sidebar + main ---
+    const layout = document.createElement('div');
+    layout.className = 'hub-layout';
 
-    const headerText = document.createElement('div');
-    headerText.className = 'home-header-text';
+    // === SIDEBAR ===
+    const sidebar = document.createElement('aside');
+    sidebar.className = 'hub-sidebar' + (sidebarCollapsed ? ' collapsed' : '');
 
-    const h1 = document.createElement('h1');
-    h1.textContent = 'AutomataHub';
-    headerText.appendChild(h1);
+    // Sidebar header
+    const sidebarHeader = document.createElement('div');
+    sidebarHeader.className = 'hub-sidebar-header';
 
-    const subtitle = document.createElement('p');
-    subtitle.className = 'subtitle';
-    subtitle.textContent = 'Select a module to get started';
-    headerText.appendChild(subtitle);
+    const sidebarTitle = document.createElement('span');
+    sidebarTitle.className = 'hub-sidebar-title';
+    sidebarTitle.textContent = 'AutomataHub';
+    sidebarHeader.appendChild(sidebarTitle);
 
-    header.appendChild(headerText);
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'hub-sidebar-toggle';
+    toggleBtn.setAttribute('title', 'Toggle sidebar');
+    toggleBtn.textContent = '\u2630';
+    toggleBtn.addEventListener('click', () => {
+      sidebarCollapsed = !sidebarCollapsed;
+      sidebar.classList.toggle('collapsed', sidebarCollapsed);
+    });
+    sidebarHeader.appendChild(toggleBtn);
+    sidebar.appendChild(sidebarHeader);
 
+    // Sidebar navigation
+    const nav = document.createElement('nav');
+    nav.className = 'hub-sidebar-nav';
+
+    const navItems = [
+      { id: 'all',       label: 'All Modules',  countId: 'hub-count-all',       count: modules.length },
+      { id: 'favorites', label: 'Favorites',     countId: 'hub-count-favorites', count: modules.filter(m => modulePrefs[m.id]?.favorite).length },
+      { id: 'autostart', label: 'Auto-start',    countId: 'hub-count-autostart', count: modules.filter(m => modulePrefs[m.id]?.autoStart).length },
+    ];
+
+    for (const item of navItems) {
+      const btn = document.createElement('button');
+      btn.className = 'hub-sidebar-nav-item' + (filterView === item.id ? ' active' : '');
+      btn.dataset.view = item.id;
+      btn.addEventListener('click', () => setActiveNavItem(item.id));
+
+      const label = document.createElement('span');
+      label.className = 'hub-nav-label';
+      label.textContent = item.label;
+      btn.appendChild(label);
+
+      const count = document.createElement('span');
+      count.className = 'hub-nav-count';
+      count.id = item.countId;
+      count.textContent = item.count;
+      btn.appendChild(count);
+
+      nav.appendChild(btn);
+    }
+
+    sidebar.appendChild(nav);
+
+    // Sidebar info button
     const infoBtn = document.createElement('button');
-    infoBtn.className = 'header-info-btn';
+    infoBtn.className = 'hub-sidebar-info-btn';
     infoBtn.setAttribute('aria-label', 'About AutomataHub');
 
     const infoImg = document.createElement('img');
     infoImg.alt = 'Info';
-    infoImg.className = 'header-info-icon';
+    infoImg.className = 'hub-sidebar-info-icon';
     window.api.getResourcesPath().then(resourcesPath => {
       infoImg.src = `file://${resourcesPath}/info.png`;
     });
     infoBtn.appendChild(infoImg);
 
+    const infoLabel = document.createElement('span');
+    infoLabel.className = 'hub-nav-label';
+    infoLabel.textContent = 'About';
+    infoBtn.appendChild(infoLabel);
+
     const tooltip = document.createElement('div');
     tooltip.className = 'info-tooltip';
-    
-    // Build tooltip content using safe DOM construction
+
     const tooltipLines = [
       { type: 'strong', text: 'AutomataHub' },
       { type: 'text', text: 'A modular desktop hub for automation tools.' },
@@ -247,7 +337,7 @@ const HomeTab = (() => {
       { type: 'strong', text: 'Installed Modules' },
       { type: 'text', text: 'Each module provides its own tab types and functionality.' },
     ];
-    
+
     let currentParagraph = document.createElement('div');
     for (const line of tooltipLines) {
       if (line.type === 'strong') {
@@ -271,31 +361,73 @@ const HomeTab = (() => {
     if (currentParagraph.children.length > 0) {
       tooltip.appendChild(currentParagraph);
     }
-    
     infoBtn.appendChild(tooltip);
 
-    header.appendChild(infoBtn);
+    sidebar.appendChild(infoBtn);
 
-    wrapper.appendChild(header);
+    layout.appendChild(sidebar);
 
-    // Module cards (sorted: favorites first, then alphabetical)
-    const modules = (window._hub && window._hub.modules) || [];
-    const sorted = sortModules(modules);
+    // === MAIN CONTENT ===
+    const main = document.createElement('div');
+    main.className = 'hub-main';
 
-    if (sorted.length === 0) {
-      renderEmpty(wrapper);
-    } else {
-      const grid = document.createElement('div');
-      grid.className = 'scripts-grid';
+    // Toolbar
+    const toolbar = document.createElement('div');
+    toolbar.className = 'hub-toolbar';
 
-      for (const mod of sorted) {
-        grid.appendChild(createModuleCard(mod));
+    const filterInput = document.createElement('input');
+    filterInput.type = 'text';
+    filterInput.className = 'hub-filter-input';
+    filterInput.placeholder = 'Search modules...';
+    filterInput.value = filterText;
+    filterInput.addEventListener('input', () => {
+      filterText = filterInput.value;
+      updateModuleGrid();
+    });
+    filterInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        filterText = '';
+        filterInput.value = '';
+        updateModuleGrid();
       }
+    });
+    toolbar.appendChild(filterInput);
 
-      wrapper.appendChild(grid);
+    const sortSelect = document.createElement('select');
+    sortSelect.className = 'hub-sort-select';
+    sortSelect.title = 'Sort modules';
+    const sortOptions = [
+      { value: 'default', label: 'Default' },
+      { value: 'az', label: 'A - Z' },
+      { value: 'za', label: 'Z - A' },
+    ];
+    for (const opt of sortOptions) {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      if (opt.value === sortMode) option.selected = true;
+      sortSelect.appendChild(option);
     }
+    sortSelect.addEventListener('change', () => {
+      sortMode = sortSelect.value;
+      updateModuleGrid();
+    });
+    toolbar.appendChild(sortSelect);
 
-    // Add watermark logo in bottom right
+    main.appendChild(toolbar);
+
+    // Module grid
+    const grid = document.createElement('div');
+    grid.className = 'hub-modules-grid';
+    main.appendChild(grid);
+
+    layout.appendChild(main);
+    container.appendChild(layout);
+
+    // Populate grid
+    updateModuleGrid();
+
+    // Add watermark logo inside the layout (absolute, not fixed)
     const logo = document.createElement('img');
     logo.className = 'home-logo';
     logo.alt = 'MW Logo';
@@ -327,16 +459,8 @@ const HomeTab = (() => {
       }, 120);
     });
 
-    wrapper.appendChild(logo);
-
-    document.addEventListener('keydown', function onKey(e) {
-      if (e.key === 'y' || e.key === 'Y') {
-        const btn = wrapper.querySelector('.header-info-btn');
-        if (btn && btn.matches(':hover')) {
-          showGitHubPrompt();
-        }
-      }
-    });
+    // Append to layout so the logo stays within the main content area
+    layout.appendChild(logo);
 
     let promptKeyHandler = null;
 
@@ -377,22 +501,21 @@ const HomeTab = (() => {
 
       const line2 = document.createElement('div');
       line2.className = 'github-prompt-line github-prompt-input-line';
-      
+
       const line2Prompt = document.createElement('span');
       line2Prompt.className = 'github-prompt-prompt';
       line2Prompt.textContent = '~';
       line2.appendChild(line2Prompt);
-      
+
       const line2Cursor = document.createElement('span');
       line2Cursor.className = 'github-prompt-cursor';
-      line2Cursor.textContent = '█';
+      line2Cursor.textContent = '\u2588';
       line2.appendChild(line2Cursor);
-      
+
       body.appendChild(line2);
 
       box.appendChild(body);
 
-      // Close when mouse leaves both logo and box
       box.addEventListener('mouseleave', () => {
         setTimeout(() => {
           if (!logo.matches(':hover') && !box.matches(':hover')) {
@@ -404,13 +527,12 @@ const HomeTab = (() => {
       document.body.appendChild(box);
       requestAnimationFrame(() => box.classList.add('github-prompt-visible'));
 
-      // Typewriter — fast regular rhythm with slight word-boundary pauses
       const fullText = ' wanna visit my github? ';
       let i = 0;
       function typingDelay(ch, nextCh) {
-        if (ch === ' ') return 95 + Math.random() * 60;  // pause at word boundary
-        if (nextCh === ' ') return 70 + Math.random() * 30; // slight slow before space
-        return 68 + Math.random() * 28;                    // fast regular keystrokes
+        if (ch === ' ') return 95 + Math.random() * 60;
+        if (nextCh === ' ') return 70 + Math.random() * 30;
+        return 68 + Math.random() * 28;
       }
       function typeNext() {
         if (i < fullText.length) {
@@ -420,14 +542,13 @@ const HomeTab = (() => {
           i++;
           setTimeout(typeNext, typingDelay(ch, nextCh));
         } else {
-          // Append [y/n] as a separate span element (safe DOM construction)
           const ynSpan = document.createElement('span');
           ynSpan.className = 'github-prompt-yn';
           ynSpan.textContent = '[y/n]';
           cmdSpan.appendChild(ynSpan);
         }
       }
-      setTimeout(typeNext, 820); // wait for flicker to settle
+      setTimeout(typeNext, 820);
 
       promptKeyHandler = function(e) {
         if (e.key === 'y' || e.key === 'Y') {
@@ -439,8 +560,6 @@ const HomeTab = (() => {
       };
       document.addEventListener('keydown', promptKeyHandler);
     }
-
-    container.appendChild(wrapper);
   }
 
   return { render };
