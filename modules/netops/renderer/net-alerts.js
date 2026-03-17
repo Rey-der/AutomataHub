@@ -430,4 +430,4 @@ class NetAlerts {
 }
 
 // Export for net-app routing
-if (typeof window !== 'undefined') window.NetAlerts = NetAlerts;
+if (typeof globalThis !== 'undefined') globalThis.NetAlerts = NetAlerts;

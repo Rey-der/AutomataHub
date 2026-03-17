@@ -66,7 +66,7 @@ const SqlHome = (() => {
   }
 
   function openTableView(table) {
-    window.tabManager.createTab('sql-table-view', table, { tableName: table }, { reuseKey: `table-${table}` });
+    globalThis.tabManager.createTab('sql-table-view', table, { tableName: table }, { reuseKey: `table-${table}` });
   }
 
   // --- Quick Stats ---
@@ -152,7 +152,7 @@ const SqlHome = (() => {
 
       card.style.cursor = 'pointer';
       card.addEventListener('click', () => {
-        window.tabManager.createTab('sql-analytics', 'RPA Analytics', {}, { reuseKey: 'sql-analytics' });
+        globalThis.tabManager.createTab('sql-analytics', 'RPA Analytics', {}, { reuseKey: 'sql-analytics' });
       });
 
       grid.appendChild(card);
@@ -308,7 +308,7 @@ const SqlHome = (() => {
       const item = document.createElement('div');
       item.className = 'sql-bookmark-item';
       item.addEventListener('click', () => {
-        window.tabManager.createTab('sql-table-view', bm.table, {
+        globalThis.tabManager.createTab('sql-table-view', bm.table, {
           tableName: bm.table,
           bookmark: bm,
         }, { reuseKey: `table-${bm.table}` });
@@ -332,10 +332,10 @@ const SqlHome = (() => {
       delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         try {
-          const prefs = await window.api.getModulePrefs('sql-visualizer') || {};
+          const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
           const bms = prefs.bookmarks || [];
           bms.splice(i, 1);
-          await window.api.setModulePrefs('sql-visualizer', { bookmarks: bms });
+          await globalThis.api.setModulePrefs('sql-visualizer', { bookmarks: bms });
           item.remove();
           if (list.children.length === 0) section.remove();
         } catch (err) {
@@ -405,7 +405,7 @@ const SqlHome = (() => {
     queryBtn.className = 'btn';
     queryBtn.textContent = 'Query Editor';
     queryBtn.addEventListener('click', () => {
-      window.tabManager.createTab('sql-query', 'Query', {}, { reuseKey: 'sql-query-default' });
+      globalThis.tabManager.createTab('sql-query', 'Query', {}, { reuseKey: 'sql-query-default' });
     });
     headerActions.appendChild(queryBtn);
 
@@ -413,7 +413,7 @@ const SqlHome = (() => {
     timelineBtn.className = 'btn';
     timelineBtn.textContent = 'Timeline';
     timelineBtn.addEventListener('click', () => {
-      window.tabManager.createTab('sql-timeline', 'Timeline', {}, { reuseKey: 'sql-timeline' });
+      globalThis.tabManager.createTab('sql-timeline', 'Timeline', {}, { reuseKey: 'sql-timeline' });
     });
     headerActions.appendChild(timelineBtn);
 
@@ -421,7 +421,7 @@ const SqlHome = (() => {
     analyticsBtn.className = 'btn';
     analyticsBtn.textContent = 'Analytics';
     analyticsBtn.addEventListener('click', () => {
-      window.tabManager.createTab('sql-analytics', 'RPA Analytics', {}, { reuseKey: 'sql-analytics' });
+      globalThis.tabManager.createTab('sql-analytics', 'RPA Analytics', {}, { reuseKey: 'sql-analytics' });
     });
     headerActions.appendChild(analyticsBtn);
 
@@ -487,7 +487,7 @@ const SqlHome = (() => {
 
     // DB Health indicator
     try {
-      const health = await window.api.invoke('sql-visualizer:get-db-health');
+      const health = await globalThis.api.invoke('sql-visualizer:get-db-health');
       if (health && health.tableCount != null) {
         content.appendChild(createDbHealthIndicator(health));
       }
@@ -498,7 +498,7 @@ const SqlHome = (() => {
     // Load stats
     let stats = [];
     try {
-      stats = await window.api.invoke('sql-visualizer:get-table-stats');
+      stats = await globalThis.api.invoke('sql-visualizer:get-table-stats');
     } catch (err) {
       console.error('[sql-home] Failed to load table stats:', err);
     }
@@ -510,7 +510,7 @@ const SqlHome = (() => {
 
     // Script Health Cards
     try {
-      const healthStats = await window.api.invoke('sql-visualizer:get-script-health');
+      const healthStats = await globalThis.api.invoke('sql-visualizer:get-script-health');
       if (healthStats && healthStats.length > 0) {
         content.appendChild(createHealthCards(healthStats));
       }
@@ -520,7 +520,7 @@ const SqlHome = (() => {
 
     // Integrity Panel
     try {
-      const report = await window.api.invoke('sql-visualizer:get-integrity-report');
+      const report = await globalThis.api.invoke('sql-visualizer:get-integrity-report');
       if (report) {
         content.appendChild(createIntegrityPanel(report));
       }
@@ -530,7 +530,7 @@ const SqlHome = (() => {
 
     // Bookmarks
     try {
-      const prefs = await window.api.getModulePrefs('sql-visualizer') || {};
+      const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
       const bookmarks = prefs.bookmarks || [];
       if (bookmarks.length > 0) {
         content.appendChild(createBookmarksSection(bookmarks));
@@ -564,20 +564,20 @@ const SqlHome = (() => {
 
 (function register() {
   function doRegister() {
-    if (!window.tabManager) {
+    if (!globalThis.tabManager) {
       setTimeout(doRegister, 0);
       return;
     }
 
-    window.tabManager.registerTabType('sql-home', {
+    globalThis.tabManager.registerTabType('sql-home', {
       render: SqlHome.render,
       maxTabs: 1,
     });
 
-    window._hub = window._hub || {};
-    window._hub.moduleOpeners = window._hub.moduleOpeners || {};
-    window._hub.moduleOpeners['sql-visualizer'] = () => {
-      window.tabManager.createTab('sql-home', 'SQL Dashboard', {}, { reuseKey: 'autostart-sql-visualizer' });
+    globalThis._hub = globalThis._hub || {};
+    globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
+    globalThis._hub.moduleOpeners['sql-visualizer'] = () => {
+      globalThis.tabManager.createTab('sql-home', 'SQL Dashboard', {}, { reuseKey: 'autostart-sql-visualizer' });
     };
   }
 

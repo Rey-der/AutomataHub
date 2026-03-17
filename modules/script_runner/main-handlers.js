@@ -9,8 +9,8 @@
  *   handlers/execution.js    — script execution, queue, logs
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 const { ScriptStore } = require('./core/script-store');
 const { ScriptPersistence } = require('./core/script-persistence');

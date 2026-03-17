@@ -153,7 +153,7 @@ const ScriptHome = (() => {
       chosen = { scriptPath: script.scriptPath, label: script.language };
     }
 
-    window.tabManager.createTab('script-execution', `${script.name} (${chosen.label})`, {
+    globalThis.tabManager.createTab('script-execution', `${script.name} (${chosen.label})`, {
       scriptPath: chosen.scriptPath,
       scriptName: script.name,
       scriptEnv: chosen.env || {},
@@ -162,20 +162,20 @@ const ScriptHome = (() => {
 
   async function handleRemoveScript(script) {
     try {
-      const result = await window.api.invoke('script-runner:remove-script', { scriptId: script.folder });
+      const result = await globalThis.api.invoke('script-runner:remove-script', { scriptId: script.folder });
       if (result.success) {
-        window.ui.showNotification(result.message, 'success');
+        globalThis.ui.showNotification(result.message, 'success');
         // Re-render the script-home tab to reflect removal
-        const activeId = window.tabManager.getActiveTabId();
-        const activeTab = window.tabManager.getTab(activeId);
+        const activeId = globalThis.tabManager.getActiveTabId();
+        const activeTab = globalThis.tabManager.getTab(activeId);
         if (activeTab && activeTab.type === 'script-home') {
           render(activeTab, document.getElementById('tab-content'));
         }
       } else {
-        window.ui.showNotification(result.message || 'Failed to remove script', 'error');
+        globalThis.ui.showNotification(result.message || 'Failed to remove script', 'error');
       }
     } catch (err) {
-      window.ui.showNotification('Failed to remove script', 'error');
+      globalThis.ui.showNotification('Failed to remove script', 'error');
     }
   }
 
@@ -227,15 +227,15 @@ const ScriptHome = (() => {
 
   async function handleBrowse() {
     try {
-      const result = await window.api.invoke('script-runner:open-folder-picker');
+      const result = await globalThis.api.invoke('script-runner:open-folder-picker');
       if (result.canceled) return;
       if (!result.valid) {
-        window.ui.showNotification(result.error || 'Invalid folder', 'error');
+        globalThis.ui.showNotification(result.error || 'Invalid folder', 'error');
         return;
       }
       await doImport(result.folderPath);
     } catch (err) {
-      window.ui.showNotification('Failed to open folder picker', 'error');
+      globalThis.ui.showNotification('Failed to open folder picker', 'error');
     }
   }
 
@@ -243,15 +243,15 @@ const ScriptHome = (() => {
     // When a drop is detected, use the folder picker to select it
     // (Electron security prevents accessing .path from drop events)
     try {
-      const result = await window.api.invoke('script-runner:open-folder-picker');
+      const result = await globalThis.api.invoke('script-runner:open-folder-picker');
       if (result.canceled) return;
       if (!result.valid) {
-        window.ui.showNotification(result.error || 'Invalid folder', 'error');
+        globalThis.ui.showNotification(result.error || 'Invalid folder', 'error');
         return;
       }
       await doImport(result.folderPath);
     } catch (err) {
-      window.ui.showNotification('Failed to import folder', 'error');
+      globalThis.ui.showNotification('Failed to import folder', 'error');
       console.error('[script-home] Drop handling error:', err);
     }
   }
@@ -262,20 +262,20 @@ const ScriptHome = (() => {
 
   async function doImport(folderPath) {
     try {
-      const result = await window.api.invoke('script-runner:import-script', { folderPath });
+      const result = await globalThis.api.invoke('script-runner:import-script', { folderPath });
       if (result.success) {
-        window.ui.showNotification(result.message, 'success');
+        globalThis.ui.showNotification(result.message, 'success');
         // Re-render
-        const activeId = window.tabManager.getActiveTabId();
-        const activeTab = window.tabManager.getTab(activeId);
+        const activeId = globalThis.tabManager.getActiveTabId();
+        const activeTab = globalThis.tabManager.getTab(activeId);
         if (activeTab && activeTab.type === 'script-home') {
           render(activeTab, document.getElementById('tab-content'));
         }
       } else {
-        window.ui.showNotification(result.message || 'Import failed', 'error');
+        globalThis.ui.showNotification(result.message || 'Import failed', 'error');
       }
     } catch (err) {
-      window.ui.showNotification('Failed to import script folder', 'error');
+      globalThis.ui.showNotification('Failed to import script folder', 'error');
     }
   }
 
@@ -336,7 +336,7 @@ const ScriptHome = (() => {
     // Load scripts
     let scripts = [];
     try {
-      scripts = await window.api.invoke('script-runner:get-scripts');
+      scripts = await globalThis.api.invoke('script-runner:get-scripts');
     } catch (err) {
       console.error('[script-home] Failed to load scripts:', err);
     }

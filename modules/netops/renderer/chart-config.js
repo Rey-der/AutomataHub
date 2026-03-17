@@ -13,7 +13,7 @@ function getThemeColors() {
   
   const hexToRgb = (hex) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '200, 200, 200';
+    return result ? `${Number.parseInt(result[1], 16)}, ${Number.parseInt(result[2], 16)}, ${Number.parseInt(result[3], 16)}` : '200, 200, 200';
   };
 
   return {
@@ -37,7 +37,7 @@ function createTrafficChart(canvasElement, data = {}) {
   const colors = getThemeColors();
   
   const ctx = canvasElement.getContext('2d');
-  const Chart = window.Chart;
+  const Chart = globalThis.Chart;
   
   if (!Chart) {
     console.error('[charts] Chart.js not loaded');
@@ -110,7 +110,7 @@ function createTrafficChart(canvasElement, data = {}) {
 function createPacketsChart(canvasElement, data = {}) {
   const colors = getThemeColors();
   const ctx = canvasElement.getContext('2d');
-  const Chart = window.Chart;
+  const Chart = globalThis.Chart;
   
   if (!Chart) return null;
 
@@ -176,7 +176,7 @@ function createPacketsChart(canvasElement, data = {}) {
 function createCpuChart(canvasElement, data = {}) {
   const colors = getThemeColors();
   const ctx = canvasElement.getContext('2d');
-  const Chart = window.Chart;
+  const Chart = globalThis.Chart;
   
   if (!Chart) return null;
 
@@ -232,7 +232,7 @@ function createCpuChart(canvasElement, data = {}) {
 function createMemoryChart(canvasElement, data = {}) {
   const colors = getThemeColors();
   const ctx = canvasElement.getContext('2d');
-  const Chart = window.Chart;
+  const Chart = globalThis.Chart;
   
   if (!Chart) return null;
 
@@ -296,7 +296,7 @@ function createMemoryChart(canvasElement, data = {}) {
 function createBufferMissChart(canvasElement, data = {}) {
   const colors = getThemeColors();
   const ctx = canvasElement.getContext('2d');
-  const Chart = window.Chart;
+  const Chart = globalThis.Chart;
   
   if (!Chart) return null;
 
@@ -352,7 +352,7 @@ function createBufferMissChart(canvasElement, data = {}) {
  */
 function hexToRgb(hex) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '200, 200, 200';
+  return result ? `${Number.parseInt(result[1], 16)}, ${Number.parseInt(result[2], 16)}, ${Number.parseInt(result[3], 16)}` : '200, 200, 200';
 }
 
 /**
@@ -372,16 +372,16 @@ function generateTimeLabels(count = 24, intervalMinutes = 5) {
   return labels;
 }
 
-// Export for browser (window object)
-if (typeof window !== 'undefined') {
-  window.getThemeColors = getThemeColors;
-  window.createTrafficChart = createTrafficChart;
-  window.createPacketsChart = createPacketsChart;
-  window.createCpuChart = createCpuChart;
-  window.createMemoryChart = createMemoryChart;
-  window.createBufferMissChart = createBufferMissChart;
-  window.hexToRgb = hexToRgb;
-  window.generateTimeLabels = generateTimeLabels;
+// Export for browser (globalThis)
+if (typeof globalThis !== 'undefined') {
+  globalThis.getThemeColors = getThemeColors;
+  globalThis.createTrafficChart = createTrafficChart;
+  globalThis.createPacketsChart = createPacketsChart;
+  globalThis.createCpuChart = createCpuChart;
+  globalThis.createMemoryChart = createMemoryChart;
+  globalThis.createBufferMissChart = createBufferMissChart;
+  globalThis.hexToRgb = hexToRgb;
+  globalThis.generateTimeLabels = generateTimeLabels;
 }
 
 // Export for Node.js module system

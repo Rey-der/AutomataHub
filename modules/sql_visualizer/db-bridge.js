@@ -24,8 +24,8 @@ const sqlJsPromise = (async () => {
   }
 })();
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 let _db = null;
 let _dbPath = null;
@@ -383,8 +383,8 @@ function getTableStats() {
 function queryRows(table, opts = {}) {
   _assertTable(table);
 
-  const offset = Math.max(0, parseInt(opts.offset, 10) || 0);
-  const limit = Math.min(500, Math.max(1, parseInt(opts.limit, 10) || 25));
+  const offset = Math.max(0, Number.parseInt(opts.offset, 10) || 0);
+  const limit = Math.min(500, Math.max(1, Number.parseInt(opts.limit, 10) || 25));
 
   let orderClause = '';
   if (opts.sortCol && !_usesSqlJs) {

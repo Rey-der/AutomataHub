@@ -3,8 +3,8 @@
  * Handles script discovery, import, and removal.
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 const { dialog } = require('electron');
 
 const EXECUTABLE_EXTENSIONS = ['.sh', '.bash', '.py', '.py3', '.js', '.mjs', '.rb', '.pl', '.csx', '.cs'];

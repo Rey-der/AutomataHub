@@ -3,10 +3,10 @@
  * Manages script execution queue and subprocess control.
  */
 
-const { EventEmitter } = require('events');
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+const { EventEmitter } = require('node:events');
+const { spawn } = require('node:child_process');
+const path = require('node:path');
+const fs = require('node:fs');
 
 const INTERPRETER_MAP = {
   '.sh': '/bin/bash',

@@ -30,7 +30,7 @@ function register(ipcBridge, { store, scanner, emit, send }) {
   });
 
   ipcBridge.handle('netops:add-discovered-host', async (_e, args) => {
-    const { host_id, hostname, ip } = args || {};
+    const { host_id, hostname } = args || {};
     if (!host_id) return { success: false, error: 'Missing host_id' };
 
     const discovered = store.findDiscoveredHost(h => h.id === host_id);

@@ -277,7 +277,7 @@ class NetHistory {
     a.download = `netops-events-${this.filterRange}-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    window.ui.showNotification(`Exported ${this.events.length} events to CSV.`, 'success');
+    globalThis.ui.showNotification(`Exported ${this.events.length} events to CSV.`, 'success');
   }
 
   /* ── Live events ────────────────────────────────────────────── */

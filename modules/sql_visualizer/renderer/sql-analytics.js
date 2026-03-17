@@ -86,7 +86,7 @@ const SqlAnalytics = (() => {
   // --- Performance Section ---
 
   async function renderPerformance(container, state) {
-    const data = await window.api.invoke('sql-visualizer:get-performance-stats', { script: state.scriptFilter });
+    const data = await globalThis.api.invoke('sql-visualizer:get-performance-stats', { script: state.scriptFilter });
     container.innerHTML = '';
 
     // Script filter
@@ -175,7 +175,7 @@ const SqlAnalytics = (() => {
   // --- Heatmap Section ---
 
   async function renderHeatmap(container, state) {
-    const data = await window.api.invoke('sql-visualizer:get-activity-heatmap', { timeRange: 'month', script: state.scriptFilter });
+    const data = await globalThis.api.invoke('sql-visualizer:get-activity-heatmap', { timeRange: 'month', script: state.scriptFilter });
     container.innerHTML = '';
 
     if (data.maxCount === 0) {
@@ -224,7 +224,7 @@ const SqlAnalytics = (() => {
   // --- Error Patterns Section ---
 
   async function renderErrors(container) {
-    const patterns = await window.api.invoke('sql-visualizer:get-error-patterns');
+    const patterns = await globalThis.api.invoke('sql-visualizer:get-error-patterns');
     container.innerHTML = '';
 
     if (patterns.length === 0) {
@@ -297,7 +297,7 @@ const SqlAnalytics = (() => {
     // Operation breakdown
     let opData;
     try {
-      opData = await window.api.invoke('sql-visualizer:run-query', {
+      opData = await globalThis.api.invoke('sql-visualizer:run-query', {
         sql: `SELECT operation, COUNT(*) AS count, script FROM file_processing_records GROUP BY operation, script ORDER BY count DESC`
       });
     } catch {
@@ -350,7 +350,7 @@ const SqlAnalytics = (() => {
     // Recent files
     let recentData;
     try {
-      recentData = await window.api.invoke('sql-visualizer:run-query', {
+      recentData = await globalThis.api.invoke('sql-visualizer:run-query', {
         sql: `SELECT source_path, dest_path, file_type, script, operation, timestamp FROM file_processing_records ORDER BY timestamp DESC LIMIT 20`
       });
     } catch { return; }
@@ -436,12 +436,12 @@ const SqlAnalytics = (() => {
 
 (function register() {
   function doRegister() {
-    if (!window.tabManager) {
+    if (!globalThis.tabManager) {
       setTimeout(doRegister, 0);
       return;
     }
 
-    window.tabManager.registerTabType('sql-analytics', {
+    globalThis.tabManager.registerTabType('sql-analytics', {
       render: SqlAnalytics.render,
       onClose: SqlAnalytics.onClose,
       maxTabs: 1,

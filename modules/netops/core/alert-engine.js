@@ -69,7 +69,7 @@ class AlertEngine {
       operator: rule.operator,
       threshold: rule.threshold,
       severity: rule.severity || 'warning',
-      enabled: rule.enabled != null ? rule.enabled : 1,
+      enabled: (rule.enabled !== undefined && rule.enabled !== null) ? rule.enabled : 1,
       cooldown_min: rule.cooldown_min || DEFAULT_COOLDOWN_MIN,
       created_at: new Date().toISOString(),
     };
@@ -158,7 +158,7 @@ class AlertEngine {
 
       case 'offline_minutes': {
         const status = this.store.getStatus(hostId);
-        if (!status || status.status !== 'offline') return 0;
+        if (status?.status !== 'offline') return 0;
         const offlineSince = new Date(status.timestamp);
         return (Date.now() - offlineSince.getTime()) / 60_000;
       }

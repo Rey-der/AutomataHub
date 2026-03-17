@@ -511,11 +511,11 @@ class NetHostList {
         host_id: hostId,
         hostname,
         ip: (formData.get('ip') || '').trim() || null,
-        port: parseInt(formData.get('port')) || 0,
+        port: Number.parseInt(formData.get('port')) || 0,
         protocol: formData.get('protocol') || 'ping',
         alias: (formData.get('alias') || '').trim() || null,
         url: (formData.get('url') || '').trim() || null,
-        expected_status: parseInt(formData.get('expected_status')) || null,
+        expected_status: Number.parseInt(formData.get('expected_status')) || null,
         keyword: (formData.get('keyword') || '').trim() || null,
         expected_ip: (formData.get('expected_ip') || '').trim() || null,
         record_type: formData.get('record_type') || 'A',
@@ -526,7 +526,7 @@ class NetHostList {
         await this.app.loadHosts();
         await this.loadExtraData();
         this.render();
-        window.ui.showNotification(`${hostname} updated successfully.`, 'success');
+        globalThis.ui.showNotification(`${hostname} updated successfully.`, 'success');
       } else {
         this._showEditFormError(result.error || 'Failed to update host.');
       }
@@ -560,11 +560,11 @@ class NetHostList {
       const args = {
         hostname,
         ip: (formData.get('ip') || '').trim() || null,
-        port: parseInt(formData.get('port')) || 0,
+        port: Number.parseInt(formData.get('port')) || 0,
         protocol: formData.get('protocol') || 'ping',
         alias: (formData.get('alias') || '').trim() || null,
         url: (formData.get('url') || '').trim() || null,
-        expected_status: parseInt(formData.get('expected_status')) || null,
+        expected_status: Number.parseInt(formData.get('expected_status')) || null,
         keyword: (formData.get('keyword') || '').trim() || null,
         expected_ip: (formData.get('expected_ip') || '').trim() || null,
         record_type: formData.get('record_type') || 'A',
@@ -575,7 +575,7 @@ class NetHostList {
         await this.app.loadHosts();
         await this.loadExtraData();
         this.render();
-        window.ui.showNotification(`${hostname} added successfully.`, 'success');
+        globalThis.ui.showNotification(`${hostname} added successfully.`, 'success');
       } else {
         this._showFormError(result.error || 'Failed to add host.');
       }
@@ -678,9 +678,9 @@ class NetHostList {
       const result = await API.invoke('netops:ping-host', { hostname: host.hostname, host_id: hostId });
       const status = result.success ? 'online' : 'offline';
       const latStr = result.latency ? `${result.latency}ms` : '';
-      window.ui.showNotification(`${host.hostname}: ${status} ${latStr}`, status === 'online' ? 'success' : 'warning');
+      globalThis.ui.showNotification(`${host.hostname}: ${status} ${latStr}`, status === 'online' ? 'success' : 'warning');
     } catch (err) {
-      window.ui.showNotification(`Ping failed: ${err.message}`, 'error');
+      globalThis.ui.showNotification(`Ping failed: ${err.message}`, 'error');
     }
   }
 
@@ -692,9 +692,9 @@ class NetHostList {
       await API.invoke('netops:remove-host', { host_id: hostId });
       await this.app.loadHosts();
       this.render();
-      window.ui.showNotification(`${host.hostname} removed.`, 'success');
+      globalThis.ui.showNotification(`${host.hostname} removed.`, 'success');
     } catch (err) {
-      window.ui.showNotification(`Failed to remove: ${err.message}`, 'error');
+      globalThis.ui.showNotification(`Failed to remove: ${err.message}`, 'error');
     }
   }
 
@@ -706,9 +706,9 @@ class NetHostList {
       await API.invoke('netops:update-host-config', { host_id: hostId, enabled: newEnabled });
       host.enabled = newEnabled;
       this.render();
-      window.ui.showNotification(`${host.hostname} ${newEnabled ? 'enabled' : 'disabled'}.`, 'info');
+      globalThis.ui.showNotification(`${host.hostname} ${newEnabled ? 'enabled' : 'disabled'}.`, 'info');
     } catch (err) {
-      window.ui.showNotification(`Failed: ${err.message}`, 'error');
+      globalThis.ui.showNotification(`Failed: ${err.message}`, 'error');
     }
   }
 
@@ -892,7 +892,7 @@ class NetHostList {
       if (menu && btn) {
         const rect = btn.getBoundingClientRect();
         menu.style.top = `${rect.bottom + 4}px`;
-        menu.style.right = `${window.innerWidth - rect.right}px`;
+        menu.style.right = `${globalThis.innerWidth - rect.right}px`;
         menu.style.display = 'block';
         this.actionMenuHostId = hostId;
       }

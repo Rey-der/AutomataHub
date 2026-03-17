@@ -5,8 +5,8 @@
  * DB lives in memory with periodic flush to disk every 60s.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { app } = require('electron');
 const initSqlJs = require('sql.js');
 

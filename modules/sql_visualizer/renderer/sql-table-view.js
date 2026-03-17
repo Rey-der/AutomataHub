@@ -47,10 +47,10 @@ const SqlTableView = (() => {
     try {
       // Fetch column info on first load
       if (state.columns.length === 0 && state.tableName) {
-        state.columns = await window.api.invoke('sql-visualizer:get-table-info', { table: state.tableName });
+        state.columns = await globalThis.api.invoke('sql-visualizer:get-table-info', { table: state.tableName });
       }
 
-      const result = await window.api.invoke('sql-visualizer:query-rows', {
+      const result = await globalThis.api.invoke('sql-visualizer:query-rows', {
         table: state.tableName,
         offset: state.page * state.pageSize,
         limit: state.pageSize,
@@ -120,7 +120,7 @@ const SqlTableView = (() => {
       pageSizeSelect.appendChild(opt);
     }
     pageSizeSelect.addEventListener('change', () => {
-      state.pageSize = parseInt(pageSizeSelect.value, 10);
+      state.pageSize = Number.parseInt(pageSizeSelect.value, 10);
       state.page = 0;
       refreshView(tab);
     });
@@ -153,8 +153,8 @@ const SqlTableView = (() => {
       refreshToggle.className = `btn btn-sm${state.autoRefresh ? ' btn-active' : ' btn-secondary'}`;
       refreshToggle.textContent = state.autoRefresh ? 'Live' : 'Auto';
       // Update tab header indicator
-      if (window.tabManager && window.tabManager.updateTabStatus) {
-        window.tabManager.updateTabStatus(tab.id, state.autoRefresh ? 'running' : 'idle');
+      if (globalThis.tabManager && globalThis.tabManager.updateTabStatus) {
+        globalThis.tabManager.updateTabStatus(tab.id, state.autoRefresh ? 'running' : 'idle');
       }
     });
     headerActions.appendChild(refreshToggle);
@@ -171,7 +171,7 @@ const SqlTableView = (() => {
       intervalSelect.appendChild(opt);
     }
     intervalSelect.addEventListener('change', () => {
-      state.refreshInterval = parseInt(intervalSelect.value, 10);
+      state.refreshInterval = Number.parseInt(intervalSelect.value, 10);
       if (state.autoRefresh) setupAutoRefresh(tab, state);
     });
     headerActions.appendChild(intervalSelect);
@@ -294,7 +294,7 @@ const SqlTableView = (() => {
             td.title = 'View correlated logs & errors';
             td.addEventListener('click', (e) => {
               e.stopPropagation();
-              window.tabManager.createTab('sql-timeline', 'Timeline', {}, { reuseKey: 'sql-timeline' });
+              globalThis.tabManager.createTab('sql-timeline', 'Timeline', {}, { reuseKey: 'sql-timeline' });
             });
           }
           if (col.name === 'script' && typeof value === 'string') {
@@ -331,7 +331,7 @@ const SqlTableView = (() => {
       render(tab, document.getElementById('tab-content'));
     } else {
       // Open automation_logs filtered by script
-      window.tabManager.createTab('sql-table-view', `logs: ${scriptName}`, { tableName: 'automation_logs' }, { reuseKey: `table-automation_logs` });
+      globalThis.tabManager.createTab('sql-table-view', `logs: ${scriptName}`, { tableName: 'automation_logs' }, { reuseKey: `table-automation_logs` });
     }
   }
 
@@ -375,7 +375,7 @@ const SqlTableView = (() => {
     const crumbHome = document.createElement('span');
     crumbHome.className = 'sql-breadcrumb-link';
     crumbHome.textContent = 'Dashboard';
-    crumbHome.addEventListener('click', () => window.tabManager.createTab('sql-home', 'SQL Dashboard', {}, { reuseKey: 'sql-home' }));
+    crumbHome.addEventListener('click', () => globalThis.tabManager.createTab('sql-home', 'SQL Dashboard', {}, { reuseKey: 'sql-home' }));
     breadcrumb.appendChild(crumbHome);
     breadcrumb.appendChild(document.createTextNode(' › '));
     const crumbTable = document.createElement('span');
@@ -435,7 +435,7 @@ const SqlTableView = (() => {
       corrBtn.textContent = 'View Correlated Logs & Errors';
       corrBtn.addEventListener('click', async () => {
         try {
-          const corr = await window.api.invoke('sql-visualizer:get-correlated-records', { executionId: row.id });
+          const corr = await globalThis.api.invoke('sql-visualizer:get-correlated-records', { executionId: row.id });
           renderCorrelatedInPanel(panel, corr);
         } catch (err) {
           console.error('[detail] correlated:', err);
@@ -450,7 +450,7 @@ const SqlTableView = (() => {
       execBtn.className = 'btn btn-sm';
       execBtn.textContent = 'Find Execution';
       execBtn.addEventListener('click', () => {
-        window.tabManager.createTab('sql-table-view', 'execution_tracking', { tableName: 'execution_tracking' }, { reuseKey: 'table-execution_tracking' });
+        globalThis.tabManager.createTab('sql-table-view', 'execution_tracking', { tableName: 'execution_tracking' }, { reuseKey: 'table-execution_tracking' });
       });
       drilldowns.appendChild(execBtn);
     }
@@ -461,7 +461,7 @@ const SqlTableView = (() => {
       scriptBtn.className = 'btn btn-sm';
       scriptBtn.textContent = 'All Activity for "' + escHtml(row.script) + '"';
       scriptBtn.addEventListener('click', () => {
-        window.tabManager.createTab('sql-query', 'Query', {}, { reuseKey: 'sql-query-default' });
+        globalThis.tabManager.createTab('sql-query', 'Query', {}, { reuseKey: 'sql-query-default' });
       });
       drilldowns.appendChild(scriptBtn);
     }
@@ -573,7 +573,7 @@ const SqlTableView = (() => {
       if (!name) return;
       overlay.remove();
       try {
-        const prefs = await window.api.getModulePrefs('sql-visualizer') || {};
+        const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
         const bookmarks = prefs.bookmarks || [];
         bookmarks.push({
           name,
@@ -584,9 +584,9 @@ const SqlTableView = (() => {
           pageSize: state.pageSize,
           createdAt: Date.now(),
         });
-        await window.api.setModulePrefs('sql-visualizer', { bookmarks });
-        if (window.ui && window.ui.showNotification) {
-          window.ui.showNotification('Bookmark saved: ' + name, 'success');
+        await globalThis.api.setModulePrefs('sql-visualizer', { bookmarks });
+        if (globalThis.ui && globalThis.ui.showNotification) {
+          globalThis.ui.showNotification('Bookmark saved: ' + name, 'success');
         }
       } catch (err) {
         console.error('[sql-table-view] bookmark save error:', err);
@@ -802,11 +802,11 @@ const SqlTableView = (() => {
         sql += ` ORDER BY "${state.sortCol}" ${state.sortDir}`;
       }
 
-      const csv = await window.api.invoke('sql-visualizer:export-csv', { sql });
+      const csv = await globalThis.api.invoke('sql-visualizer:export-csv', { sql });
       downloadCsv(csv, `${state.tableName}.csv`);
-      window.ui.showNotification(`Exported ${state.tableName}.csv`, 'success');
+      globalThis.ui.showNotification(`Exported ${state.tableName}.csv`, 'success');
     } catch (err) {
-      window.ui.showNotification('Export failed: ' + (err.message || 'Unknown error'), 'error');
+      globalThis.ui.showNotification('Export failed: ' + (err.message || 'Unknown error'), 'error');
     }
   }
 
@@ -830,12 +830,12 @@ const SqlTableView = (() => {
 
 (function register() {
   function doRegister() {
-    if (!window.tabManager) {
+    if (!globalThis.tabManager) {
       setTimeout(doRegister, 0);
       return;
     }
 
-    window.tabManager.registerTabType('sql-table-view', {
+    globalThis.tabManager.registerTabType('sql-table-view', {
       render: SqlTableView.render,
       onClose: (tab) => SqlTableView.removeState(tab.id),
       maxTabs: 6,

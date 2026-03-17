@@ -3,9 +3,7 @@
  * Displays status pills, aggregate metrics, and 6 interactive charts.
  */
 
-if (typeof API === 'undefined') {
-  var API = window.api;
-}
+const API = globalThis.api;
 
 class NetMetricsDashboard {
   constructor() {
@@ -483,12 +481,12 @@ class NetMetricsDashboard {
    */
   initializeCharts() {
     // Import chart builders from chart-config.js
-    if (typeof window.createTrafficChart === 'undefined') {
+    if (typeof globalThis.createTrafficChart === 'undefined') {
       console.warn('[net-metrics] Chart builders not loaded. Ensure chart-config.js is included.');
       return;
     }
 
-    const { createTrafficChart, createPacketsChart, createCpuChart, createMemoryChart, createBufferMissChart, generateTimeLabels } = window;
+    const { createTrafficChart, createPacketsChart, createCpuChart, createMemoryChart, createBufferMissChart, generateTimeLabels } = globalThis;
 
     // Aggregate data from all hosts
     const aggregatedData = this.aggregateMetricsForCharts();
@@ -529,8 +527,8 @@ class NetMetricsDashboard {
 
       // Buffer hit rate (simple line chart)
       const bufferRateCanvas = document.getElementById('chart-buffer-rate');
-      if (bufferRateCanvas && typeof window.Chart !== 'undefined') {
-        const Chart = window.Chart;
+      if (bufferRateCanvas && typeof globalThis.Chart !== 'undefined') {
+        const Chart = globalThis.Chart;
         const ctx = bufferRateCanvas.getContext('2d');
         this.charts.set('bufferRate', new Chart(ctx, {
           type: 'line',
@@ -562,7 +560,7 @@ class NetMetricsDashboard {
    * Aggregate metrics from all hosts for chart display.
    */
   aggregateMetricsForCharts() {
-    const { createTrafficChart, generateTimeLabels } = window;
+    const { createTrafficChart, generateTimeLabels } = globalThis;
     const allNetworkMetrics = [];
     const allSystemMetrics = [];
     const allBufferMetrics = [];

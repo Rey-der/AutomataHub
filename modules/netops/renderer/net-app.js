@@ -5,9 +5,7 @@
  * until implemented in Phases 2–6.
  */
 
-if (typeof API === 'undefined') {
-  var API = window.api;
-}
+const API = globalThis.api;
 
 const NETOPS_LS_KEY = 'netops-ui-state';
 
@@ -403,8 +401,8 @@ class NetApp {
 
 (function registerNetApp() {
   function doRegister() {
-    if (!window.tabManager) { setTimeout(doRegister, 0); return; }
-    window.tabManager.registerTabType('netops-dashboard', {
+    if (!globalThis.tabManager) { setTimeout(doRegister, 0); return; }
+    globalThis.tabManager.registerTabType('netops-dashboard', {
       render: (tab, container) => {
         container.innerHTML = '';
         const app = new NetApp();
@@ -424,11 +422,11 @@ class NetApp {
 
 (function registerModuleOpener() {
   function doRegister() {
-    if (!window._hub) { setTimeout(doRegister, 0); return; }
-    window._hub.moduleOpeners = window._hub.moduleOpeners || {};
-    window._hub.moduleOpeners['netops'] = function openNetOps(mod) {
-      if (window.tabManager && window.tabManager.hasTabType('netops-dashboard')) {
-        window.tabManager.createTab('netops-dashboard', 'NetOps Monitor', { moduleId: mod.id }, { target: 'module' });
+    if (!globalThis._hub) { setTimeout(doRegister, 0); return; }
+    globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
+    globalThis._hub.moduleOpeners['netops'] = function openNetOps(mod) {
+      if (globalThis.tabManager && globalThis.tabManager.hasTabType('netops-dashboard')) {
+        globalThis.tabManager.createTab('netops-dashboard', 'NetOps Monitor', { moduleId: mod.id }, { target: 'module' });
       }
     };
   }

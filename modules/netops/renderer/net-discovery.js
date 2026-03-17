@@ -205,13 +205,13 @@ class NetDiscovery {
 
       this.render();
       const found = result.discovered_count || 0;
-      window.ui.showNotification(`Scan complete: ${found} host${found !== 1 ? 's' : ''} online out of ${result.scanned} scanned.`, 'success');
+      globalThis.ui.showNotification(`Scan complete: ${found} host${found !== 1 ? 's' : ''} online out of ${result.scanned} scanned.`, 'success');
     } catch (err) {
       this.scanning = false;
       this.scanProgress = null;
       this.scanStartTime = null;
       this.render();
-      window.ui.showNotification(`Scan failed: ${err.message}`, 'error');
+      globalThis.ui.showNotification(`Scan failed: ${err.message}`, 'error');
     }
   }
 
@@ -225,12 +225,12 @@ class NetDiscovery {
       if (result.success) {
         await this.app.loadHosts();
         this.render();
-        window.ui.showNotification(`${ip} added to monitored hosts.`, 'success');
+        globalThis.ui.showNotification(`${ip} added to monitored hosts.`, 'success');
       } else {
-        window.ui.showNotification(result.error || 'Failed to add host.', 'error');
+        globalThis.ui.showNotification(result.error || 'Failed to add host.', 'error');
       }
     } catch (err) {
-      window.ui.showNotification(`Failed: ${err.message}`, 'error');
+      globalThis.ui.showNotification(`Failed: ${err.message}`, 'error');
     }
   }
 
@@ -268,9 +268,9 @@ class NetDiscovery {
       delete this.hostsByNet[networkId];
       await this.loadNetworks();
       this.render();
-      window.ui.showNotification(`Network ${net.cidr} removed.`, 'success');
+      globalThis.ui.showNotification(`Network ${net.cidr} removed.`, 'success');
     } catch (err) {
-      window.ui.showNotification(`Failed: ${err.message}`, 'error');
+      globalThis.ui.showNotification(`Failed: ${err.message}`, 'error');
     }
   }
 
@@ -333,7 +333,7 @@ class NetDiscovery {
         const fd = new FormData(form);
         const cidr = (fd.get('cidr') || '').trim();
         if (!cidr) return;
-        this.startScan(cidr, parseInt(fd.get('port')) || 0, (fd.get('name') || '').trim());
+        this.startScan(cidr, Number.parseInt(fd.get('port')) || 0, (fd.get('name') || '').trim());
       });
     }
 

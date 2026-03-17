@@ -3,7 +3,7 @@
  * Falls back to TCP if ICMP is unavailable (permission denied, etc.).
  */
 
-const { execFile } = require('child_process');
+const { execFile } = require('node:child_process');
 const tcpCheck = require('./tcp');
 
 const PING_TIMEOUT_S = 3;
@@ -56,11 +56,14 @@ function runPing(hostname) {
     const isWin = process.platform === 'win32';
     const isMac = process.platform === 'darwin';
     // -W on macOS expects milliseconds; on Linux expects seconds
-    const args = isWin
-      ? ['-n', '1', '-w', String(PING_TIMEOUT_MS), hostname]
-      : isMac
-        ? ['-c', '1', '-W', String(PING_TIMEOUT_MS), hostname]
-        : ['-c', '1', '-W', String(PING_TIMEOUT_S), hostname];
+    let args;
+    if (isWin) {
+      args = ['-n', '1', '-w', String(PING_TIMEOUT_MS), hostname];
+    } else if (isMac) {
+      args = ['-c', '1', '-W', String(PING_TIMEOUT_MS), hostname];
+    } else {
+      args = ['-c', '1', '-W', String(PING_TIMEOUT_S), hostname];
+    }
 
     const child = execFile('ping', args, { timeout: KILL_TIMEOUT_MS }, (err, stdout) => {
       if (err) return reject(err);
@@ -80,7 +83,7 @@ function runPing(hostname) {
 function parseLatency(stdout) {
   for (const re of Object.values(LATENCY_RE)) {
     const m = stdout.match(re);
-    if (m) return parseFloat(m[1]);
+    if (m) return Number.parseFloat(m[1]);
   }
   return null;
 }

@@ -256,7 +256,7 @@ class NetHostDetail {
   async _loadChart() {
     this._destroyChart();
     const canvas = this.container.querySelector('#hd-chart-canvas');
-    if (!canvas || !window.Chart) return;
+    if (!canvas || !globalThis.Chart) return;
 
     try {
       switch (this.activeTab) {
@@ -278,8 +278,8 @@ class NetHostDetail {
     const labels = pts.map(p => _hdTimeLabel(p.timestamp));
     const data = pts.map(p => p.latency_ms ?? null);
 
-    const colors = window.getThemeColors ? getThemeColors() : {};
-    this.chart = new window.Chart(canvas.getContext('2d'), {
+    const colors = globalThis.getThemeColors ? getThemeColors() : {};
+    this.chart = new globalThis.Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
         labels,
@@ -309,7 +309,7 @@ class NetHostDetail {
       trafficIn: metrics.map(m => m.traffic_in_mb),
       trafficOut: metrics.map(m => m.traffic_out_mb),
     };
-    this.chart = window.createTrafficChart(canvas, data);
+    this.chart = globalThis.createTrafficChart(canvas, data);
   }
 
   async _chartSystem(canvas) {
@@ -318,9 +318,9 @@ class NetHostDetail {
     });
     const metrics = res.metrics || [];
     const labels = metrics.map(m => _hdTimeLabel(m.timestamp));
-    const colors = window.getThemeColors ? getThemeColors() : {};
+    const colors = globalThis.getThemeColors ? getThemeColors() : {};
 
-    this.chart = new window.Chart(canvas.getContext('2d'), {
+    this.chart = new globalThis.Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
         labels,
@@ -351,9 +351,9 @@ class NetHostDetail {
     });
     const metrics = res.metrics || [];
     const labels = metrics.map(m => _hdTimeLabel(m.timestamp));
-    const colors = window.getThemeColors ? getThemeColors() : {};
+    const colors = globalThis.getThemeColors ? getThemeColors() : {};
 
-    this.chart = new window.Chart(canvas.getContext('2d'), {
+    this.chart = new globalThis.Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
         labels,
@@ -391,11 +391,11 @@ class NetHostDetail {
           min: 0,
           ...(yMax ? { max: yMax } : { grace: '10%' }),
           ticks: { color: textColor },
-          grid: { color: `rgba(${window.hexToRgb ? hexToRgb(borderColor) : '58,58,58'}, 0.3)` },
+          grid: { color: `rgba(${globalThis.hexToRgb ? hexToRgb(borderColor) : '58,58,58'}, 0.3)` },
         },
         x: {
           ticks: { color: textColor, maxTicksLimit: 12 },
-          grid: { color: `rgba(${window.hexToRgb ? hexToRgb(borderColor) : '58,58,58'}, 0.3)` },
+          grid: { color: `rgba(${globalThis.hexToRgb ? hexToRgb(borderColor) : '58,58,58'}, 0.3)` },
         },
       },
     };
@@ -500,9 +500,9 @@ class NetHostDetail {
           const result = await API.invoke('netops:ping-host', { hostname: this.host.hostname, host_id: this.hostId });
           const s = result.success ? 'online' : 'offline';
           const lat = result.latency ? ` ${result.latency}ms` : '';
-          window.ui.showNotification(`${this.host.hostname}: ${s}${lat}`, result.success ? 'success' : 'warning');
+          globalThis.ui.showNotification(`${this.host.hostname}: ${s}${lat}`, result.success ? 'success' : 'warning');
         } catch (err) {
-          window.ui.showNotification(`Ping failed: ${err.message}`, 'error');
+          globalThis.ui.showNotification(`Ping failed: ${err.message}`, 'error');
         }
         break;
       }
@@ -510,7 +510,7 @@ class NetHostDetail {
         const newEnabled = this.host.enabled ? 0 : 1;
         await API.invoke('netops:update-host-config', { host_id: this.hostId, enabled: newEnabled });
         this.host.enabled = newEnabled;
-        window.ui.showNotification(`${this.host.hostname} ${newEnabled ? 'enabled' : 'disabled'}.`, 'info');
+        globalThis.ui.showNotification(`${this.host.hostname} ${newEnabled ? 'enabled' : 'disabled'}.`, 'info');
         this.render();
         break;
       }
@@ -518,7 +518,7 @@ class NetHostDetail {
         if (!confirm(`Remove "${this.host.alias || this.host.hostname}"? This cannot be undone.`)) return;
         await API.invoke('netops:remove-host', { host_id: this.hostId });
         await this.app.loadHosts();
-        window.ui.showNotification(`${this.host.hostname} removed.`, 'success');
+        globalThis.ui.showNotification(`${this.host.hostname} removed.`, 'success');
         this.app.navigateTo('hosts');
         break;
       }

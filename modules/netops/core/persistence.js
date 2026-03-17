@@ -11,8 +11,8 @@
  * another `if (version < N)` block in _migrate().
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { app } = require('electron');
 
 const DB_DIR = path.join(app.getPath('userData'), 'netops');
@@ -474,7 +474,7 @@ class NetOpsPersistence {
       const avg = {};
       for (const f of fields) {
         const sum = g.rows.reduce((s, r) => s + (r[f] || 0), 0);
-        avg[f] = parseFloat((sum / n).toFixed(2));
+        avg[f] = Number.parseFloat((sum / n).toFixed(2));
       }
       this.db.run(
         `INSERT OR REPLACE INTO metrics_hourly (host_id, metric_type, hour, avg_json, sample_count)

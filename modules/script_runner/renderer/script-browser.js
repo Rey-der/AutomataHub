@@ -332,16 +332,16 @@ class ScriptBrowser {
       });
 
       if (result.success) {
-        window.ui?.showNotification?.('Removed from topic', 'success');
+        globalThis.ui?.showNotification?.('Removed from topic', 'success');
         await this.app.loadScripts();
         await this.app.loadTopics();
         this.render();
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to remove from topic', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to remove from topic', 'error');
       }
     } catch (err) {
       console.error('[script-runner] Remove from topic error:', err.message);
-      window.ui?.showNotification?.('Error removing from topic', 'error');
+      globalThis.ui?.showNotification?.('Error removing from topic', 'error');
     } finally {
       this.setLoading(false);
     }
@@ -358,8 +358,8 @@ class ScriptBrowser {
       chosen = variants[0];
     }
 
-    if (window.tabManager) {
-      window.tabManager.createTab('script-execution', `${script.name}`, {
+    if (globalThis.tabManager) {
+      globalThis.tabManager.createTab('script-execution', `${script.name}`, {
         scriptPath: chosen.scriptPath || script.scriptPath,
         scriptName: script.name,
         scriptId: script.id || script.folder,
@@ -416,7 +416,7 @@ class ScriptBrowser {
 
   _handleAddToTopic(script) {
     if (this.app.topics.length === 0) {
-      window.ui?.showNotification?.('Create a topic first', 'info');
+      globalThis.ui?.showNotification?.('Create a topic first', 'info');
       return;
     }
 
@@ -464,15 +464,15 @@ class ScriptBrowser {
       });
 
       if (result.success) {
-        window.ui?.showNotification?.(`Added to "${topic?.name}"`, 'success');
+        globalThis.ui?.showNotification?.(`Added to "${topic?.name}"`, 'success');
         await this.app.loadScripts();
         await this.app.loadTopics();
         this.render();
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to add to topic', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to add to topic', 'error');
       }
     } catch (err) {
-      window.ui?.showNotification?.('Failed to add to topic', 'error');
+      globalThis.ui?.showNotification?.('Failed to add to topic', 'error');
     } finally {
       this.setLoading(false);
     }
@@ -488,15 +488,15 @@ class ScriptBrowser {
       });
 
       if (result.success) {
-        window.ui?.showNotification?.('Script removed', 'success');
+        globalThis.ui?.showNotification?.('Script removed', 'success');
         await this.app.loadScripts();
         this.render();
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to remove script', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to remove script', 'error');
       }
     } catch (err) {
       console.error('[script-runner] Remove script error:', err.message);
-      window.ui?.showNotification?.('Failed to remove script', 'error');
+      globalThis.ui?.showNotification?.('Failed to remove script', 'error');
     } finally {
       this.setLoading(false);
     }
@@ -508,7 +508,7 @@ class ScriptBrowser {
       const result = await API.invoke('script-runner:open-folder-picker');
       if (result.canceled) return;
       if (!result.valid) {
-        window.ui?.showNotification?.(result.error || 'Invalid folder', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Invalid folder', 'error');
         return;
       }
 
@@ -517,15 +517,15 @@ class ScriptBrowser {
       });
 
       if (importResult.success) {
-        window.ui?.showNotification?.(importResult.message, 'success');
+        globalThis.ui?.showNotification?.(importResult.message, 'success');
         await this.app.loadScripts();
         this.render();
       } else {
-        window.ui?.showNotification?.(importResult.message || 'Import failed', 'error');
+        globalThis.ui?.showNotification?.(importResult.message || 'Import failed', 'error');
       }
     } catch (err) {
       console.error('[script-runner] Import error:', err.message);
-      window.ui?.showNotification?.('Failed to import scripts', 'error');
+      globalThis.ui?.showNotification?.('Failed to import scripts', 'error');
     } finally {
       this.setLoading(false);
     }

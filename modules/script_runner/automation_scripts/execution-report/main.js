@@ -5,7 +5,7 @@
  * Default: last 20 executions. Pass a number as first arg to override.
  */
 
-const path = require('path');
+const path = require('node:path');
 
 const dbPath = process.env.SMART_DESKTOP_DB;
 if (!dbPath) {
@@ -19,7 +19,7 @@ const { printJSON } = require(path.join(projectRoot, 'src', 'utils', 'output'));
 
 try {
   const db = getDb();
-  const limit = parseInt(process.argv[2], 10) || 20;
+  const limit = Number.parseInt(process.argv[2], 10) || 20;
 
   const rows = db.prepare(`
     SELECT
