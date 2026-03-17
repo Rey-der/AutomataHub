@@ -3,8 +3,8 @@
  * Stores data in `user-prefs.json` inside Electron's userData directory.
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 const { app } = require('electron');
 
 const PREFS_FILE = path.join(app.getPath('userData'), 'user-prefs.json');

@@ -95,9 +95,9 @@ class TabManager {
     const maxForType = this._maxTabsPerType.get(type) || 4;
     const typeTabs = this.getTabsByType(type);
     if (typeTabs.length >= maxForType) {
-      window.ui.showNotification(`Maximum of ${maxForType} ${type} tabs reached. Close a tab first.`, 'warning');
+      globalThis.ui.showNotification(`Maximum of ${maxForType} ${type} tabs reached. Close a tab first.`, 'warning');
       // Switch to the most recent existing tab of this type
-      const last = typeTabs[typeTabs.length - 1];
+      const last = typeTabs.at(-1);
       if (last) this.switchTab(last.id);
       return null;
     }
@@ -128,7 +128,7 @@ class TabManager {
     this.activeTabId = tabId;
 
     // Track tab history (avoid consecutive duplicates)
-    if (this._tabHistory[this._tabHistory.length - 1] !== tabId) {
+    if (this._tabHistory.at(-1) !== tabId) {
       this._tabHistory.push(tabId);
       // Keep history bounded
       if (this._tabHistory.length > 50) this._tabHistory.splice(0, this._tabHistory.length - 50);
@@ -264,8 +264,8 @@ class TabManager {
 
     if (tab.type === 'home') {
       // Home tab is always rendered by the hub dashboard
-      if (window.homeTab) {
-        window.homeTab.render();
+      if (globalThis.homeTab) {
+        globalThis.homeTab.render();
       }
       return;
     }

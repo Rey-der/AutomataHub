@@ -8,13 +8,13 @@
   </head>
   <body>
     <div id="app">
-      <nav id="main-tab-bar" class="tab-bar main-tab-bar" role="tablist" aria-label="Main tabs">
+      <div id="main-tab-bar" class="tab-bar main-tab-bar" role="tablist" aria-label="Main tabs">
         <div class="tab-bar-left">
           <button class="tab active" data-tab-id="home" role="tab" aria-selected="true" aria-controls="tab-content">Home</button>
         </div>
         <div class="tab-bar-divider" aria-hidden="true"></div>
-        <div class="tab-bar-modules" id="module-tabs" role="group" aria-label="Open modules"></div>
-      </nav>
+        <div class="tab-bar-modules" id="module-tabs" aria-label="Open modules"></div>
+      </div>
 
       <main id="tab-content" class="tab-content" role="tabpanel" aria-label="Tab content"></main>
     </div>
@@ -28,6 +28,6 @@
     <script src="../node_modules/chart.js/dist/chart.umd.js"></script>
 
     <!-- Module renderer scripts are loaded dynamically by the bootstrapper -->
-    <script src="./module-bootstrap.js"></script>
+    <script type="module" src="./module-bootstrap.js"></script>
   </body>
 </html>

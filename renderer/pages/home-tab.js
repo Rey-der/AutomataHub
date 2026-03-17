@@ -9,6 +9,24 @@ const HomeTab = (() => {
   let sortMode = 'default'; // 'default' | 'az' | 'za'
   let sidebarCollapsed = false;
 
+  // GitHub prompt state (module-scoped to reduce nesting)
+  let promptOpen = false;
+  let promptKeyHandler = null;
+  let promptLogoRef = null;
+
+  // Crypto-safe random for typing animation
+  const randBuf = new Uint32Array(1);
+  function cryptoRand() {
+    crypto.getRandomValues(randBuf);
+    return randBuf[0] / 0x100000000;
+  }
+
+  function typingDelay(ch, nextCh) {
+    if (ch === ' ') return 95 + cryptoRand() * 60;
+    if (nextCh === ' ') return 70 + cryptoRand() * 30;
+    return 68 + cryptoRand() * 28;
+  }
+
   // --- Module Card ---
 
   function createModuleCard(mod) {
@@ -90,24 +108,24 @@ const HomeTab = (() => {
   }
 
   function handleOpenModule(mod) {
-    if (mod.tabTypes && mod.tabTypes.length > 0) {
-      const defaultType = mod.tabTypes[0];
-      const typeId = defaultType.id || defaultType;
+    if (!mod.tabTypes?.length) return;
 
-      if (window._hub && window._hub.moduleOpeners && window._hub.moduleOpeners[mod.id]) {
-        window._hub.moduleOpeners[mod.id](mod);
-        return;
-      }
+    const defaultType = mod.tabTypes[0];
+    const typeId = defaultType.id || defaultType;
 
-      const existing = window.tabManager.getTabsByType(typeId);
-      if (existing.length > 0) {
-        window.tabManager.switchTab(existing[0].id);
-        return;
-      }
+    if (globalThis._hub?.moduleOpeners?.[mod.id]) {
+      globalThis._hub.moduleOpeners[mod.id](mod);
+      return;
+    }
 
-      if (window.tabManager.hasTabType(typeId)) {
-        window.tabManager.createTab(typeId, mod.name, { moduleId: mod.id }, { target: 'module' });
-      }
+    const existing = globalThis.tabManager.getTabsByType(typeId);
+    if (existing.length > 0) {
+      globalThis.tabManager.switchTab(existing[0].id);
+      return;
+    }
+
+    if (globalThis.tabManager.hasTabType(typeId)) {
+      globalThis.tabManager.createTab(typeId, mod.name, { moduleId: mod.id }, { target: 'module' });
     }
   }
 
@@ -117,7 +135,7 @@ const HomeTab = (() => {
     const current = modulePrefs[moduleId] || { favorite: false, autoStart: false };
     const newVal = !current.favorite;
     modulePrefs[moduleId] = { ...current, favorite: newVal };
-    await window.api.setModulePrefs(moduleId, { favorite: newVal });
+    await globalThis.api.setModulePrefs(moduleId, { favorite: newVal });
 
     btn.classList.toggle('active', newVal);
     btn.textContent = newVal ? '\u2665' : '\u2661';
@@ -130,7 +148,7 @@ const HomeTab = (() => {
     const current = modulePrefs[moduleId] || { favorite: false, autoStart: false };
     const newVal = !current.autoStart;
     modulePrefs[moduleId] = { ...current, autoStart: newVal };
-    await window.api.setModulePrefs(moduleId, { autoStart: newVal });
+    await globalThis.api.setModulePrefs(moduleId, { autoStart: newVal });
 
     btn.classList.toggle('active', newVal);
     btn.textContent = newVal ? '\u2605' : '\u2606';
@@ -142,7 +160,7 @@ const HomeTab = (() => {
   // --- Filtering & Sorting ---
 
   function getFilteredModules() {
-    let modules = (window._hub && window._hub.modules) || [];
+    let modules = globalThis._hub?.modules || [];
 
     // View filter
     if (filterView === 'favorites') {
@@ -207,7 +225,7 @@ const HomeTab = (() => {
   }
 
   function updateSidebarCounts() {
-    const modules = (window._hub && window._hub.modules) || [];
+    const modules = globalThis._hub?.modules || [];
 
     const allCount = document.getElementById('hub-count-all');
     const favCount = document.getElementById('hub-count-favorites');
@@ -226,33 +244,106 @@ const HomeTab = (() => {
     updateModuleGrid();
   }
 
-  // --- Render ---
+  // --- GitHub Prompt (module-scoped) ---
 
-  async function render() {
-    const container = document.getElementById('tab-content');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    // Load user preferences
-    try {
-      const prefs = await window.api.getPrefs();
-      modulePrefs = (prefs && prefs.modules) || {};
-    } catch {
-      modulePrefs = {};
+  function dismissPrompt() {
+    const box = document.querySelector('.github-prompt-box');
+    if (!box) return;
+    box.classList.remove('github-prompt-visible');
+    setTimeout(() => box.remove(), 200);
+    if (promptKeyHandler) {
+      document.removeEventListener('keydown', promptKeyHandler);
+      promptKeyHandler = null;
     }
+    promptOpen = false;
+  }
 
-    const modules = (window._hub && window._hub.modules) || [];
+  function showGitHubPrompt() {
+    if (promptOpen) return;
+    promptOpen = true;
 
-    // --- Root layout: sidebar + main ---
-    const layout = document.createElement('div');
-    layout.className = 'hub-layout';
+    const box = document.createElement('div');
+    box.className = 'github-prompt-box';
 
-    // === SIDEBAR ===
+    const body = document.createElement('div');
+    body.className = 'github-prompt-body';
+
+    const line1 = document.createElement('div');
+    line1.className = 'github-prompt-line';
+
+    const promptSpan = document.createElement('span');
+    promptSpan.className = 'github-prompt-prompt';
+    promptSpan.textContent = '~';
+    line1.appendChild(promptSpan);
+
+    const cmdSpan = document.createElement('span');
+    cmdSpan.className = 'github-prompt-cmd';
+    line1.appendChild(cmdSpan);
+    body.appendChild(line1);
+
+    const line2 = document.createElement('div');
+    line2.className = 'github-prompt-line github-prompt-input-line';
+
+    const line2Prompt = document.createElement('span');
+    line2Prompt.className = 'github-prompt-prompt';
+    line2Prompt.textContent = '~';
+    line2.appendChild(line2Prompt);
+
+    const line2Cursor = document.createElement('span');
+    line2Cursor.className = 'github-prompt-cursor';
+    line2Cursor.textContent = '\u2588';
+    line2.appendChild(line2Cursor);
+
+    body.appendChild(line2);
+    box.appendChild(body);
+
+    box.addEventListener('mouseleave', () => {
+      setTimeout(() => {
+        if (promptLogoRef && !promptLogoRef.matches(':hover') && !box.matches(':hover')) {
+          dismissPrompt();
+        }
+      }, 120);
+    });
+
+    document.body.appendChild(box);
+    requestAnimationFrame(() => box.classList.add('github-prompt-visible'));
+
+    const fullText = ' wanna visit my github? ';
+    let i = 0;
+    function typeNext() {
+      if (i < fullText.length) {
+        const ch = fullText[i];
+        const nextCh = fullText[i + 1] || '';
+        cmdSpan.textContent += ch;
+        i++;
+        setTimeout(typeNext, typingDelay(ch, nextCh));
+      } else {
+        const ynSpan = document.createElement('span');
+        ynSpan.className = 'github-prompt-yn';
+        ynSpan.textContent = '[y/n]';
+        cmdSpan.appendChild(ynSpan);
+      }
+    }
+    setTimeout(typeNext, 820);
+
+    promptKeyHandler = function(e) {
+      if (e.key === 'y' || e.key === 'Y') {
+        globalThis.api.openExternalUrl('https://github.com/Rey-der');
+        dismissPrompt();
+      } else if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
+        dismissPrompt();
+      }
+    };
+    document.addEventListener('keydown', promptKeyHandler);
+  }
+
+  // --- Sidebar Builder ---
+
+  function createSidebar(modules) {
     const sidebar = document.createElement('aside');
     sidebar.className = 'hub-sidebar' + (sidebarCollapsed ? ' collapsed' : '');
 
-    // Sidebar header
+    // Header
     const sidebarHeader = document.createElement('div');
     sidebarHeader.className = 'hub-sidebar-header';
 
@@ -272,7 +363,7 @@ const HomeTab = (() => {
     sidebarHeader.appendChild(toggleBtn);
     sidebar.appendChild(sidebarHeader);
 
-    // Sidebar navigation
+    // Navigation
     const nav = document.createElement('nav');
     nav.className = 'hub-sidebar-nav';
 
@@ -303,8 +394,11 @@ const HomeTab = (() => {
     }
 
     sidebar.appendChild(nav);
+    sidebar.appendChild(createInfoButton());
+    return sidebar;
+  }
 
-    // Sidebar info button
+  function createInfoButton() {
     const infoBtn = document.createElement('button');
     infoBtn.className = 'hub-sidebar-info-btn';
     infoBtn.setAttribute('aria-label', 'About AutomataHub');
@@ -312,7 +406,7 @@ const HomeTab = (() => {
     const infoImg = document.createElement('img');
     infoImg.alt = 'Info';
     infoImg.className = 'hub-sidebar-info-icon';
-    window.api.getResourcesPath().then(resourcesPath => {
+    globalThis.api.getResourcesPath().then(resourcesPath => {
       infoImg.src = `file://${resourcesPath}/info.png`;
     });
     infoBtn.appendChild(infoImg);
@@ -322,6 +416,11 @@ const HomeTab = (() => {
     infoLabel.textContent = 'About';
     infoBtn.appendChild(infoLabel);
 
+    infoBtn.appendChild(buildTooltipContent());
+    return infoBtn;
+  }
+
+  function buildTooltipContent() {
     const tooltip = document.createElement('div');
     tooltip.className = 'info-tooltip';
 
@@ -361,17 +460,12 @@ const HomeTab = (() => {
     if (currentParagraph.children.length > 0) {
       tooltip.appendChild(currentParagraph);
     }
-    infoBtn.appendChild(tooltip);
+    return tooltip;
+  }
 
-    sidebar.appendChild(infoBtn);
+  // --- Toolbar Builder ---
 
-    layout.appendChild(sidebar);
-
-    // === MAIN CONTENT ===
-    const main = document.createElement('div');
-    main.className = 'hub-main';
-
-    // Toolbar
+  function createToolbar() {
     const toolbar = document.createElement('div');
     toolbar.className = 'hub-toolbar';
 
@@ -414,9 +508,39 @@ const HomeTab = (() => {
     });
     toolbar.appendChild(sortSelect);
 
-    main.appendChild(toolbar);
+    return toolbar;
+  }
 
-    // Module grid
+  // --- Render ---
+
+  async function render() {
+    const container = document.getElementById('tab-content');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Load user preferences
+    try {
+      const prefs = await globalThis.api.getPrefs();
+      modulePrefs = prefs?.modules || {};
+    } catch {
+      modulePrefs = {};
+    }
+
+    const modules = globalThis._hub?.modules || [];
+
+    // Root layout: sidebar + main
+    const layout = document.createElement('div');
+    layout.className = 'hub-layout';
+
+    layout.appendChild(createSidebar(modules));
+
+    // Main content
+    const main = document.createElement('div');
+    main.className = 'hub-main';
+
+    main.appendChild(createToolbar());
+
     const grid = document.createElement('div');
     grid.className = 'hub-modules-grid';
     main.appendChild(grid);
@@ -427,20 +551,19 @@ const HomeTab = (() => {
     // Populate grid
     updateModuleGrid();
 
-    // Add watermark logo inside the layout (absolute, not fixed)
+    // Watermark logo
     const logo = document.createElement('img');
     logo.className = 'home-logo';
     logo.alt = 'MW Logo';
     logo.style.cursor = 'pointer';
     logo.setAttribute('title', 'Visit GitHub');
+    promptLogoRef = logo;
 
-    window.api.getResourcesPath().then(resourcesPath => {
+    globalThis.api.getResourcesPath().then(resourcesPath => {
       logo.src = `file://${resourcesPath}/mw.png`;
     }).catch(() => {
       logo.src = '../resources/mw.png';
     });
-
-    let promptOpen = false;
 
     logo.addEventListener('click', () => {
       if (promptOpen) {
@@ -459,115 +582,10 @@ const HomeTab = (() => {
       }, 120);
     });
 
-    // Append to layout so the logo stays within the main content area
     layout.appendChild(logo);
-
-    let promptKeyHandler = null;
-
-    function dismissPrompt() {
-      const box = document.querySelector('.github-prompt-box');
-      if (!box) return;
-      box.classList.remove('github-prompt-visible');
-      setTimeout(() => box.remove(), 200);
-      if (promptKeyHandler) {
-        document.removeEventListener('keydown', promptKeyHandler);
-        promptKeyHandler = null;
-      }
-      promptOpen = false;
-    }
-
-    function showGitHubPrompt() {
-      if (promptOpen) return;
-      promptOpen = true;
-
-      const box = document.createElement('div');
-      box.className = 'github-prompt-box';
-
-      const body = document.createElement('div');
-      body.className = 'github-prompt-body';
-
-      const line1 = document.createElement('div');
-      line1.className = 'github-prompt-line';
-
-      const promptSpan = document.createElement('span');
-      promptSpan.className = 'github-prompt-prompt';
-      promptSpan.textContent = '~';
-      line1.appendChild(promptSpan);
-
-      const cmdSpan = document.createElement('span');
-      cmdSpan.className = 'github-prompt-cmd';
-      line1.appendChild(cmdSpan);
-      body.appendChild(line1);
-
-      const line2 = document.createElement('div');
-      line2.className = 'github-prompt-line github-prompt-input-line';
-
-      const line2Prompt = document.createElement('span');
-      line2Prompt.className = 'github-prompt-prompt';
-      line2Prompt.textContent = '~';
-      line2.appendChild(line2Prompt);
-
-      const line2Cursor = document.createElement('span');
-      line2Cursor.className = 'github-prompt-cursor';
-      line2Cursor.textContent = '\u2588';
-      line2.appendChild(line2Cursor);
-
-      body.appendChild(line2);
-
-      box.appendChild(body);
-
-      box.addEventListener('mouseleave', () => {
-        setTimeout(() => {
-          if (!logo.matches(':hover') && !box.matches(':hover')) {
-            dismissPrompt();
-          }
-        }, 120);
-      });
-
-      document.body.appendChild(box);
-      requestAnimationFrame(() => box.classList.add('github-prompt-visible'));
-
-      const fullText = ' wanna visit my github? ';
-      let i = 0;
-      const randBuf = new Uint32Array(1);
-      function cryptoRand() {
-        crypto.getRandomValues(randBuf);
-        return randBuf[0] / 0x100000000;
-      }
-      function typingDelay(ch, nextCh) {
-        if (ch === ' ') return 95 + cryptoRand() * 60;
-        if (nextCh === ' ') return 70 + cryptoRand() * 30;
-        return 68 + cryptoRand() * 28;
-      }
-      function typeNext() {
-        if (i < fullText.length) {
-          const ch = fullText[i];
-          const nextCh = fullText[i + 1] || '';
-          cmdSpan.textContent += ch;
-          i++;
-          setTimeout(typeNext, typingDelay(ch, nextCh));
-        } else {
-          const ynSpan = document.createElement('span');
-          ynSpan.className = 'github-prompt-yn';
-          ynSpan.textContent = '[y/n]';
-          cmdSpan.appendChild(ynSpan);
-        }
-      }
-      setTimeout(typeNext, 820);
-
-      promptKeyHandler = function(e) {
-        if (e.key === 'y' || e.key === 'Y') {
-          window.api.openExternalUrl('https://github.com/Rey-der');
-          dismissPrompt();
-        } else if (e.key === 'n' || e.key === 'N' || e.key === 'Escape') {
-          dismissPrompt();
-        }
-      };
-      document.addEventListener('keydown', promptKeyHandler);
-    }
   }
 
   return { render };
 })();
 
-window.homeTab = HomeTab;
+globalThis.homeTab = HomeTab;
