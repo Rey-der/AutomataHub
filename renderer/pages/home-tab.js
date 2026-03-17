@@ -529,10 +529,15 @@ const HomeTab = (() => {
 
       const fullText = ' wanna visit my github? ';
       let i = 0;
+      const randBuf = new Uint32Array(1);
+      function cryptoRand() {
+        crypto.getRandomValues(randBuf);
+        return randBuf[0] / 0x100000000;
+      }
       function typingDelay(ch, nextCh) {
-        if (ch === ' ') return 95 + Math.random() * 60;
-        if (nextCh === ' ') return 70 + Math.random() * 30;
-        return 68 + Math.random() * 28;
+        if (ch === ' ') return 95 + cryptoRand() * 60;
+        if (nextCh === ' ') return 70 + cryptoRand() * 30;
+        return 68 + cryptoRand() * 28;
       }
       function typeNext() {
         if (i < fullText.length) {
