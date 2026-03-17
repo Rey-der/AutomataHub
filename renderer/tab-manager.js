@@ -9,8 +9,7 @@ class TabManager {
     this.tabs.set('home', { id: 'home', type: 'home', title: 'Home', status: 'idle', target: 'main' });
 
     this.mainTabBar = document.getElementById('main-tab-bar');
-    this.autoStartTabs = document.getElementById('auto-start-tabs');
-    this.moduleTabBar = document.getElementById('module-tab-bar');
+    this.moduleTabs = document.getElementById('module-tabs');
     this.tabContent = document.getElementById('tab-content');
 
     // Bind Home tab click
@@ -117,7 +116,6 @@ class TabManager {
 
     this.tabs.set(id, tab);
     this._renderTabButton(tab);
-    this._updateModuleBarVisibility();
     if (!opts.background) {
       this.switchTab(id);
     }
@@ -161,11 +159,9 @@ class TabManager {
 
     this.tabs.delete(tabId);
 
-    // Remove tab button from whichever bar it's in
+    // Remove tab button
     const btn = this._findTabButton(tabId);
     if (btn) btn.remove();
-
-    this._updateModuleBarVisibility();
 
     // Switch to the last visited tab that still exists
     if (this.activeTabId === tabId) {
@@ -244,38 +240,22 @@ class TabManager {
 
     btn.addEventListener('click', () => this.switchTab(tab.id));
 
-    // Route to the correct tab bar
-    if (tab.target === 'main') {
-      this.autoStartTabs.appendChild(btn);
-    } else {
-      this.moduleTabBar.appendChild(btn);
-    }
+    // All non-home tabs go to the right side of the main tab bar
+    this.moduleTabs.appendChild(btn);
   }
 
   /**
-   * Find a tab button across both bars.
+   * Find a tab button in the main tab bar.
    */
   _findTabButton(tabId) {
-    return this.mainTabBar.querySelector(`[data-tab-id="${tabId}"]`)
-      || this.moduleTabBar.querySelector(`[data-tab-id="${tabId}"]`);
+    return this.mainTabBar.querySelector(`[data-tab-id="${tabId}"]`);
   }
 
   /**
-   * Get all tab buttons from both bars.
+   * Get all tab buttons from the main tab bar.
    */
   _getAllTabButtons() {
-    return [
-      ...this.mainTabBar.querySelectorAll('.tab'),
-      ...this.moduleTabBar.querySelectorAll('.tab'),
-    ];
-  }
-
-  /**
-   * Show/hide the module tab bar based on whether it has tabs.
-   */
-  _updateModuleBarVisibility() {
-    const hasTabs = this.moduleTabBar.querySelectorAll('.tab').length > 0;
-    this.moduleTabBar.classList.toggle('hidden', !hasTabs);
+    return [...this.mainTabBar.querySelectorAll('.tab')];
   }
 
   _renderContent(tabId) {
