@@ -42,7 +42,7 @@ function sanitizeScriptName(name) {
   return String(name || '')
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9-_]/g, '-');
+    .replaceAll(/[^a-z0-9-_]/g, '-');
 }
 
 function truncateOutput(text, maxLines = 1000) {
@@ -53,7 +53,7 @@ function truncateOutput(text, maxLines = 1000) {
   return lines.slice(lines.length - maxLines).join('\n');
 }
 
-window.ui = {
+globalThis.ui = {
   showNotification,
   formatTimestamp,
   sanitizeScriptName,

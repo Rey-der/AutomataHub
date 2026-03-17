@@ -3,8 +3,8 @@
  * Shared across the hub core and all modules.
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 /**
  * Resolve a path and verify it is inside the given base directory.

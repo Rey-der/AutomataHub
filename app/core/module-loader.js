@@ -10,35 +10,59 @@
  * Each module folder must contain a manifest.json and optionally a main-handlers.js.
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 const REQUIRED_MANIFEST_FIELDS = ['id', 'name'];
+
+/**
+ * Resolve renderer assets (scripts or styles) declared in a manifest.
+ */
+function resolveRendererAssets(manifest, modDir, key) {
+  const assets = [];
+  if (!Array.isArray(manifest[key])) return assets;
+
+  for (const rel of manifest[key]) {
+    const absPath = path.join(modDir, rel);
+    if (fs.existsSync(absPath)) {
+      assets.push(absPath);
+    } else {
+      console.warn(`[module-loader] Module "${manifest.id}": ${key} not found — ${rel}`);
+    }
+  }
+  return assets;
+}
+
+/**
+ * Parse and validate a manifest.json file. Returns the parsed object or null.
+ */
+function parseManifest(manifestPath, label) {
+  if (!fs.existsSync(manifestPath)) {
+    console.warn(`[module-loader] Skipping "${label}": no manifest.json`);
+    return null;
+  }
+
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    const missing = REQUIRED_MANIFEST_FIELDS.filter((f) => !manifest[f]);
+    if (missing.length > 0) {
+      console.warn(`[module-loader] Skipping "${label}": manifest missing fields: ${missing.join(', ')}`);
+      return null;
+    }
+    return manifest;
+  } catch (err) {
+    console.warn(`[module-loader] Skipping "${label}": malformed manifest.json — ${err.message}`);
+    return null;
+  }
+}
 
 /**
  * Load a single module from its directory. Returns a module descriptor or null.
  */
 function loadModuleFromDir(modDir, label) {
   const manifestPath = path.join(modDir, 'manifest.json');
-
-  if (!fs.existsSync(manifestPath)) {
-    console.warn(`[module-loader] Skipping "${label}": no manifest.json`);
-    return null;
-  }
-
-  let manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  } catch (err) {
-    console.warn(`[module-loader] Skipping "${label}": malformed manifest.json — ${err.message}`);
-    return null;
-  }
-
-  const missing = REQUIRED_MANIFEST_FIELDS.filter((f) => !manifest[f]);
-  if (missing.length > 0) {
-    console.warn(`[module-loader] Skipping "${label}": manifest missing fields: ${missing.join(', ')}`);
-    return null;
-  }
+  const manifest = parseManifest(manifestPath, label);
+  if (!manifest) return null;
 
   const mainEntryFile = manifest.mainEntry || 'main-handlers.js';
   const mainEntryPath = path.join(modDir, mainEntryFile);
@@ -53,30 +77,6 @@ function loadModuleFromDir(modDir, label) {
     }
   }
 
-  const rendererScripts = [];
-  if (Array.isArray(manifest.rendererScripts)) {
-    for (const rel of manifest.rendererScripts) {
-      const absPath = path.join(modDir, rel);
-      if (fs.existsSync(absPath)) {
-        rendererScripts.push(absPath);
-      } else {
-        console.warn(`[module-loader] Module "${manifest.id}": renderer script not found — ${rel}`);
-      }
-    }
-  }
-
-  const rendererStyles = [];
-  if (Array.isArray(manifest.rendererStyles)) {
-    for (const rel of manifest.rendererStyles) {
-      const absPath = path.join(modDir, rel);
-      if (fs.existsSync(absPath)) {
-        rendererStyles.push(absPath);
-      } else {
-        console.warn(`[module-loader] Module "${manifest.id}": renderer style not found — ${rel}`);
-      }
-    }
-  }
-
   return {
     id: manifest.id,
     name: manifest.name,
@@ -84,8 +84,8 @@ function loadModuleFromDir(modDir, label) {
     description: manifest.description || '',
     ipcChannels: Array.isArray(manifest.ipcChannels) ? manifest.ipcChannels : [],
     tabTypes: Array.isArray(manifest.tabTypes) ? manifest.tabTypes : [],
-    rendererScripts,
-    rendererStyles,
+    rendererScripts: resolveRendererAssets(manifest, modDir, 'rendererScripts'),
+    rendererStyles: resolveRendererAssets(manifest, modDir, 'rendererStyles'),
     moduleDir: modDir,
     setup: typeof handlers.setup === 'function' ? handlers.setup : null,
     teardown: typeof handlers.teardown === 'function' ? handlers.teardown : null,

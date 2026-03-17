@@ -1,5 +1,5 @@
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 const { app, BrowserWindow, session, ipcMain, dialog, nativeImage, shell } = require('electron');
 const { ModuleRegistry } = require('./core/module-registry');
 const { discoverModules, discoverInstalledModules } = require('./core/module-loader');
@@ -145,7 +145,9 @@ function loadModules() {
 
 // --- App Lifecycle ---
 
-app.whenReady().then(() => {
+async function init() {
+  await app.whenReady();
+
   // Set dock icon on macOS
   if (process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(nativeImage.createFromPath(ICON_PATH));
@@ -160,7 +162,9 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
-});
+}
+
+init();
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -9,68 +9,6 @@
  * 4. Boot the tab manager (show home)
  */
 
-(async function bootstrap() {
-  // Wait for DOM
-  if (document.readyState === 'loading') {
-    await new Promise((r) => document.addEventListener('DOMContentLoaded', r));
-  }
-
-  try {
-    // 1. Initialize dynamic IPC channels
-    await window.api.initChannels();
-
-    // 2. Fetch modules
-    const modules = await window.api.getModules();
-    window._hub = window._hub || {};
-    window._hub.modules = modules;
-
-    // 3. Load renderer styles and scripts for each module
-    for (const mod of modules) {
-      // Load styles first so they're available when scripts render
-      if (Array.isArray(mod.rendererStyles)) {
-        for (const stylePath of mod.rendererStyles) {
-          loadStyle(stylePath);
-        }
-      }
-
-      // Load scripts sequentially to respect order
-      if (Array.isArray(mod.rendererScripts)) {
-        for (const scriptPath of mod.rendererScripts) {
-          await loadScript(scriptPath);
-        }
-      }
-    }
-  } catch (err) {
-    console.error('[bootstrap] Failed to load modules:', err);
-  }
-
-  // 4. Boot tab manager and show home
-  window.tabManager = new TabManager();
-  window.tabManager.switchTab('home');
-
-  // 5. Auto-start modules with autoStart preference
-  // Use setTimeout to let module renderer scripts finish registering their tab types
-  setTimeout(async () => {
-    try {
-      const prefs = await window.api.getPrefs();
-      const modulePrefs = (prefs && prefs.modules) || {};
-
-      for (const mod of (window._hub.modules || [])) {
-        if (modulePrefs[mod.id] && modulePrefs[mod.id].autoStart) {
-          if (mod.tabTypes && mod.tabTypes.length > 0) {
-            const typeId = mod.tabTypes[0].id || mod.tabTypes[0];
-            if (window.tabManager.hasTabType(typeId)) {
-              window.tabManager.createTab(typeId, mod.name, { moduleId: mod.id }, { target: 'main', reuseKey: `autostart-${mod.id}`, background: true });
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('[bootstrap] Failed to auto-start modules:', err);
-    }
-  }, 50);
-})();
-
 function loadStyle(absolutePath) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
@@ -82,7 +20,7 @@ function loadStyle(absolutePath) {
 }
 
 function loadScript(absolutePath) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const script = document.createElement('script');
     script.src = `file://${absolutePath}`;
     script.onload = resolve;
@@ -93,3 +31,63 @@ function loadScript(absolutePath) {
     document.body.appendChild(script);
   });
 }
+
+// Wait for DOM
+if (document.readyState === 'loading') {
+  await new Promise((r) => document.addEventListener('DOMContentLoaded', r));
+}
+
+try {
+  // 1. Initialize dynamic IPC channels
+  await globalThis.api.initChannels();
+
+  // 2. Fetch modules
+  const modules = await globalThis.api.getModules();
+  globalThis._hub = globalThis._hub || {};
+  globalThis._hub.modules = modules;
+
+  // 3. Load renderer styles and scripts for each module
+  for (const mod of modules) {
+    // Load styles first so they're available when scripts render
+    if (Array.isArray(mod.rendererStyles)) {
+      for (const stylePath of mod.rendererStyles) {
+        loadStyle(stylePath);
+      }
+    }
+
+    // Load scripts sequentially to respect order
+    if (Array.isArray(mod.rendererScripts)) {
+      for (const scriptPath of mod.rendererScripts) {
+        await loadScript(scriptPath);
+      }
+    }
+  }
+} catch (err) {
+  console.error('[bootstrap] Failed to load modules:', err);
+}
+
+// 4. Boot tab manager and show home
+globalThis.tabManager = new TabManager();
+globalThis.tabManager.switchTab('home');
+
+// 5. Auto-start modules with autoStart preference
+// Use setTimeout to let module renderer scripts finish registering their tab types
+setTimeout(async () => {
+  try {
+    const prefs = await globalThis.api.getPrefs();
+    const modulePrefs = prefs?.modules || {};
+
+    for (const mod of (globalThis._hub?.modules || [])) {
+      if (modulePrefs[mod.id]?.autoStart) {
+        if (mod.tabTypes?.length > 0) {
+          const typeId = mod.tabTypes[0].id || mod.tabTypes[0];
+          if (globalThis.tabManager.hasTabType(typeId)) {
+            globalThis.tabManager.createTab(typeId, mod.name, { moduleId: mod.id }, { target: 'main', reuseKey: `autostart-${mod.id}`, background: true });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[bootstrap] Failed to auto-start modules:', err);
+  }
+}, 50);

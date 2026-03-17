@@ -10,7 +10,7 @@
  * Keep usage minimal — only add events when two modules actually need to talk.
  */
 
-const { EventEmitter } = require('events');
+const { EventEmitter } = require('node:events');
 
 const hubBus = new EventEmitter();
 
