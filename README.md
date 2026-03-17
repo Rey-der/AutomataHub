@@ -32,10 +32,11 @@ AutomataHub (hub)
 │   └── pages/
 │       └── home-tab.js     # Hub dashboard — shows installed modules
 │
-├── modules/                # Local module overrides (development)
-│   └── script-runner/      # Example: Script Runner module
+├── modules/                # Installed modules
+│   ├── script_runner/      # Script Runner module
+│   ├── netops/             # NetOps Monitor module
+│   └── sql_visualizer/     # SQL Visualizer module
 │
-├── scripts/                # User script folders (used by script-runner)
 ├── logs/                   # Saved execution logs
 ├── resources/              # App icons & images
 └── docs/                   # Design documentation
@@ -43,9 +44,11 @@ AutomataHub (hub)
 
 ## Available Modules
 
-| Module | Repo | Description |
-|--------|------|-------------|
-| **Script Runner** | [automatahub-script-runner](https://github.com/Rey-der/automatahub-script-runner) | Execute local scripts with live terminal output, queue management, and log saving |
+| Module | Description |
+|--------|-------------|
+| **Script Runner** | Execute and manage local automation scripts with live terminal output, queue management, topic organization, and log persistence |
+| **NetOps Monitor** | Real-time network monitoring with host scanning, port checking, latency measurement, alert rules, and status tracking |
+| **SQL Visualizer** | Browse, query, and analyze databases with table browsing, a query editor, execution timeline, and RPA analytics |
 
 ## Quick Start
 
@@ -116,8 +119,6 @@ See the [Script Runner module](https://github.com/Rey-der/automatahub-script-run
 - Path containment validation via `resolveInside()` — blocks path traversal
 - All child processes spawned with `shell: false`
 - Input validation at preload boundary
-
-See [SECURITY.md](SECURITY.md) for the full policy.
 
 ## Development
 

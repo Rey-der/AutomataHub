@@ -1,0 +1,17 @@
+{
+  "name": "automatahub-sql-visualizer",
+  "version": "1.0.0",
+  "description": "SQL Visualizer module for AutomataHub — browse, query, and analyze the Smart Desktop SQL database",
+  "keywords": ["automatahub", "module", "sql-visualizer", "sqlite", "database", "rpa"],
+  "license": "MIT",
+  "main": "main-handlers.js",
+  "files": [
+    "manifest.json",
+    "main-handlers.js",
+    "db-bridge.js",
+    "renderer/"
+  ],
+  "dependencies": {
+    "sql.js": "^1.14.1"
+  }
+}

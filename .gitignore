@@ -1,5 +1,4 @@
 node_modules/
-modules/
 dist/
 out/
 .DS_Store
@@ -13,5 +12,3 @@ logs/
 *.pem
 *.key
 *.cert
-
-TODO_INSTALLER.md

@@ -1,0 +1,44 @@
+{
+  "id": "sql-visualizer",
+  "name": "SQL Visualizer",
+  "version": "1.2.0",
+  "description": "Browse, query, and analyze the Smart Desktop database with tables, queries, analytics, and live monitoring",
+  "mainEntry": "main-handlers.js",
+  "ipcChannels": [
+    "sql-visualizer:get-tables",
+    "sql-visualizer:get-table-info",
+    "sql-visualizer:get-table-stats",
+    "sql-visualizer:query-rows",
+    "sql-visualizer:run-query",
+    "sql-visualizer:get-row-count",
+    "sql-visualizer:export-csv",
+    "sql-visualizer:get-db-path",
+    "sql-visualizer:get-db-status",
+    "sql-visualizer:get-execution-timeline",
+    "sql-visualizer:get-script-health",
+    "sql-visualizer:get-performance-stats",
+    "sql-visualizer:get-activity-heatmap",
+    "sql-visualizer:get-error-patterns",
+    "sql-visualizer:get-integrity-report",
+    "sql-visualizer:get-db-health",
+    "sql-visualizer:get-correlated-records"
+  ],
+  "tabTypes": [
+    { "id": "sql-home", "label": "SQL Dashboard" },
+    { "id": "sql-table-view", "label": "Table View" },
+    { "id": "sql-query", "label": "Query Editor" },
+    { "id": "sql-timeline", "label": "Execution Timeline" },
+    { "id": "sql-analytics", "label": "RPA Analytics" }
+  ],
+  "rendererScripts": [
+    "renderer/db-connection-manager.js",
+    "renderer/sql-home.js",
+    "renderer/sql-table-view.js",
+    "renderer/sql-query.js",
+    "renderer/sql-timeline.js",
+    "renderer/sql-analytics.js"
+  ],
+  "rendererStyles": [
+    "renderer/styles.css"
+  ]
+}
