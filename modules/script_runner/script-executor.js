@@ -1,7 +1,7 @@
-const { EventEmitter } = require('events');
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+const { EventEmitter } = require('node:events');
+const { spawn } = require('node:child_process');
+const path = require('node:path');
+const fs = require('node:fs');
 const { ERROR_MESSAGES, friendlyError } = require('../../app/core/errors');
 const { resolveInside } = require('../../app/core/path-utils');
 

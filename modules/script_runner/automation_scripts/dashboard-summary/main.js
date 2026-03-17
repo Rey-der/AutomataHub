@@ -11,7 +11,7 @@
  * Outputs JSON to stdout for script_runner display.
  */
 
-const path = require('path');
+const path = require('node:path');
 
 const dbPath = process.env.SMART_DESKTOP_DB;
 if (!dbPath) {

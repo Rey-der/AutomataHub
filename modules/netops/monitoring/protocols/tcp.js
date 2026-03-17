@@ -3,7 +3,7 @@
  * Extracted from the original HostMonitor.ping() logic.
  */
 
-const net = require('net');
+const net = require('node:net');
 
 const DEFAULT_TIMEOUT = 5000;
 
@@ -26,7 +26,7 @@ async function check(host, opts = {}) {
         return resolve({
           online: false,
           latency_ms: null,
-          detail: { port: ports[ports.length - 1], error: 'All ports unreachable' },
+          detail: { port: ports.at(-1), error: 'All ports unreachable' },
         });
       }
 

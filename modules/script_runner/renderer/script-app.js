@@ -4,9 +4,7 @@
  * Similar to NetApp for NetOps module.
  */
 
-if (typeof API === 'undefined') {
-  var API = window.api;
-}
+const API = globalThis.api;
 
 const SCRIPT_RUNNER_LS_KEY = 'script-runner-ui-state';
 const SCRIPT_RUNNER_MAX_HISTORY = 50;
@@ -142,7 +140,7 @@ class ScriptApp {
 
     // Track execution history for "Recent Runs" in detail panel
     const unsub5 = API.on('script-runner:complete', (data) => {
-      const tab = window.tabManager?.getTab?.(data.tabId);
+      const tab = globalThis.tabManager?.getTab?.(data.tabId);
       const entry = {
         tabId: data.tabId,
         scriptId: tab?.scriptId || data.tabId,
@@ -205,12 +203,12 @@ class ScriptApp {
 // Register with TabManager
 (function registerTabType() {
   function doRegister() {
-    if (!window.tabManager) {
+    if (!globalThis.tabManager) {
       setTimeout(doRegister, 0);
       return;
     }
     
-    window.tabManager.registerTabType('script-home', {
+    globalThis.tabManager.registerTabType('script-home', {
       render(tab, container) {
         container.innerHTML = '';
 
@@ -247,16 +245,16 @@ class ScriptApp {
 // Register module opener for hub's module list
 (function registerModuleOpener() {
   function doRegister() {
-    if (!window._hub) {
+    if (!globalThis._hub) {
       setTimeout(doRegister, 0);
       return;
     }
     
-    window._hub.moduleOpeners = window._hub.moduleOpeners || {};
-    window._hub.moduleOpeners['script-runner'] = function openScriptRunner(mod) {
-      if (window.tabManager && window.tabManager.hasTabType('script-home')) {
+    globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
+    globalThis._hub.moduleOpeners['script-runner'] = function openScriptRunner(mod) {
+      if (globalThis.tabManager && globalThis.tabManager.hasTabType('script-home')) {
         console.log('[script-app] Opening Scripts tab for module:', mod.id);
-        window.tabManager.createTab('script-home', 'Scripts', { moduleId: mod.id }, { target: 'module' });
+        globalThis.tabManager.createTab('script-home', 'Scripts', { moduleId: mod.id }, { target: 'module' });
       } else {
         console.warn('[script-app] Script-home tab type not registered or tabManager not available');
       }

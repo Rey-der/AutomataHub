@@ -445,14 +445,14 @@ class TopicList {
     try {
       const result = await API.invoke('script-runner:create-topic', { name, description, color });
       if (result.success) {
-        window.ui?.showNotification?.(`Topic "${name}" created`, 'success');
+        globalThis.ui?.showNotification?.(`Topic "${name}" created`, 'success');
         this._hideCreateDialog();
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to create topic', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to create topic', 'error');
       }
     } catch (err) {
       console.error('[script-topics] Create error:', err.message);
-      window.ui?.showNotification?.('Error creating topic', 'error');
+      globalThis.ui?.showNotification?.('Error creating topic', 'error');
     }
   }
 
@@ -480,14 +480,14 @@ class TopicList {
       });
 
       if (result.success) {
-        window.ui?.showNotification?.('Topic updated', 'success');
+        globalThis.ui?.showNotification?.('Topic updated', 'success');
         this._hideEditDialog();
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to update topic', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to update topic', 'error');
       }
     } catch (err) {
       console.error('[script-topics] Update error:', err.message);
-      window.ui?.showNotification?.('Error updating topic', 'error');
+      globalThis.ui?.showNotification?.('Error updating topic', 'error');
     }
   }
 
@@ -495,13 +495,13 @@ class TopicList {
     try {
       const result = await API.invoke('script-runner:delete-topic', { topic_id: topicId });
       if (result.success) {
-        window.ui?.showNotification?.('Topic deleted', 'success');
+        globalThis.ui?.showNotification?.('Topic deleted', 'success');
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to delete topic', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to delete topic', 'error');
       }
     } catch (err) {
       console.error('[script-topics] Delete error:', err.message);
-      window.ui?.showNotification?.('Error deleting topic', 'error');
+      globalThis.ui?.showNotification?.('Error deleting topic', 'error');
     }
   }
 
@@ -516,13 +516,13 @@ class TopicList {
       });
 
       if (result.success) {
-        window.ui?.showNotification?.(`Topic duplicated as "${newName}"`, 'success');
+        globalThis.ui?.showNotification?.(`Topic duplicated as "${newName}"`, 'success');
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to duplicate topic', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to duplicate topic', 'error');
       }
     } catch (err) {
       console.error('[script-topics] Duplicate error:', err.message);
-      window.ui?.showNotification?.('Error duplicating topic', 'error');
+      globalThis.ui?.showNotification?.('Error duplicating topic', 'error');
     }
   }
 
@@ -530,16 +530,16 @@ class TopicList {
     try {
       const result = await API.invoke('script-runner:add-script-to-topic', { script_id: scriptId, topic_id: topicId });
       if (result.success) {
-        window.ui?.showNotification?.('Script added to topic', 'success');
+        globalThis.ui?.showNotification?.('Script added to topic', 'success');
         // Reload topics to update counts
         await this.app.loadTopics();
         this.render();
       } else {
-        window.ui?.showNotification?.(result.error || 'Failed to add script', 'error');
+        globalThis.ui?.showNotification?.(result.error || 'Failed to add script', 'error');
       }
     } catch (err) {
       console.error('[script-topics] Add script error:', err.message);
-      window.ui?.showNotification?.('Error adding script', 'error');
+      globalThis.ui?.showNotification?.('Error adding script', 'error');
     }
   }
 
@@ -576,7 +576,7 @@ class TopicList {
     a.download = `topics-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    window.ui?.showNotification?.(`Exported ${topics.length} topic${topics.length !== 1 ? 's' : ''}`, 'success');
+    globalThis.ui?.showNotification?.(`Exported ${topics.length} topic${topics.length !== 1 ? 's' : ''}`, 'success');
   }
 
   _handleImportTopics() {
@@ -591,7 +591,7 @@ class TopicList {
         const data = JSON.parse(text);
         const topics = Array.isArray(data) ? data : (data.topics || []);
         if (!topics.length) {
-          window.ui?.showNotification?.('No topics found in file', 'error');
+          globalThis.ui?.showNotification?.('No topics found in file', 'error');
           return;
         }
 
@@ -615,9 +615,9 @@ class TopicList {
         const msg = skipped > 0
           ? `Imported ${imported}, skipped ${skipped} (duplicates or invalid)`
           : `Imported ${imported} topic${imported !== 1 ? 's' : ''}`;
-        window.ui?.showNotification?.(msg, 'success');
+        globalThis.ui?.showNotification?.(msg, 'success');
       } catch (err) {
-        window.ui?.showNotification?.('Failed to parse JSON file', 'error');
+        globalThis.ui?.showNotification?.('Failed to parse JSON file', 'error');
       }
     });
     input.click();

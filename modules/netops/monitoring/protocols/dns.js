@@ -3,7 +3,7 @@
  * Supports A, AAAA, MX, CNAME record types.
  */
 
-const dns = require('dns').promises;
+const dns = require('node:dns').promises;
 
 const DEFAULT_TIMEOUT = 5000;
 

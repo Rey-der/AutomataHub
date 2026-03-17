@@ -302,7 +302,7 @@ function getDbHealth() {
     return { fileSizeBytes: 0, walSizeBytes: 0, integrityOk: false, indexCount: 0, tableCount: 0, pageSize: 0, pageCount: 0, lastModified: null };
   }
 
-  const fs = require('fs');
+  const fs = require('node:fs');
   const dbPath = dbBridge.getDbPath();
   let fileSizeBytes = 0;
   let walSizeBytes = 0;
@@ -355,7 +355,7 @@ function getCorrelatedRecords(executionId) {
   const execs = _query(`
     SELECT id, script, start_time, end_time, status, error_message
     FROM execution_tracking
-    WHERE id = ${parseInt(executionId, 10)}
+    WHERE id = ${Number.parseInt(executionId, 10)}
   `);
 
   if (execs.length === 0) return { execution: null, logs: [], errors: [] };

@@ -41,7 +41,7 @@ const SqlQuery = (() => {
 
   async function loadSavedQueries(state) {
     try {
-      const prefs = await window.api.getModulePrefs('sql-visualizer') || {};
+      const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
       state.savedQueries = prefs.savedQueries || [];
     } catch (err) {
       console.error('[sql-query] load saved queries:', err);
@@ -88,15 +88,15 @@ const SqlQuery = (() => {
       if (!name) return;
       overlay.remove();
       try {
-        const prefs = await window.api.getModulePrefs('sql-visualizer') || {};
+        const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
         const savedQueries = prefs.savedQueries || [];
         savedQueries.push({ name, sql, createdAt: Date.now() });
-        await window.api.setModulePrefs('sql-visualizer', { savedQueries });
+        await globalThis.api.setModulePrefs('sql-visualizer', { savedQueries });
         state.savedQueries = savedQueries;
         state.showSaved = true;
         render(tab, document.getElementById('tab-content'));
-        if (window.ui && window.ui.showNotification) {
-          window.ui.showNotification('Query saved: ' + name, 'success');
+        if (globalThis.ui && globalThis.ui.showNotification) {
+          globalThis.ui.showNotification('Query saved: ' + name, 'success');
         }
       } catch (err) {
         console.error('[sql-query] save query error:', err);
@@ -117,10 +117,10 @@ const SqlQuery = (() => {
 
   async function deleteSavedQuery(tab, state, index) {
     try {
-      const prefs = await window.api.getModulePrefs('sql-visualizer') || {};
+      const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
       const savedQueries = prefs.savedQueries || [];
       savedQueries.splice(index, 1);
-      await window.api.setModulePrefs('sql-visualizer', { savedQueries });
+      await globalThis.api.setModulePrefs('sql-visualizer', { savedQueries });
       state.savedQueries = savedQueries;
       render(tab, document.getElementById('tab-content'));
     } catch (err) {
@@ -443,7 +443,7 @@ const SqlQuery = (() => {
     render(tab, document.getElementById('tab-content'));
 
     try {
-      const result = await window.api.invoke('sql-visualizer:run-query', { sql });
+      const result = await globalThis.api.invoke('sql-visualizer:run-query', { sql });
       state.result = result;
       state.error = null;
 
@@ -470,7 +470,7 @@ const SqlQuery = (() => {
     if (!sql) return;
 
     try {
-      const csv = await window.api.invoke('sql-visualizer:export-csv', { sql });
+      const csv = await globalThis.api.invoke('sql-visualizer:export-csv', { sql });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -481,9 +481,9 @@ const SqlQuery = (() => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      window.ui.showNotification('Exported query-result.csv', 'success');
+      globalThis.ui.showNotification('Exported query-result.csv', 'success');
     } catch (err) {
-      window.ui.showNotification('Export failed: ' + (err.message || 'Unknown error'), 'error');
+      globalThis.ui.showNotification('Export failed: ' + (err.message || 'Unknown error'), 'error');
     }
   }
 
@@ -494,12 +494,12 @@ const SqlQuery = (() => {
 
 (function register() {
   function doRegister() {
-    if (!window.tabManager) {
+    if (!globalThis.tabManager) {
       setTimeout(doRegister, 0);
       return;
     }
 
-    window.tabManager.registerTabType('sql-query', {
+    globalThis.tabManager.registerTabType('sql-query', {
       render: SqlQuery.render,
       onClose: (tab) => SqlQuery.removeState(tab.id),
       maxTabs: 3,

@@ -19,7 +19,7 @@ const DbConnectionManager = (() => {
    */
   async function checkStatus() {
     try {
-      const status = await window.api.invoke('sql-visualizer:get-db-status');
+      const status = await globalThis.api.invoke('sql-visualizer:get-db-status');
       updateStatus(status);
       return status;
     } catch (err) {

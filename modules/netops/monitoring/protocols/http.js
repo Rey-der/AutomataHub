@@ -2,9 +2,9 @@
  * HTTP/HTTPS Protocol Check — GET request with status, timing, keyword, and TLS cert info.
  */
 
-const http = require('http');
-const https = require('https');
-const { URL } = require('url');
+const http = require('node:http');
+const https = require('node:https');
+const { URL } = require('node:url');
 
 const DEFAULT_TIMEOUT = 10000;
 const MAX_BODY_BYTES = 1024 * 64; // 64 KB for keyword search

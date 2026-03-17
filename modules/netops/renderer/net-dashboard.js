@@ -3,9 +3,7 @@
  * Discovered networks are handled by DiscoveredNetworksPanel (net-discovered.js).
  */
 
-if (typeof API === 'undefined') {
-  var API = window.api;
-}
+const API = globalThis.api;
 
 class NetDashboard {
   constructor() {
@@ -240,7 +238,7 @@ class NetDashboard {
     const scanBtn = this.container.querySelector('#scanner-btn');
 
     const cidr = cidrInput.value.trim();
-    const port = portInput.value ? parseInt(portInput.value) : null;
+    const port = portInput.value ? Number.parseInt(portInput.value) : null;
     if (!cidr) { this.showError('Please enter a CIDR range'); return; }
 
     scanBtn.disabled = true;
@@ -282,32 +280,14 @@ class NetDashboard {
     // Monitored host — Ping
     this.container.querySelectorAll('.btn-ping').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const hostId = parseFloat(btn.dataset.hostId);
-        const host = this.hosts.find(h => h.id == hostId);
-        if (!host) return;
-
-        btn.disabled = true;
-        btn.textContent = 'Pinging...';
-        try {
-          const result = await API.invoke('netops:ping-host', { hostname: host.hostname, host_id: hostId });
-          const status = result.success ? 'online' : 'offline';
-          this.statusMap.set(hostId, { status, latency_ms: result.latency || null, timestamp: new Date().toISOString() });
-          this.updateHostCard(hostId);
-          this.updateStatusSummary();
-          this.showToast(`${host.hostname} is ${status}${result.latency ? ` (${result.latency}ms)` : ''}`);
-        } catch (err) {
-          this.showError('Ping failed: ' + err.message);
-        } finally {
-          btn.disabled = false;
-          btn.textContent = 'Ping Now';
-        }
+        const hostId = Number.parseFloat(btn.dataset.hostId);
       });
     });
 
     // Monitored host — Details
     this.container.querySelectorAll('.btn-detail').forEach(btn => {
       btn.addEventListener('click', () => {
-        const hostId = parseFloat(btn.dataset.hostId);
+        const hostId = Number.parseFloat(btn.dataset.hostId);
         const host = this.hosts.find(h => h.id == hostId);
         if (host) this.expandDetailSection(host);
       });
@@ -316,7 +296,7 @@ class NetDashboard {
     // Monitored host — Remove
     this.container.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const hostId = parseFloat(btn.dataset.hostId);
+        const hostId = Number.parseFloat(btn.dataset.hostId);
         const host = this.hosts.find(h => h.id == hostId);
         if (!host || !confirm(`Remove ${host.hostname}?`)) return;
 
@@ -406,8 +386,8 @@ class NetDashboard {
 
 (function registerDashboard() {
   function doRegister() {
-    if (!window.tabManager) { setTimeout(doRegister, 0); return; }
-    window.tabManager.registerTabType('netops-dashboard', {
+    if (!globalThis.tabManager) { setTimeout(doRegister, 0); return; }
+    globalThis.tabManager.registerTabType('netops-dashboard', {
       render: (tab, container) => {
         container.innerHTML = '';
         const dashboard = new NetDashboard();
@@ -427,11 +407,11 @@ class NetDashboard {
 
 (function registerModuleOpener() {
   function doRegister() {
-    if (!window._hub) { setTimeout(doRegister, 0); return; }
-    window._hub.moduleOpeners = window._hub.moduleOpeners || {};
-    window._hub.moduleOpeners['netops'] = function openNetOps(mod) {
-      if (window.tabManager && window.tabManager.hasTabType('netops-dashboard')) {
-        window.tabManager.createTab('netops-dashboard', 'Monitor', { moduleId: mod.id }, { target: 'module' });
+    if (!globalThis._hub) { setTimeout(doRegister, 0); return; }
+    globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
+    globalThis._hub.moduleOpeners['netops'] = function openNetOps(mod) {
+      if (globalThis.tabManager && globalThis.tabManager.hasTabType('netops-dashboard')) {
+        globalThis.tabManager.createTab('netops-dashboard', 'Monitor', { moduleId: mod.id }, { target: 'module' });
       }
     };
   }

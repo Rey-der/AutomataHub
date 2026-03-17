@@ -21,9 +21,9 @@
  *   DRY_RUN=1      — print what would happen without moving files
  */
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
 
 const dbPath = process.env.SMART_DESKTOP_DB;
 if (!dbPath) {

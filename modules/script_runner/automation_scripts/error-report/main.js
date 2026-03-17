@@ -5,7 +5,7 @@
  * Default: last 20 errors. Pass a number as first arg to override.
  */
 
-const path = require('path');
+const path = require('node:path');
 
 const dbPath = process.env.SMART_DESKTOP_DB;
 if (!dbPath) {
@@ -19,7 +19,7 @@ const { printJSON } = require(path.join(projectRoot, 'src', 'utils', 'output'));
 const { closeDb } = require(path.join(projectRoot, 'src', 'utils', 'db'));
 
 try {
-  const limit = parseInt(process.argv[2], 10) || 20;
+  const limit = Number.parseInt(process.argv[2], 10) || 20;
   const rows = error.getRecent(limit);
 
   if (rows.length === 0) {

@@ -2,7 +2,7 @@
  * NetOps Handlers — Backup, restore, retention settings, and DB management.
  */
 
-const fs = require('fs');
+const fs = require('node:fs');
 const { dialog } = require('electron');
 
 function register(ipcBridge, { persistence, store, mainWindow }) {

@@ -188,7 +188,7 @@ const ScriptExecution = (() => {
         ta.value = state.scriptOverride !== null ? state.scriptOverride : 'Loading\u2026';
         placeholder.appendChild(ta);
         if (state.scriptOverride === null && tab.scriptPath) {
-          window.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
+          globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
             .then((res) => {
               const el = document.getElementById(`script-edit-${tab.id}`);
               if (!el) return;
@@ -204,7 +204,7 @@ const ScriptExecution = (() => {
         codeBlock.textContent = state.scriptOverride !== null ? state.scriptOverride : 'Loading\u2026';
         placeholder.appendChild(codeBlock);
         if (state.scriptOverride === null && tab.scriptPath) {
-          window.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
+          globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
             .then((res) => {
               const el = document.getElementById(`script-preview-${tab.id}`);
               if (!el) return;
@@ -233,8 +233,8 @@ const ScriptExecution = (() => {
           if (taEl) s.scriptOverride = taEl.value;
           s.editMode = false;
         }
-        if (window.tabManager.getActiveTabId() === tab.id) {
-          render(window.tabManager.getTab(tab.id), document.getElementById('tab-content'));
+        if (globalThis.tabManager.getActiveTabId() === tab.id) {
+          render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
         }
       });
     } else {
@@ -368,9 +368,9 @@ const ScriptExecution = (() => {
     state.startTime = Date.now();
 
     startTimer(tab.id);
-    window.tabManager.updateTabStatus(tab.id, 'running');
+    globalThis.tabManager.updateTabStatus(tab.id, 'running');
 
-    window.api.invoke('script-runner:run-script', {
+    globalThis.api.invoke('script-runner:run-script', {
       scriptPath: tab.scriptPath,
       scriptName: tab.scriptName || tab.title,
       tabId: tab.id,
@@ -379,18 +379,18 @@ const ScriptExecution = (() => {
     }).catch(() => {
       state.isRunning = false;
       stopTimer(tab.id);
-      window.tabManager.updateTabStatus(tab.id, 'error');
-      window.ui.showNotification('Failed to start script', 'error');
+      globalThis.tabManager.updateTabStatus(tab.id, 'error');
+      globalThis.ui.showNotification('Failed to start script', 'error');
     });
 
     // Re-render if this tab is active to update button states
-    if (window.tabManager.getActiveTabId() === tab.id) {
-      render(window.tabManager.getTab(tab.id), document.getElementById('tab-content'));
+    if (globalThis.tabManager.getActiveTabId() === tab.id) {
+      render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
     }
   }
 
   function handleStop(tabId) {
-    window.api.invoke('script-runner:stop-script', { tabId });
+    globalThis.api.invoke('script-runner:stop-script', { tabId });
   }
 
   async function handleSaveLogs(tab) {
@@ -403,19 +403,19 @@ const ScriptExecution = (() => {
     }).join('\n');
 
     try {
-      const result = await window.api.invoke('script-runner:save-logs', {
+      const result = await globalThis.api.invoke('script-runner:save-logs', {
         content,
         scriptName: tab.scriptName || tab.title,
         timestamp: new Date().toISOString(),
         tabId: tab.id,
       });
       if (result.success) {
-        window.ui.showNotification(result.message, 'success');
+        globalThis.ui.showNotification(result.message, 'success');
       } else {
-        window.ui.showNotification(result.message || 'Failed to save logs', 'error');
+        globalThis.ui.showNotification(result.message || 'Failed to save logs', 'error');
       }
     } catch {
-      window.ui.showNotification('Failed to save logs', 'error');
+      globalThis.ui.showNotification('Failed to save logs', 'error');
     }
   }
 
@@ -429,10 +429,10 @@ const ScriptExecution = (() => {
     state.scriptOverride = null;
     state.editMode = false;
 
-    window.api.invoke('script-runner:clear-terminal', { tabId });
+    globalThis.api.invoke('script-runner:clear-terminal', { tabId });
 
-    if (window.tabManager.getActiveTabId() === tabId) {
-      const tab = window.tabManager.getTab(tabId);
+    if (globalThis.tabManager.getActiveTabId() === tabId) {
+      const tab = globalThis.tabManager.getTab(tabId);
       if (tab) render(tab, document.getElementById('tab-content'));
     }
   }
@@ -457,7 +457,7 @@ const ScriptExecution = (() => {
       }
     }
 
-    const isActive = window.tabManager.getActiveTabId() === tabId;
+    const isActive = globalThis.tabManager.getActiveTabId() === tabId;
     const terminal = isActive ? document.getElementById(`terminal-${tabId}`) : null;
 
     // Truncate head if exceeding limit
@@ -525,44 +525,44 @@ const ScriptExecution = (() => {
     if (elapsedEl) elapsedEl.textContent = formatElapsed(runtime);
 
     const status = exitCode === 0 ? 'success' : 'error';
-    window.tabManager.updateTabStatus(tabId, status);
+    globalThis.tabManager.updateTabStatus(tabId, status);
 
     const msg = signal
       ? `Process terminated (signal: ${signal})`
       : `Process exited with code ${exitCode} (${formatElapsed(runtime)})`;
     appendOutput(tabId, msg, new Date().toISOString(), 'system');
 
-    if (window.tabManager.getActiveTabId() === tabId) {
-      const tab = window.tabManager.getTab(tabId);
+    if (globalThis.tabManager.getActiveTabId() === tabId) {
+      const tab = globalThis.tabManager.getTab(tabId);
       if (tab) render(tab, document.getElementById('tab-content'));
     }
   }
 
   function onQueueStatus(tabId, position) {
-    window.tabManager.updateTabStatus(tabId, 'queued');
+    globalThis.tabManager.updateTabStatus(tabId, 'queued');
     appendOutput(tabId, `Queued at position ${position}`, new Date().toISOString(), 'system');
   }
 
   // --- IPC Wiring ---
 
   function setupListeners() {
-    window.api.on('script-runner:output', (data) => {
+    globalThis.api.on('script-runner:output', (data) => {
       appendOutput(data.tabId, data.text, data.timestamp, 'stdout');
     });
 
-    window.api.on('script-runner:error', (data) => {
+    globalThis.api.on('script-runner:error', (data) => {
       appendOutput(data.tabId, data.text, data.timestamp, 'stderr');
     });
 
-    window.api.on('script-runner:complete', (data) => {
+    globalThis.api.on('script-runner:complete', (data) => {
       onComplete(data.tabId, data.exitCode, data.runtime, data.signal);
     });
 
-    window.api.on('script-runner:queue-status', (data) => {
+    globalThis.api.on('script-runner:queue-status', (data) => {
       onQueueStatus(data.tabId, data.position);
     });
 
-    window.api.on('script-runner:log-saved', () => {
+    globalThis.api.on('script-runner:log-saved', () => {
       // Reserved for future external log triggers
     });
   }
@@ -574,12 +574,12 @@ const ScriptExecution = (() => {
 
 (function register() {
   function doRegister() {
-    if (!window.tabManager) {
+    if (!globalThis.tabManager) {
       setTimeout(doRegister, 0);
       return;
     }
 
-    window.tabManager.registerTabType('script-execution', {
+    globalThis.tabManager.registerTabType('script-execution', {
       render: ScriptExecution.render,
       onClose: (tab) => ScriptExecution.removeState(tab.id),
       maxTabs: 4,

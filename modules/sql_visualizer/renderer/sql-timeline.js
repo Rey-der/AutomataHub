@@ -115,7 +115,7 @@ const SqlTimeline = (() => {
 
     let data = [];
     try {
-      data = await window.api.invoke('sql-visualizer:get-execution-timeline', { timeRange: state.timeRange });
+      data = await globalThis.api.invoke('sql-visualizer:get-execution-timeline', { timeRange: state.timeRange });
     } catch (err) {
       ganttArea.innerHTML = `<div class="sql-tl-error">Failed to load timeline: ${err.message}</div>`;
       return;
@@ -320,7 +320,7 @@ const SqlTimeline = (() => {
 
     let corr;
     try {
-      corr = await window.api.invoke('sql-visualizer:get-correlated-records', { executionId: exec.id });
+      corr = await globalThis.api.invoke('sql-visualizer:get-correlated-records', { executionId: exec.id });
     } catch (err) {
       panel.innerHTML = `<div class="sql-tl-error">Failed to load details: ${err.message}</div>`;
       return;
@@ -454,12 +454,12 @@ const SqlTimeline = (() => {
 
 (function register() {
   function doRegister() {
-    if (!window.tabManager) {
+    if (!globalThis.tabManager) {
       setTimeout(doRegister, 0);
       return;
     }
 
-    window.tabManager.registerTabType('sql-timeline', {
+    globalThis.tabManager.registerTabType('sql-timeline', {
       render: SqlTimeline.render,
       onClose: SqlTimeline.onClose,
       maxTabs: 1,

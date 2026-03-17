@@ -4,7 +4,7 @@
  * Unified result shape: { online, latency_ms, protocol, detail }
  */
 
-const net = require('net');
+const net = require('node:net');
 
 const tcpProto  = require('./protocols/tcp');
 const icmpProto = require('./protocols/icmp');

@@ -26,8 +26,8 @@ function createMetricsCollector() {
 
       return {
         hostname,
-        traffic_in_mb: parseFloat(traffic_in.toFixed(2)),
-        traffic_out_mb: parseFloat(traffic_out.toFixed(2)),
+        traffic_in_mb: Number.parseFloat(traffic_in.toFixed(2)),
+        traffic_out_mb: Number.parseFloat(traffic_out.toFixed(2)),
         packets_in,
         packets_out,
         timestamp: new Date().toISOString()
@@ -46,8 +46,8 @@ function createMetricsCollector() {
       
       return {
         hostname,
-        cpu_percent: parseFloat(cpu.toFixed(2)),
-        memory_percent: parseFloat(memory.toFixed(2)),
+        cpu_percent: Number.parseFloat(cpu.toFixed(2)),
+        memory_percent: Number.parseFloat(memory.toFixed(2)),
         memory_used_mb: memoryUsed,
         memory_total_mb: 32000,
         timestamp: new Date().toISOString()
@@ -74,10 +74,10 @@ function createMetricsCollector() {
         hostname,
         buffer_hits: hits,
         buffer_misses: misses,
-        hit_rate: parseFloat(hitRate.toFixed(2)),
-        small_miss_mb: parseFloat(smallMiss.toFixed(2)),
-        medium_miss_mb: parseFloat(mediumMiss.toFixed(2)),
-        large_miss_mb: parseFloat(largeMiss.toFixed(2)),
+        hit_rate: Number.parseFloat(hitRate.toFixed(2)),
+        small_miss_mb: Number.parseFloat(smallMiss.toFixed(2)),
+        medium_miss_mb: Number.parseFloat(mediumMiss.toFixed(2)),
+        large_miss_mb: Number.parseFloat(largeMiss.toFixed(2)),
         timestamp: new Date().toISOString()
       };
     },

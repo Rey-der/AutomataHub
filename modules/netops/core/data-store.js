@@ -98,7 +98,7 @@ class NetOpsStore {
     hostId = this._nid(hostId);
     return this.history
       .filter(h => h.host_id === hostId)
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .toSorted((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, limit);
   }
 
@@ -111,7 +111,7 @@ class NetOpsStore {
 
   getRecentEvents(limit = 10) {
     return this.statusChanges
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .toSorted((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, limit);
   }
 
@@ -133,7 +133,7 @@ class NetOpsStore {
     if (entries.length === 0) return { uptime_percent: 0, total_checks: 0, online_checks: 0 };
     const online = entries.filter(e => e.status === 'online').length;
     return {
-      uptime_percent: parseFloat(((online / entries.length) * 100).toFixed(2)),
+      uptime_percent: Number.parseFloat(((online / entries.length) * 100).toFixed(2)),
       total_checks: entries.length,
       online_checks: online,
     };
@@ -187,7 +187,7 @@ class NetOpsStore {
   }
 
   findDiscoveredHost(predicate) {
-    return this.discoveredHosts.find(predicate) || null;
+    return this.discoveredHosts.find(h => predicate(h)) || null;
   }
 
   addDiscoveredHost(host) {
@@ -250,7 +250,7 @@ class NetOpsStore {
     if (severity) items = items.filter(a => a.severity === severity);
     if (unacknowledged) items = items.filter(a => !a.acknowledged);
     return items
-      .sort((a, b) => new Date(b.triggered_at) - new Date(a.triggered_at))
+      .toSorted((a, b) => new Date(b.triggered_at) - new Date(a.triggered_at))
       .slice(0, limit);
   }
 
@@ -297,7 +297,7 @@ class NetOpsStore {
     hostId = this._nid(hostId);
     return this._metricsArray(type)
       .filter(m => m.host_id === hostId && new Date(m.timestamp) > cutoffTime)
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .toSorted((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
       .slice(-limit);
   }
 
@@ -347,10 +347,10 @@ class NetOpsStore {
     return this._metricsArray(type).filter(m => m.host_id === hostId && new Date(m.timestamp) > cutoff);
   }
 
-  _avg(arr, field) { return parseFloat((arr.reduce((s, m) => s + m[field], 0) / arr.length).toFixed(2)); }
-  _max(arr, field) { return parseFloat(Math.max(...arr.map(m => m[field])).toFixed(2)); }
-  _min(arr, field) { return parseFloat(Math.min(...arr.map(m => m[field])).toFixed(2)); }
-  _sum(arr, field) { return parseFloat(arr.reduce((s, m) => s + m[field], 0).toFixed(2)); }
+  _avg(arr, field) { return Number.parseFloat((arr.reduce((s, m) => s + m[field], 0) / arr.length).toFixed(2)); }
+  _max(arr, field) { return Number.parseFloat(Math.max(...arr.map(m => m[field])).toFixed(2)); }
+  _min(arr, field) { return Number.parseFloat(Math.min(...arr.map(m => m[field])).toFixed(2)); }
+  _sum(arr, field) { return Number.parseFloat(arr.reduce((s, m) => s + m[field], 0).toFixed(2)); }
 }
 
 module.exports = { NetOpsStore };

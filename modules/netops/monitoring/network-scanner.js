@@ -17,6 +17,63 @@ class NetworkScanner {
    * @param {string|null} name - Optional network display name
    * @param {Function|null} send - Push event emitter
    */
+  /**
+   * Process a single IP during a scan: ping, port-check, store result.
+   */
+  async _processHost(ip, port, networkId) {
+    const ping = await this.monitor.ping(ip);
+    const result = {
+      ip,
+      hostname: ip,
+      status: ping.success ? 'online' : 'offline',
+      latency: ping.latency || null,
+      openPorts: [],
+    };
+
+    if (port && ping.success && await this.monitor.checkPort(ip, port)) {
+      result.openPorts.push(port);
+    }
+
+    // Save or update discovered host
+    const existingHost = this.store.findDiscoveredHost(
+      h => h.network_id === networkId && h.ip === ip
+    );
+    const record = {
+      id: existingHost?.id || this.store.generateId(),
+      network_id: networkId,
+      ip,
+      hostname: ip,
+      status: result.status,
+      latency_ms: result.latency,
+      discovered_at: existingHost?.discovered_at || new Date().toISOString(),
+    };
+
+    if (existingHost) {
+      this.store.updateDiscoveredHost(existingHost, record);
+    } else {
+      this.store.addDiscoveredHost(record);
+    }
+
+    return result;
+  }
+
+  /**
+   * Resolve or create the network entry for a scan.
+   */
+  _resolveNetwork(cidr, name) {
+    const existing = this.store.findDiscoveredNetwork(cidr);
+    if (existing) return existing.id;
+
+    const networkId = this.store.generateId();
+    this.store.addDiscoveredNetwork({
+      id: networkId,
+      cidr,
+      name: name || cidr,
+      discovered_at: new Date().toISOString(),
+    });
+    return networkId;
+  }
+
   async scan(cidr, port, name, send) {
     // Cancel any running scan
     if (this.activeScan) this.activeScan.stop = true;
@@ -24,21 +81,7 @@ class NetworkScanner {
     const results = [];
     this.activeScan = { stop: false };
 
-    const existing = this.store.findDiscoveredNetwork(cidr);
-    let networkId;
-
-    if (existing) {
-      networkId = existing.id;
-    } else {
-      networkId = this.store.generateId();
-      this.store.addDiscoveredNetwork({
-        id: networkId,
-        cidr,
-        name: name || cidr,
-        discovered_at: new Date().toISOString(),
-      });
-    }
-
+    const networkId = this._resolveNetwork(cidr, name);
     const ips = NetworkScanner.parseCIDR(cidr);
     let completed = 0;
 
@@ -46,40 +89,7 @@ class NetworkScanner {
       if (this.activeScan.stop) break;
 
       try {
-        const ping = await this.monitor.ping(ip);
-        const result = {
-          ip,
-          hostname: ip,
-          status: ping.success ? 'online' : 'offline',
-          latency: ping.latency || null,
-          openPorts: [],
-        };
-
-        if (port && ping.success && await this.monitor.checkPort(ip, port)) {
-          result.openPorts.push(port);
-        }
-
-        results.push(result);
-
-        // Save or update discovered host
-        const existingHost = this.store.findDiscoveredHost(
-          h => h.network_id === networkId && h.ip === ip
-        );
-        const record = {
-          id: existingHost?.id || this.store.generateId(),
-          network_id: networkId,
-          ip,
-          hostname: ip,
-          status: result.status,
-          latency_ms: result.latency,
-          discovered_at: existingHost?.discovered_at || new Date().toISOString(),
-        };
-
-        if (existingHost) {
-          this.store.updateDiscoveredHost(existingHost, record);
-        } else {
-          this.store.addDiscoveredHost(record);
-        }
+        results.push(await this._processHost(ip, port, networkId));
       } catch (err) {
         results.push({ ip, status: 'error', latency: null, error: err.message });
       }
@@ -113,11 +123,11 @@ class NetworkScanner {
     if (!cidr.includes('/')) return [cidr];
 
     const [ipPart, maskStr] = cidr.split('/');
-    const mask = parseInt(maskStr, 10);
+    const mask = Number.parseInt(maskStr, 10);
     if (mask < 0 || mask > 32) throw new Error('Invalid CIDR mask: ' + maskStr);
     if (mask === 32) return [ipPart];
 
-    const parts = ipPart.split('.').map(p => parseInt(p, 10));
+    const parts = ipPart.split('.').map(p => Number.parseInt(p, 10));
     if (parts.length !== 4 || parts.some(p => p < 0 || p > 255)) {
       throw new Error('Invalid IP address: ' + ipPart);
     }

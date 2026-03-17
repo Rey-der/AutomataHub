@@ -3,9 +3,9 @@
  * Handles script execution, queue status, and log saving.
  */
 
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+const path = require('node:path');
+const fs = require('node:fs');
+const os = require('node:os');
 
 function register(ipcBridge, { executor, send, paths, ensureDir, ERROR_MESSAGES }) {
   // Temp files written for per-run script overrides; cleaned up after completion

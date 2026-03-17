@@ -4,8 +4,8 @@
  * ad-hoc SQL execution, and CSV export.
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 const dbBridge = require(path.join(__dirname, 'db-bridge'));
 const analyzer = require(path.join(__dirname, 'query-analyzer'));
