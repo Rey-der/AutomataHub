@@ -1,0 +1,5 @@
+{
+  "name": "Execution Report (C#)",
+  "description": "Displays recent script executions with duration and status — C# variant",
+  "mainScript": "Program.cs"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Backup Query (C#)",
+  "description": "Displays backup history, most recent first — C# variant",
+  "mainScript": "Program.cs"
+}

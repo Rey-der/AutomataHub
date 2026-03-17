@@ -1,0 +1,5 @@
+{
+  "name": "Download Sorter (C#)",
+  "description": "Sorts files in ~/Downloads into categorised subfolders and logs results to DB — C# variant",
+  "mainScript": "Program.cs"
+}

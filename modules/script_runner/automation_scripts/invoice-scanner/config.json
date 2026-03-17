@@ -1,0 +1,5 @@
+{
+  "name": "Invoice Scanner",
+  "description": "Scans PDF invoices, extracts vendor/amount/date, and stores in DB",
+  "mainScript": "main.js"
+}

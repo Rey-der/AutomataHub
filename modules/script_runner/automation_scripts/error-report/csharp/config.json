@@ -1,0 +1,5 @@
+{
+  "name": "Error Report (C#)",
+  "description": "Displays recent errors with script name, timestamp, and message — C# variant",
+  "mainScript": "Program.cs"
+}

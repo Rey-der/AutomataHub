@@ -1,0 +1,5 @@
+{
+  "name": "Backup Query",
+  "description": "Displays backup history, most recent first",
+  "mainScript": "main.js"
+}

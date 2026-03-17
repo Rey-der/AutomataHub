@@ -1,0 +1,54 @@
+{
+  "id": "script-runner",
+  "name": "Script Runner",
+  "version": "2.0.0",
+  "description": "Execute and manage local automation scripts with live terminal output",
+  "mainEntry": "main-handlers.js",
+  "ipcChannels": [
+    "script-runner:get-scripts",
+    "script-runner:run-script",
+    "script-runner:save-logs",
+    "script-runner:stop-script",
+    "script-runner:clear-terminal",
+    "script-runner:open-folder-picker",
+    "script-runner:validate-dropped-folder",
+    "script-runner:import-script",
+    "script-runner:remove-script",
+    "script-runner:output",
+    "script-runner:error",
+    "script-runner:complete",
+    "script-runner:queue-status",
+    "script-runner:log-saved",
+    "script-runner:get-topics",
+    "script-runner:create-topic",
+    "script-runner:update-topic",
+    "script-runner:delete-topic",
+    "script-runner:add-script-to-topic",
+    "script-runner:remove-script-from-topic",
+    "script-runner:reorder-topic-scripts",
+    "script-runner:get-script-topics",
+    "script-runner:get-topic-scripts",
+    "script-runner:topic-created",
+    "script-runner:topic-updated",
+    "script-runner:topic-deleted",
+    "script-runner:script-added-to-topic",
+    "script-runner:script-removed-from-topic",
+    "script-runner:topic-scripts-reordered",
+    "script-runner:scripts-updated",
+    "script-runner:read-script"
+  ],
+  "tabTypes": [
+    { "id": "script-home", "label": "Scripts" },
+    { "id": "script-execution", "label": "Execution" }
+  ],
+  "rendererScripts": [
+    "renderer/script-app.js",
+    "renderer/script-topics.js",
+    "renderer/script-browser.js",
+    "renderer/script-home.js",
+    "renderer/execution-tab.js"
+  ],
+  "rendererStyles": [
+    "renderer/styles.css"
+  ]
+}

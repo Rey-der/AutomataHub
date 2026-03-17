@@ -1,0 +1,5 @@
+{
+  "name": "Dashboard Summary (C#)",
+  "description": "Aggregated stats: files sorted, invoices, automations, errors, last backup — C# variant",
+  "mainScript": "Program.cs"
+}

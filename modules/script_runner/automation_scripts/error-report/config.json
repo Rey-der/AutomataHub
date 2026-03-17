@@ -1,0 +1,5 @@
+{
+  "name": "Error Report",
+  "description": "Displays recent errors with script name, timestamp, and message",
+  "mainScript": "main.js"
+}
