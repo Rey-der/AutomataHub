@@ -43,8 +43,10 @@ contextBridge.exposeInMainWorld('api', {
   // --- Event listeners (guarded by allowlist) ---
 
   on: (event, callback) => {
-    if (!allowedChannels.includes(event)) return;
-    ipcRenderer.on(event, (_event, data) => callback(data));
+    if (!allowedChannels.includes(event)) return () => {};
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on(event, handler);
+    return () => ipcRenderer.off(event, handler);
   },
   off: (event, callback) => {
     if (!allowedChannels.includes(event)) return;

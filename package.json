@@ -4,9 +4,6 @@
   "version": "1.0.0",
   "description": "Modular Electron desktop hub for automation tools with plugin system",
   "main": "app/main.js",
-  "directories": {
-    "doc": "docs"
-  },
   "author": "Rey-der",
   "license": "ISC",
   "repository": {
@@ -54,13 +51,23 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "resources/icon.icns",
-      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }]
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
     },
     "dmg": {
       "title": "AutomataHub"
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "resources/icon.ico"
     },
     "nsis": {
@@ -74,9 +81,14 @@
       "shortcutName": "AutomataHub"
     }
   },
-  "dependencies": {},
   "devDependencies": {
-    "electron": "^41.0.2",
+    "electron": "^28.3.3",
     "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "chart.js": "^4.5.1",
+    "sql.js": "^1.14.1",
+    "uplot": "^1.6.32"
   }
 }
