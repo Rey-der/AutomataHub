@@ -132,7 +132,7 @@ function getPerformanceStats(script) {
   const sum = sorted.reduce((a, b) => a + b, 0);
   const avg = Math.round(sum / sorted.length);
   const min = sorted[0];
-  const max = sorted[sorted.length - 1];
+  const max = sorted.at(-1);
   const median = sorted[Math.floor(sorted.length / 2)];
   const p95 = sorted[Math.floor(sorted.length * 0.95)];
 
@@ -187,10 +187,10 @@ function getErrorPatterns() {
  */
 function _normalizeErrorMessage(msg) {
   return msg
-    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<UUID>')
-    .replace(/\/[\w./-]+/g, '<PATH>')
-    .replace(/\b\d{4,}\b/g, '<NUM>')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<UUID>')
+    .replaceAll(/\/[\w./-]+/g, '<PATH>')
+    .replaceAll(/\b\d{4,}\b/g, '<NUM>')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -417,7 +417,7 @@ function getExecutionTimeline(timeRange) {
  */
 function _escLiteral(val) {
   if (val === null || val === undefined) return '';
-  return String(val).replace(/'/g, "''");
+  return String(val).replaceAll("'", "''");
 }
 
 /**

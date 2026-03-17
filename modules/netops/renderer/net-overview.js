@@ -123,7 +123,7 @@ class NetOverview {
     this.container.innerHTML = `
       <div class="overview">
         <div class="overview-kpis" id="ov-kpis">
-          ${Array(5).fill('<div class="kpi-tile skeleton"></div>').join('')}
+          ${[...Array(5)].fill('<div class="kpi-tile skeleton"></div>').join('')}
         </div>
         <section class="overview-section">
           <h3>Hosts at a Glance</h3>
@@ -222,7 +222,7 @@ class NetOverview {
     }
 
     for (const b of beats) {
-      const cls = b.status === 'online' ? 'hb-up' : b.status === 'offline' ? 'hb-down' : 'hb-none';
+      const cls = _hbClass(b.status);
       const latStr = b.latency_ms != null ? `${b.latency_ms}ms` : '\u2014';
       const time = new Date(b.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const title = `${time} \u2022 ${b.status} \u2022 ${latStr}`;
@@ -294,9 +294,15 @@ class NetOverview {
 
 function _escHtml(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(text || '').replace(/[&<>"']/g, c => map[c]);
+  return String(text || '').replaceAll(/[&<>"']/g, c => map[c]);
 }
 
 function _escAttr(text) {
-  return _escHtml(text).replace(/\n/g, ' ');
+  return _escHtml(text).replaceAll(/\n/g, ' ');
+}
+
+function _hbClass(status) {
+  if (status === 'online') return 'hb-up';
+  if (status === 'offline') return 'hb-down';
+  return 'hb-none';
 }

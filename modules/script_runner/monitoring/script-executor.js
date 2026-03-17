@@ -140,7 +140,7 @@ class ScriptExecutor extends EventEmitter {
 
     const child = spawn(command, args, {
       cwd: path.dirname(resolvedPath),
-      env: { ...process.env, ...this.extraEnv, ...(job.env || {}) },
+      env: { ...process.env, ...this.extraEnv, ...job.env },
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
       detached: false,
@@ -178,9 +178,12 @@ class ScriptExecutor extends EventEmitter {
     });
 
     child.on('error', (err) => {
-      const msg = err.code === 'ENOENT'
-        ? `Command not found: "${command}". Make sure it is installed and in your PATH.`
-        : (this.friendlyError ? this.friendlyError(err) : err.message);
+      let msg;
+      if (err.code === 'ENOENT') {
+        msg = `Command not found: "${command}". Make sure it is installed and in your PATH.`;
+      } else {
+        msg = this.friendlyError ? this.friendlyError(err) : err.message;
+      }
       this.emit('error', {
         tabId: job.tabId,
         text: msg,

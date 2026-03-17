@@ -10,16 +10,17 @@ const API = globalThis.api;
 const NETOPS_LS_KEY = 'netops-ui-state';
 
 class NetApp {
+  activeView = 'overview';
+  hosts = [];
+  statusMap = new Map();
+  unsubscribes = [];
+  autoRefreshInterval = null;
+  sidebarCollapsed = false;
+  lastCollectionTime = null;
+  _viewInstance = null;   // current view component (has init/destroy)
+  hostListSort = { col: 'name', asc: true };
+
   constructor() {
-    this.activeView = 'overview';
-    this.hosts = [];
-    this.statusMap = new Map();
-    this.unsubscribes = [];
-    this.autoRefreshInterval = null;
-    this.sidebarCollapsed = false;
-    this.lastCollectionTime = null;
-    this._viewInstance = null;   // current view component (has init/destroy)
-    this.hostListSort = { col: 'name', asc: true };
     this._restoreState();
   }
 
@@ -340,47 +341,50 @@ class NetApp {
   }
 
   _handleKeyboard(e) {
-    // Escape: close modals, return from detail, or blur focused input
     if (e.key === 'Escape') {
-      // If a modal is open in the current view, close it
-      if (this._viewInstance && typeof this._viewInstance.hideAddModal === 'function') {
-        const modal = this.container.querySelector('#hl-add-modal');
-        if (modal && modal.style.display !== 'none') {
-          this._viewInstance.hideAddModal();
-          e.preventDefault();
-          return;
-        }
-      }
-      // Return from host-detail to hosts
-      if (this.activeView === 'host-detail') {
-        this.navigateTo('hosts');
+      this._handleEscape(e);
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+      this._handleSidebarNav(e);
+    }
+  }
+
+  _handleEscape(e) {
+    if (this._viewInstance?.hideAddModal) {
+      const modal = this.container.querySelector('#hl-add-modal');
+      if (modal?.style.display !== 'none') {
+        this._viewInstance.hideAddModal();
         e.preventDefault();
         return;
       }
-      // Blur focused input
-      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-        document.activeElement.blur();
-        e.preventDefault();
-      }
+    }
+    if (this.activeView === 'host-detail') {
+      this.navigateTo('hosts');
+      e.preventDefault();
       return;
     }
+    if (document.activeElement?.tagName === 'INPUT') {
+      document.activeElement.blur();
+      e.preventDefault();
+    }
+  }
 
-    // Arrow keys for sidebar navigation
+  _handleSidebarNav(e) {
     const sidebar = this.container.querySelector('.sidebar-nav');
-    if (sidebar && sidebar.contains(document.activeElement)) {
-      const items = [...sidebar.querySelectorAll('.sidebar-nav-item')];
-      const idx = items.indexOf(document.activeElement);
-      if (idx === -1) return;
-      if (e.key === 'ArrowDown' && idx < items.length - 1) {
-        items[idx + 1].focus();
-        e.preventDefault();
-      } else if (e.key === 'ArrowUp' && idx > 0) {
-        items[idx - 1].focus();
-        e.preventDefault();
-      } else if (e.key === 'Enter') {
-        document.activeElement.click();
-        e.preventDefault();
-      }
+    if (!sidebar?.contains(document.activeElement)) return;
+    const items = [...sidebar.querySelectorAll('.sidebar-nav-item')];
+    const idx = items.indexOf(document.activeElement);
+    if (idx === -1) return;
+    if (e.key === 'ArrowDown' && idx < items.length - 1) {
+      items[idx + 1].focus();
+      e.preventDefault();
+    } else if (e.key === 'ArrowUp' && idx > 0) {
+      items[idx - 1].focus();
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      document.activeElement.click();
+      e.preventDefault();
     }
   }
 
@@ -425,7 +429,7 @@ class NetApp {
     if (!globalThis._hub) { setTimeout(doRegister, 0); return; }
     globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
     globalThis._hub.moduleOpeners['netops'] = function openNetOps(mod) {
-      if (globalThis.tabManager && globalThis.tabManager.hasTabType('netops-dashboard')) {
+      if (globalThis.tabManager?.hasTabType('netops-dashboard')) {
         globalThis.tabManager.createTab('netops-dashboard', 'NetOps Monitor', { moduleId: mod.id }, { target: 'module' });
       }
     };

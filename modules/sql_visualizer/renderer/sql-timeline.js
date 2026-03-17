@@ -109,6 +109,73 @@ const SqlTimeline = (() => {
 
   // --- Refresh ---
 
+  function _buildScriptRow(script, data, minTime, maxTime, span, overlaps, state) {
+    const row = document.createElement('div');
+    row.className = 'sql-tl-row';
+
+    const label = document.createElement('div');
+    label.className = 'sql-tl-label';
+    label.textContent = script;
+    row.appendChild(label);
+
+    const track = document.createElement('div');
+    track.className = 'sql-tl-track';
+
+    for (const exec of data.filter((d) => d.script === script)) {
+      const startMs = new Date(exec.start_time).getTime();
+      const endMs = exec.end_time ? new Date(exec.end_time).getTime() : Date.now();
+      const leftPct = ((startMs - minTime) / span) * 100;
+      const widthPct = Math.max(0.3, ((endMs - startMs) / span) * 100);
+
+      const bar = document.createElement('div');
+      bar.className = `sql-tl-bar sql-tl-bar--${(exec.status || 'running').toLowerCase()}`;
+      bar.style.left = `${leftPct}%`;
+      bar.style.width = `${widthPct}%`;
+      if (overlaps.has(exec.id)) bar.classList.add('sql-tl-bar--overlap');
+
+      const dur = exec.durationMs != null ? formatDuration(exec.durationMs) : 'running…';
+      bar.title = `${exec.script}\n${exec.start_time} → ${exec.end_time || '(running)'}\nDuration: ${dur}\nStatus: ${exec.status || 'RUNNING'}`;
+      bar.addEventListener('click', () => showDetail(state, exec));
+      track.appendChild(bar);
+    }
+
+    row.appendChild(track);
+    return row;
+  }
+
+  function _attachGanttPanZoom(ganttArea, wrapper, state, minTime, maxTime) {
+    ganttArea.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.3 : 0.7;
+      applyZoom(wrapper, state, factor, ganttArea, e);
+    }, { passive: false });
+
+    ganttArea.addEventListener('mousedown', (e) => {
+      if (e.button === 0) {
+        const vStart = state.viewStart ?? minTime;
+        const vEnd = state.viewEnd ?? maxTime;
+        state._dragOrigin = { x: e.clientX, viewStart: vStart, viewEnd: vEnd };
+        ganttArea.style.cursor = 'grabbing';
+      }
+    });
+
+    ganttArea.addEventListener('mousemove', (e) => {
+      if (state._dragOrigin) {
+        const dx = e.clientX - state._dragOrigin.x;
+        const trackWidth = ganttArea.querySelector('.sql-tl-track')?.offsetWidth || ganttArea.offsetWidth;
+        const vSpan = state._dragOrigin.viewEnd - state._dragOrigin.viewStart;
+        const timeDelta = -(dx / trackWidth) * vSpan;
+        state.viewStart = state._dragOrigin.viewStart + timeDelta;
+        state.viewEnd = state._dragOrigin.viewEnd + timeDelta;
+        refreshTimeline(wrapper, state);
+      }
+    });
+
+    const clearDrag = () => { state._dragOrigin = null; ganttArea.style.cursor = ''; };
+    ganttArea.addEventListener('mouseup', clearDrag);
+    ganttArea.addEventListener('mouseleave', clearDrag);
+  }
+
   async function refreshTimeline(wrapper, state) {
     const ganttArea = wrapper.querySelector('.sql-tl-gantt-area');
     ganttArea.innerHTML = '';
@@ -128,104 +195,24 @@ const SqlTimeline = (() => {
       return;
     }
 
-    // Compute full data time bounds
     const starts = data.map((d) => new Date(d.start_time).getTime());
     const ends = data.map((d) => d.end_time ? new Date(d.end_time).getTime() : Date.now());
     const dataMin = Math.min(...starts);
     const dataMax = Math.max(...ends);
 
-    // Use zoom state if set, otherwise fit all
-    const minTime = state.viewStart != null ? state.viewStart : dataMin;
-    const maxTime = state.viewEnd != null ? state.viewEnd : dataMax;
+    const minTime = state.viewStart ?? dataMin;
+    const maxTime = state.viewEnd ?? dataMax;
     const span = maxTime - minTime || 1;
 
-    // Group by script
-    const scripts = [...new Set(data.map((d) => d.script))].sort();
-
-    // Detect overlaps
+    const scripts = [...new Set(data.map((d) => d.script))].sort((a, b) => a.localeCompare(b));
     const overlaps = detectOverlaps(data);
 
-    // Time axis
     ganttArea.appendChild(buildTimeAxis(minTime, maxTime));
-
-    // Script rows
     for (const script of scripts) {
-      const row = document.createElement('div');
-      row.className = 'sql-tl-row';
-
-      const label = document.createElement('div');
-      label.className = 'sql-tl-label';
-      label.textContent = script;
-      row.appendChild(label);
-
-      const track = document.createElement('div');
-      track.className = 'sql-tl-track';
-
-      const scriptExecs = data.filter((d) => d.script === script);
-      for (const exec of scriptExecs) {
-        const startMs = new Date(exec.start_time).getTime();
-        const endMs = exec.end_time ? new Date(exec.end_time).getTime() : Date.now();
-
-        const leftPct = ((startMs - minTime) / span) * 100;
-        const widthPct = Math.max(0.3, ((endMs - startMs) / span) * 100);
-
-        const bar = document.createElement('div');
-        bar.className = `sql-tl-bar sql-tl-bar--${(exec.status || 'running').toLowerCase()}`;
-        bar.style.left = `${leftPct}%`;
-        bar.style.width = `${widthPct}%`;
-
-        if (overlaps.has(exec.id)) {
-          bar.classList.add('sql-tl-bar--overlap');
-        }
-
-        // Tooltip
-        const dur = exec.durationMs != null ? formatDuration(exec.durationMs) : 'running…';
-        bar.title = `${exec.script}\n${exec.start_time} → ${exec.end_time || '(running)'}\nDuration: ${dur}\nStatus: ${exec.status || 'RUNNING'}`;
-
-        bar.addEventListener('click', () => showDetail(state, exec));
-        track.appendChild(bar);
-      }
-
-      row.appendChild(track);
-      ganttArea.appendChild(row);
+      ganttArea.appendChild(_buildScriptRow(script, data, minTime, maxTime, span, overlaps, state));
     }
 
-    // --- Mouse wheel zoom ---
-    ganttArea.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const factor = e.deltaY > 0 ? 1.3 : 0.7;
-      applyZoom(wrapper, state, factor, ganttArea, e);
-    }, { passive: false });
-
-    // --- Drag to pan ---
-    ganttArea.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
-      const vStart = state.viewStart != null ? state.viewStart : minTime;
-      const vEnd = state.viewEnd != null ? state.viewEnd : maxTime;
-      state._dragOrigin = { x: e.clientX, viewStart: vStart, viewEnd: vEnd };
-      ganttArea.style.cursor = 'grabbing';
-    });
-
-    ganttArea.addEventListener('mousemove', (e) => {
-      if (!state._dragOrigin) return;
-      const dx = e.clientX - state._dragOrigin.x;
-      const trackWidth = ganttArea.querySelector('.sql-tl-track')?.offsetWidth || ganttArea.offsetWidth;
-      const vSpan = state._dragOrigin.viewEnd - state._dragOrigin.viewStart;
-      const timeDelta = -(dx / trackWidth) * vSpan;
-      state.viewStart = state._dragOrigin.viewStart + timeDelta;
-      state.viewEnd = state._dragOrigin.viewEnd + timeDelta;
-      refreshTimeline(wrapper, state);
-    });
-
-    ganttArea.addEventListener('mouseup', () => {
-      state._dragOrigin = null;
-      ganttArea.style.cursor = '';
-    });
-
-    ganttArea.addEventListener('mouseleave', () => {
-      state._dragOrigin = null;
-      ganttArea.style.cursor = '';
-    });
+    _attachGanttPanZoom(ganttArea, wrapper, state, minTime, maxTime);
   }
 
   // --- Zoom helper ---
@@ -239,8 +226,8 @@ const SqlTimeline = (() => {
     const dataMin = Math.min(...starts);
     const dataMax = Math.max(...ends);
 
-    const curStart = state.viewStart != null ? state.viewStart : dataMin;
-    const curEnd = state.viewEnd != null ? state.viewEnd : dataMax;
+    const curStart = state.viewStart ?? dataMin;
+    const curEnd = state.viewEnd ?? dataMax;
     const curSpan = curEnd - curStart;
 
     // Find zoom anchor (mouse position or center)
@@ -313,6 +300,56 @@ const SqlTimeline = (() => {
 
   // --- Detail panel ---
 
+  function _appendCorrLogs(panel, logs) {
+    if (!logs || logs.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'sql-tl-detail-section';
+    const h4 = document.createElement('h4');
+    h4.textContent = `Logs (${logs.length})`;
+    section.appendChild(h4);
+    const list = document.createElement('div');
+    list.className = 'sql-tl-log-list';
+    for (const log of logs) {
+      const item = document.createElement('div');
+      item.className = `sql-tl-log-item sql-tl-log-item--${log.status.toLowerCase()}`;
+      item.innerHTML = `
+        <span class="sql-tl-log-time">${escHtml(log.timestamp)}</span>
+        <span class="sql-badge sql-badge--${log.status.toLowerCase()}">${log.status}</span>
+        <span class="sql-tl-log-msg">${escHtml(log.message)}</span>
+      `;
+      list.appendChild(item);
+    }
+    section.appendChild(list);
+    panel.appendChild(section);
+  }
+
+  function _appendCorrErrors(panel, errors) {
+    if (!errors || errors.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'sql-tl-detail-section';
+    const h4 = document.createElement('h4');
+    h4.textContent = `Errors (${errors.length})`;
+    section.appendChild(h4);
+    for (const err of errors) {
+      const item = document.createElement('div');
+      item.className = 'sql-tl-error-item';
+      item.innerHTML = `
+        <div class="sql-tl-error-header">
+          <span class="sql-tl-log-time">${escHtml(err.timestamp)}</span>
+          <span>${escHtml(err.message)}</span>
+        </div>
+      `;
+      if (err.stack_trace) {
+        const stack = document.createElement('pre');
+        stack.className = 'sql-tl-stack';
+        stack.textContent = err.stack_trace;
+        item.appendChild(stack);
+      }
+      section.appendChild(item);
+    }
+    panel.appendChild(section);
+  }
+
   async function showDetail(state, exec) {
     const panel = state.detailPanel;
     panel.classList.remove('hidden');
@@ -356,59 +393,8 @@ const SqlTimeline = (() => {
     }
     panel.appendChild(info);
 
-    // Correlated logs
-    if (corr.logs && corr.logs.length > 0) {
-      const section = document.createElement('div');
-      section.className = 'sql-tl-detail-section';
-
-      const h4 = document.createElement('h4');
-      h4.textContent = `Logs (${corr.logs.length})`;
-      section.appendChild(h4);
-
-      const list = document.createElement('div');
-      list.className = 'sql-tl-log-list';
-      for (const log of corr.logs) {
-        const item = document.createElement('div');
-        item.className = `sql-tl-log-item sql-tl-log-item--${log.status.toLowerCase()}`;
-        item.innerHTML = `
-          <span class="sql-tl-log-time">${escHtml(log.timestamp)}</span>
-          <span class="sql-badge sql-badge--${log.status.toLowerCase()}">${log.status}</span>
-          <span class="sql-tl-log-msg">${escHtml(log.message)}</span>
-        `;
-        list.appendChild(item);
-      }
-      section.appendChild(list);
-      panel.appendChild(section);
-    }
-
-    // Correlated errors
-    if (corr.errors && corr.errors.length > 0) {
-      const section = document.createElement('div');
-      section.className = 'sql-tl-detail-section';
-
-      const h4 = document.createElement('h4');
-      h4.textContent = `Errors (${corr.errors.length})`;
-      section.appendChild(h4);
-
-      for (const err of corr.errors) {
-        const item = document.createElement('div');
-        item.className = 'sql-tl-error-item';
-        item.innerHTML = `
-          <div class="sql-tl-error-header">
-            <span class="sql-tl-log-time">${escHtml(err.timestamp)}</span>
-            <span>${escHtml(err.message)}</span>
-          </div>
-        `;
-        if (err.stack_trace) {
-          const stack = document.createElement('pre');
-          stack.className = 'sql-tl-stack';
-          stack.textContent = err.stack_trace;
-          item.appendChild(stack);
-        }
-        section.appendChild(item);
-      }
-      panel.appendChild(section);
-    }
+    _appendCorrLogs(panel, corr.logs);
+    _appendCorrErrors(panel, corr.errors);
 
     if ((!corr.logs || corr.logs.length === 0) && (!corr.errors || corr.errors.length === 0)) {
       const empty = document.createElement('p');

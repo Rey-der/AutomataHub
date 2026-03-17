@@ -70,7 +70,7 @@ async function check(host, opts = {}) {
       if (res.socket && typeof res.socket.getPeerCertificate === 'function') {
         try {
           const cert = res.socket.getPeerCertificate();
-          if (cert && cert.valid_to) certExpiry = cert.valid_to;
+          if (cert?.valid_to) certExpiry = cert.valid_to;
         } catch { /* ignore */ }
       }
 

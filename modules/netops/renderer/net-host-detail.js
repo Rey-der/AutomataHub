@@ -35,7 +35,7 @@ class NetHostDetail {
     this.container.innerHTML = `
       <div class="hd-wrapper">
         <div class="hd-header"><div class="skeleton skeleton-text" style="width:200px;height:28px"></div></div>
-        <div class="hd-kpis">${Array(4).fill('<div class="kpi-tile skeleton"></div>').join('')}</div>
+        <div class="hd-kpis">${new Array(4).fill('<div class="kpi-tile skeleton"></div>').join('')}</div>
         <div class="skeleton skeleton-row" style="height:24px;margin:16px 0"></div>
         <div class="skeleton skeleton-block" style="height:200px"></div>
       </div>
@@ -113,10 +113,10 @@ class NetHostDetail {
 
         <!-- KPI cards -->
         <div class="hd-kpi-row">
-          ${this._kpi('Latency', latency != null ? `${latency}ms` : '\u2014', 'latency')}
-          ${this._kpi('Uptime', `${uptimePct.toFixed(1)}%`, uptimePct >= 99 ? 'good' : uptimePct >= 90 ? 'warn' : 'bad')}
-          ${avgCpu != null ? this._kpi('Avg CPU', `${avgCpu.toFixed(1)}%`, avgCpu < 70 ? 'good' : avgCpu < 90 ? 'warn' : 'bad') : ''}
-          ${avgMem != null ? this._kpi('Avg Memory', `${avgMem.toFixed(1)}%`, avgMem < 70 ? 'good' : avgMem < 90 ? 'warn' : 'bad') : ''}
+          ${this._kpi('Latency', latency == null ? '\u2014' : `${latency}ms`, 'latency')}
+          ${this._kpi('Uptime', `${uptimePct.toFixed(1)}%`, this._uptimeTone(uptimePct))}
+          ${avgCpu == null ? '' : this._kpi('Avg CPU', `${avgCpu.toFixed(1)}%`, this._metricTone(avgCpu))}
+          ${avgMem == null ? '' : this._kpi('Avg Memory', `${avgMem.toFixed(1)}%`, this._metricTone(avgMem))}
         </div>
 
         <!-- Heartbeat bar -->
@@ -177,34 +177,56 @@ class NetHostDetail {
     `;
   }
 
+  _uptimeTone(pct) {
+    if (pct >= 99) return 'good';
+    if (pct >= 90) return 'warn';
+    return 'bad';
+  }
+
+  _metricTone(val) {
+    if (val < 70) return 'good';
+    if (val < 90) return 'warn';
+    return 'bad';
+  }
+
   _renderProtoDetail() {
     const cached = this.app.statusMap.get(this.hostId);
     const detail = cached?.detail;
     if (!detail || Object.keys(detail).length === 0) return '';
 
     const proto = this.host.protocol || 'tcp';
-    const items = [];
-
-    if (proto === 'http' || proto === 'https') {
-      if (detail.status_code != null) items.push(`<span class="hd-pd-item">Status: <strong>${detail.status_code}</strong></span>`);
-      if (detail.response_time_ms != null) items.push(`<span class="hd-pd-item">Response: <strong>${detail.response_time_ms}ms</strong></span>`);
-      if (detail.cert_expiry_date) items.push(`<span class="hd-pd-item">Cert Expires: <strong>${detail.cert_expiry_date}</strong></span>`);
-      if (detail.keyword_found != null) items.push(`<span class="hd-pd-item">Keyword: <strong>${detail.keyword_found ? '✓ found' : '✗ not found'}</strong></span>`);
-    } else if (proto === 'dns') {
-      if (detail.record_type) items.push(`<span class="hd-pd-item">Record: <strong>${_hdEsc(detail.record_type)}</strong></span>`);
-      if (detail.addresses) items.push(`<span class="hd-pd-item">Resolved: <strong>${_hdEsc(detail.addresses.join(', '))}</strong></span>`);
-      if (detail.ip_match != null) items.push(`<span class="hd-pd-item">IP Match: <strong>${detail.ip_match ? '✓' : '✗'}</strong></span>`);
-      if (detail.resolution_time_ms != null) items.push(`<span class="hd-pd-item">DNS Time: <strong>${detail.resolution_time_ms}ms</strong></span>`);
-    } else if (proto === 'icmp' && detail.icmpFallback) {
-      items.push(`<span class="hd-pd-item hd-pd-warn">ICMP unavailable — TCP fallback</span>`);
-    } else if (detail.port) {
-      items.push(`<span class="hd-pd-item">Port: <strong>${detail.port}</strong></span>`);
-    }
+    const items = this._protoItems(proto, detail);
 
     if (detail.error) items.push(`<span class="hd-pd-item hd-pd-err">${_hdEsc(detail.error)}</span>`);
 
     if (items.length === 0) return '';
     return `<div class="hd-proto-detail">${items.join('')}</div>`;
+  }
+
+  _protoItems(proto, detail) {
+    if (proto === 'http' || proto === 'https') return this._protoHttp(detail);
+    if (proto === 'dns') return this._protoDns(detail);
+    if (proto === 'icmp' && detail.icmpFallback) return ['<span class="hd-pd-item hd-pd-warn">ICMP unavailable — TCP fallback</span>'];
+    if (detail.port) return [`<span class="hd-pd-item">Port: <strong>${detail.port}</strong></span>`];
+    return [];
+  }
+
+  _protoHttp(detail) {
+    const items = [];
+    if (detail.status_code != null) items.push(`<span class="hd-pd-item">Status: <strong>${detail.status_code}</strong></span>`);
+    if (detail.response_time_ms != null) items.push(`<span class="hd-pd-item">Response: <strong>${detail.response_time_ms}ms</strong></span>`);
+    if (detail.cert_expiry_date) items.push(`<span class="hd-pd-item">Cert Expires: <strong>${detail.cert_expiry_date}</strong></span>`);
+    if (detail.keyword_found != null) items.push(`<span class="hd-pd-item">Keyword: <strong>${detail.keyword_found ? '✓ found' : '✗ not found'}</strong></span>`);
+    return items;
+  }
+
+  _protoDns(detail) {
+    const items = [];
+    if (detail.record_type) items.push(`<span class="hd-pd-item">Record: <strong>${_hdEsc(detail.record_type)}</strong></span>`);
+    if (detail.addresses) items.push(`<span class="hd-pd-item">Resolved: <strong>${_hdEsc(detail.addresses.join(', '))}</strong></span>`);
+    if (detail.ip_match != null) items.push(`<span class="hd-pd-item">IP Match: <strong>${detail.ip_match ? '✓' : '✗'}</strong></span>`);
+    if (detail.resolution_time_ms != null) items.push(`<span class="hd-pd-item">DNS Time: <strong>${detail.resolution_time_ms}ms</strong></span>`);
+    return items;
   }
 
   _tab(id, label) {
@@ -243,7 +265,7 @@ class NetHostDetail {
   _renderTimeAxis() {
     if (this.heartbeats.length < 2) return '';
     const first = this.heartbeats[0];
-    const last = this.heartbeats[this.heartbeats.length - 1];
+    const last = this.heartbeats.at(-1);
     const fTime = first.timestamp ? new Date(first.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
     const lTime = last.timestamp ? new Date(last.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
     return `<span>${fTime}</span><span>${lTime}</span>`;
@@ -429,11 +451,10 @@ class NetHostDetail {
       try {
         const res = await API.invoke('netops:get-uptime-stats', { host_id: this.hostId, timeRange: this.timeRange });
         this.uptime = res;
-        const kpiUp = this.container.querySelector('.hd-kpi-good .hd-kpi-value, .hd-kpi-warn .hd-kpi-value, .hd-kpi-bad .hd-kpi-value');
         // Find the uptime KPI specifically by checking the label
         this.container.querySelectorAll('.hd-kpi').forEach(kpi => {
           const label = kpi.querySelector('.hd-kpi-label');
-          if (label && label.textContent === 'Uptime') {
+          if (label?.textContent === 'Uptime') {
             const valEl = kpi.querySelector('.hd-kpi-value');
             if (valEl) valEl.textContent = `${(res.uptime_percent ?? 0).toFixed(1)}%`;
           }
@@ -452,7 +473,7 @@ class NetHostDetail {
       badge.textContent = status;
     }
     const kpiLat = this.container.querySelector('.hd-kpi-latency .hd-kpi-value');
-    if (kpiLat) kpiLat.textContent = latency != null ? `${latency}ms` : '\u2014';
+    if (kpiLat) kpiLat.textContent = latency == null ? '\u2014' : `${latency}ms`;
   }
 
   // ================================================================
@@ -495,34 +516,37 @@ class NetHostDetail {
   async _handleAction(action) {
     if (!this.host) return;
     switch (action) {
-      case 'ping': {
-        try {
-          const result = await API.invoke('netops:ping-host', { hostname: this.host.hostname, host_id: this.hostId });
-          const s = result.success ? 'online' : 'offline';
-          const lat = result.latency ? ` ${result.latency}ms` : '';
-          globalThis.ui.showNotification(`${this.host.hostname}: ${s}${lat}`, result.success ? 'success' : 'warning');
-        } catch (err) {
-          globalThis.ui.showNotification(`Ping failed: ${err.message}`, 'error');
-        }
-        break;
-      }
-      case 'disable': {
-        const newEnabled = this.host.enabled ? 0 : 1;
-        await API.invoke('netops:update-host-config', { host_id: this.hostId, enabled: newEnabled });
-        this.host.enabled = newEnabled;
-        globalThis.ui.showNotification(`${this.host.hostname} ${newEnabled ? 'enabled' : 'disabled'}.`, 'info');
-        this.render();
-        break;
-      }
-      case 'remove': {
-        if (!confirm(`Remove "${this.host.alias || this.host.hostname}"? This cannot be undone.`)) return;
-        await API.invoke('netops:remove-host', { host_id: this.hostId });
-        await this.app.loadHosts();
-        globalThis.ui.showNotification(`${this.host.hostname} removed.`, 'success');
-        this.app.navigateTo('hosts');
-        break;
-      }
+      case 'ping':    return this._actionPing();
+      case 'disable': return this._actionToggle();
+      case 'remove':  return this._actionRemove();
     }
+  }
+
+  async _actionPing() {
+    try {
+      const result = await API.invoke('netops:ping-host', { hostname: this.host.hostname, host_id: this.hostId });
+      const s = result.success ? 'online' : 'offline';
+      const lat = result.latency ? ` ${result.latency}ms` : '';
+      globalThis.ui.showNotification(`${this.host.hostname}: ${s}${lat}`, result.success ? 'success' : 'warning');
+    } catch (err) {
+      globalThis.ui.showNotification(`Ping failed: ${err.message}`, 'error');
+    }
+  }
+
+  async _actionToggle() {
+    const newEnabled = this.host.enabled ? 0 : 1;
+    await API.invoke('netops:update-host-config', { host_id: this.hostId, enabled: newEnabled });
+    this.host.enabled = newEnabled;
+    globalThis.ui.showNotification(`${this.host.hostname} ${newEnabled ? 'enabled' : 'disabled'}.`, 'info');
+    this.render();
+  }
+
+  async _actionRemove() {
+    if (!confirm(`Remove "${this.host.alias || this.host.hostname}"? This cannot be undone.`)) return;
+    await API.invoke('netops:remove-host', { host_id: this.hostId });
+    await this.app.loadHosts();
+    globalThis.ui.showNotification(`${this.host.hostname} removed.`, 'success');
+    this.app.navigateTo('hosts');
   }
 
   // ================================================================
@@ -542,7 +566,7 @@ class NetHostDetail {
 
 function _hdEsc(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(text || '').replace(/[&<>"']/g, c => map[c]);
+  return String(text || '').replaceAll(/[&<>"']/g, c => map[c]);
 }
 
 function _hdTimeLabel(timestamp) {

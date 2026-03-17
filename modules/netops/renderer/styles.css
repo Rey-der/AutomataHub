@@ -1195,6 +1195,7 @@
   cursor: pointer;
   white-space: nowrap;
   text-align: left;
+  position: relative;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -1218,10 +1219,6 @@
   width: 3px;
   background: var(--accent);
   border-radius: 0 2px 2px 0;
-}
-
-.sidebar-nav-item {
-  position: relative;
 }
 
 .nav-icon {
@@ -1482,6 +1479,7 @@
 
 .kpi-tile.skeleton {
   height: 80px;
+  min-height: 70px;
   background: var(--surface);
   animation: skeleton-pulse 1.2s ease infinite;
 }
@@ -2788,9 +2786,6 @@
 .skeleton-block {
   border-radius: 6px;
 }
-.kpi-tile.skeleton {
-  min-height: 70px;
-}
 @keyframes skeletonShimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -3029,9 +3024,9 @@
   min-width: 52px;
   text-align: center;
 }
-.na-sev-critical { background: rgba(239,68,68,0.15); color: #ef4444; }
-.na-sev-warning  { background: rgba(245,158,11,0.15); color: #f59e0b; }
-.na-sev-info     { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.na-sev-critical { background: rgba(239,68,68,0.15); color: #f87171; }
+.na-sev-warning  { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.na-sev-info     { background: rgba(59,130,246,0.15); color: #60a5fa; }
 
 /* Alert list rows */
 .na-alert-list { display: flex; flex-direction: column; gap: 2px; }

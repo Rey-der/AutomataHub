@@ -58,7 +58,10 @@ class NetHistory {
 
   async loadTimeline() {
     const hosts = this._filteredHosts();
-    const limit = this.filterRange === '30d' ? 500 : this.filterRange === '7d' ? 300 : 150;
+    let limit;
+    if (this.filterRange === '30d') limit = 500;
+    else if (this.filterRange === '7d') limit = 300;
+    else limit = 150;
     const results = await Promise.allSettled(
       hosts.map(h => API.invoke('netops:get-status-history', { host_id: h.id, limit }))
     );
@@ -154,7 +157,7 @@ class NetHistory {
 
         <!-- Event log -->
         <div class="hist-section">
-          <div class="hist-section-title">Event Log <span class="hist-event-count">${this.events.length} event${this.events.length !== 1 ? 's' : ''}</span></div>
+          <div class="hist-section-title">Event Log <span class="hist-event-count">${this.events.length} event${this.events.length === 1 ? '' : 's'}</span></div>
           <div class="hist-events-wrap">
             <table class="hist-event-table">
               <thead>
@@ -186,7 +189,10 @@ class NetHistory {
 
   _renderUptimeBar(d) {
     const pct = d.uptime_percent;
-    const tone = pct >= 99 ? 'good' : pct >= 90 ? 'warn' : 'bad';
+    let tone;
+    if (pct >= 99) tone = 'good';
+    else if (pct >= 90) tone = 'warn';
+    else tone = 'bad';
     return `
       <div class="hist-uptime-row" data-host-id="${d.host.id}">
         <span class="hist-uptime-name">${_histEsc(d.host.alias || d.host.hostname)}</span>
@@ -236,7 +242,7 @@ class NetHistory {
     const timeStr = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const host = this.app.hosts.find(h => h.id === evt.host_id);
     const name = host ? (host.alias || host.hostname) : `Host #${evt.host_id}`;
-    const lat = evt.latency_ms != null ? `${evt.latency_ms}ms` : '\u2014';
+    const lat = evt.latency_ms == null ? '\u2014' : `${evt.latency_ms}ms`;
 
     return `
       <tr class="hist-evt-row" data-host-id="${evt.host_id}">
@@ -354,7 +360,7 @@ class NetHistory {
 
 function _histEsc(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(text || '').replace(/[&<>"']/g, c => map[c]);
+  return String(text || '').replaceAll(/[&<>"']/g, c => map[c]);
 }
 
 function _histRangeMs(range) {

@@ -76,10 +76,10 @@ class NetMetricsDashboard {
         <div class="skeleton-header" style="height: 60px; background: var(--surface); margin-bottom: 16px; border-radius: 6px;"></div>
         <div class="skeleton-pills" style="height: 120px; background: var(--surface); margin-bottom: 16px; border-radius: 6px;"></div>
         <div class="skeleton-kpi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
-          ${Array(6).fill().map(() => '<div style="height: 100px; background: var(--surface); border-radius: 6px;"></div>').join('')}
+          ${[...Array(6)].fill().map(() => '<div style="height: 100px; background: var(--surface); border-radius: 6px;"></div>').join('')}
         </div>
         <div class="skeleton-charts" style="display: grid; gap: 20px;">
-          ${Array(3).fill().map(() => '<div style="height: 300px; background: var(--surface); border-radius: 6px;"></div>').join('')}
+          ${[...Array(3)].fill().map(() => '<div style="height: 300px; background: var(--surface); border-radius: 6px;"></div>').join('')}
         </div>
       </div>
     `;
@@ -481,12 +481,12 @@ class NetMetricsDashboard {
    */
   initializeCharts() {
     // Import chart builders from chart-config.js
-    if (typeof globalThis.createTrafficChart === 'undefined') {
+    if (globalThis.createTrafficChart === undefined) {
       console.warn('[net-metrics] Chart builders not loaded. Ensure chart-config.js is included.');
       return;
     }
 
-    const { createTrafficChart, createPacketsChart, createCpuChart, createMemoryChart, createBufferMissChart, generateTimeLabels } = globalThis;
+    const { createTrafficChart, createPacketsChart, createCpuChart, createMemoryChart, createBufferMissChart } = globalThis;
 
     // Aggregate data from all hosts
     const aggregatedData = this.aggregateMetricsForCharts();
@@ -527,7 +527,7 @@ class NetMetricsDashboard {
 
       // Buffer hit rate (simple line chart)
       const bufferRateCanvas = document.getElementById('chart-buffer-rate');
-      if (bufferRateCanvas && typeof globalThis.Chart !== 'undefined') {
+      if (bufferRateCanvas && globalThis.Chart !== undefined) {
         const Chart = globalThis.Chart;
         const ctx = bufferRateCanvas.getContext('2d');
         this.charts.set('bufferRate', new Chart(ctx, {
@@ -560,7 +560,7 @@ class NetMetricsDashboard {
    * Aggregate metrics from all hosts for chart display.
    */
   aggregateMetricsForCharts() {
-    const { createTrafficChart, generateTimeLabels } = globalThis;
+    const { generateTimeLabels } = globalThis;
     const allNetworkMetrics = [];
     const allSystemMetrics = [];
     const allBufferMetrics = [];
@@ -660,73 +660,19 @@ class NetMetricsDashboard {
    * Calculate overall statistics for KPI cards.
    */
   calculateOverallStats() {
-    let totalLatency = 0;
-    let latencyCount = 0;
-    let totalCpu = 0;
-    let cpuCount = 0;
-    let totalMemory = 0;
-    let memoryCount = 0;
-    let totalTrafficIn = 0;
-    let totalTrafficOut = 0;
-    let onlineCount = 0;
+    const stats = { totalLatency: 0, latencyCount: 0, totalCpu: 0, cpuCount: 0, totalMemory: 0, memoryCount: 0, totalTrafficIn: 0, totalTrafficOut: 0, onlineCount: 0 };
 
-    // In single-host mode, only process that host's data
     if (this.singleHostId) {
       const cache = this.metricsCache.get(this.singleHostId);
-      if (cache) {
-        const agg = cache.aggregates || {};
-
-        if (agg.avg_latency_ms !== undefined) {
-          totalLatency = agg.avg_latency_ms;
-          latencyCount = 1;
-        }
-        if (agg.avg_cpu_percent !== undefined) {
-          totalCpu = agg.avg_cpu_percent;
-          cpuCount = 1;
-        }
-        if (agg.avg_memory_percent !== undefined) {
-          totalMemory = agg.avg_memory_percent;
-          memoryCount = 1;
-        }
-        if (cache.network && cache.network.length > 0) {
-          totalTrafficIn = cache.network.reduce((sum, m) => sum + (m.traffic_in_mb || 0), 0);
-          totalTrafficOut = cache.network.reduce((sum, m) => sum + (m.traffic_out_mb || 0), 0);
-        }
-
-        const status = this.statusMap.get(this.singleHostId)?.status;
-        if (status === 'online') onlineCount = 1;
-      }
+      if (cache) this._accumulateStats(stats, cache, this.singleHostId);
     } else {
-      // Full dashboard mode: aggregate all hosts
-      this.metricsCache.forEach((cache, hostId) => {
-        const agg = cache.aggregates || {};
-
-        if (agg.avg_latency_ms !== undefined) {
-          totalLatency += agg.avg_latency_ms;
-          latencyCount++;
-        }
-        if (agg.avg_cpu_percent !== undefined) {
-          totalCpu += agg.avg_cpu_percent;
-          cpuCount++;
-        }
-        if (agg.avg_memory_percent !== undefined) {
-          totalMemory += agg.avg_memory_percent;
-          memoryCount++;
-        }
-        if (cache.network && cache.network.length > 0) {
-          totalTrafficIn += cache.network.reduce((sum, m) => sum + (m.traffic_in_mb || 0), 0);
-          totalTrafficOut += cache.network.reduce((sum, m) => sum + (m.traffic_out_mb || 0), 0);
-        }
-
-        const status = this.statusMap.get(hostId)?.status;
-        if (status === 'online') onlineCount++;
-      });
+      this.metricsCache.forEach((cache, hostId) => this._accumulateStats(stats, cache, hostId));
     }
 
-    const avgLatency = latencyCount > 0 ? totalLatency / latencyCount : 0;
-    const avgCpu = cpuCount > 0 ? totalCpu / cpuCount : 0;
-    const avgMemory = memoryCount > 0 ? totalMemory / memoryCount : 0;
-    const uptime = this.hosts.length > 0 ? (onlineCount / this.hosts.length) * 100 : 0;
+    const avgLatency = stats.latencyCount > 0 ? stats.totalLatency / stats.latencyCount : 0;
+    const avgCpu = stats.cpuCount > 0 ? stats.totalCpu / stats.cpuCount : 0;
+    const avgMemory = stats.memoryCount > 0 ? stats.totalMemory / stats.memoryCount : 0;
+    const uptime = this.hosts.length > 0 ? (stats.onlineCount / this.hosts.length) * 100 : 0;
 
     // Trend calculation (simplified: compare first half to second half)
     const latencyTrend = this.calculateTrend('latency');
@@ -741,10 +687,32 @@ class NetMetricsDashboard {
       avgMemory,
       memoryTrend,
       totalTrafficIn,
-      totalTrafficOut,
+      totalTrafficIn: stats.totalTrafficIn,
+      totalTrafficOut: stats.totalTrafficOut,
       uptime,
-      onlineCount
+      onlineCount: stats.onlineCount
     };
+  }
+
+  _accumulateStats(stats, cache, hostId) {
+    const agg = cache.aggregates || {};
+    if (agg.avg_latency_ms !== undefined) {
+      stats.totalLatency += agg.avg_latency_ms;
+      stats.latencyCount++;
+    }
+    if (agg.avg_cpu_percent !== undefined) {
+      stats.totalCpu += agg.avg_cpu_percent;
+      stats.cpuCount++;
+    }
+    if (agg.avg_memory_percent !== undefined) {
+      stats.totalMemory += agg.avg_memory_percent;
+      stats.memoryCount++;
+    }
+    if (cache.network?.length > 0) {
+      stats.totalTrafficIn += cache.network.reduce((sum, m) => sum + (m.traffic_in_mb || 0), 0);
+      stats.totalTrafficOut += cache.network.reduce((sum, m) => sum + (m.traffic_out_mb || 0), 0);
+    }
+    if (this.statusMap.get(hostId)?.status === 'online') stats.onlineCount++;
   }
 
   /**
@@ -756,26 +724,10 @@ class NetMetricsDashboard {
     let count = 0;
 
     this.metricsCache.forEach((cache) => {
-      if (metric === 'latency') {
-        const agg = cache.aggregates || {};
-        if (agg.avg_latency_ms !== undefined) {
-          firstHalf += agg.avg_latency_ms;
-          secondHalf += agg.avg_latency_ms;
-          count++;
-        }
-      } else if (metric === 'cpu' && cache.system && cache.system.length > 0) {
-        const mid = Math.floor(cache.system.length / 2);
-        const first = cache.system.slice(0, mid).reduce((sum, m) => sum + (m.cpu_percent || 0), 0) / mid || 0;
-        const second = cache.system.slice(mid).reduce((sum, m) => sum + (m.cpu_percent || 0), 0) / (cache.system.length - mid) || 0;
-        firstHalf += first;
-        secondHalf += second;
-        count++;
-      } else if (metric === 'memory' && cache.system && cache.system.length > 0) {
-        const mid = Math.floor(cache.system.length / 2);
-        const first = cache.system.slice(0, mid).reduce((sum, m) => sum + (m.memory_percent || 0), 0) / mid || 0;
-        const second = cache.system.slice(mid).reduce((sum, m) => sum + (m.memory_percent || 0), 0) / (cache.system.length - mid) || 0;
-        firstHalf += first;
-        secondHalf += second;
+      const result = this._cacheTrend(cache, metric);
+      if (result) {
+        firstHalf += result.first;
+        secondHalf += result.second;
         count++;
       }
     });
@@ -784,6 +736,20 @@ class NetMetricsDashboard {
     firstHalf /= count;
     secondHalf /= count;
     return firstHalf !== 0 ? ((secondHalf - firstHalf) / firstHalf) * 100 : 0;
+  }
+
+  _cacheTrend(cache, metric) {
+    if (metric === 'latency') {
+      const agg = cache.aggregates || {};
+      if (agg.avg_latency_ms === undefined) return null;
+      return { first: agg.avg_latency_ms, second: agg.avg_latency_ms };
+    }
+    const key = metric === 'cpu' ? 'cpu_percent' : 'memory_percent';
+    if (!cache.system?.length) return null;
+    const mid = Math.floor(cache.system.length / 2);
+    const first = cache.system.slice(0, mid).reduce((sum, m) => sum + (m[key] || 0), 0) / mid || 0;
+    const second = cache.system.slice(mid).reduce((sum, m) => sum + (m[key] || 0), 0) / (cache.system.length - mid) || 0;
+    return { first, second };
   }
 
   /**
@@ -820,7 +786,7 @@ class NetMetricsDashboard {
     const latency = statusData?.latency_ms;
 
     pill.className = `status-pill status-${status}`;
-    if (latency !== null && latency !== undefined) {
+    if (latency != null) {
       const latencyEl = pill.querySelector('.pill-latency');
       if (latencyEl) {
         latencyEl.textContent = `${latency}ms`;
@@ -852,7 +818,7 @@ class NetMetricsDashboard {
         const valueEl = card.querySelector('.kpi-value');
         const trendEl = card.querySelector('.kpi-trend');
         if (valueEl) {
-          const [val, unit] = valueEl.innerHTML.split('<span');
+          const [, unit] = valueEl.innerHTML.split('<span');
           valueEl.innerHTML = updates[idx].value + '<span' + unit;
         }
         if (trendEl && idx < 3) {

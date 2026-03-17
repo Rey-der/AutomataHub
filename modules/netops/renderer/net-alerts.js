@@ -135,7 +135,7 @@ class NetAlerts {
           <span class="na-alert-msg">${this._esc(a.message || '')}</span>
           <span class="na-alert-time">${time}</span>
           <span class="na-alert-status ${a.resolved_at ? 'resolved' : 'active'}">${resolved}</span>
-          ${!a.acknowledged ? `<button class="na-ack-btn" data-ack-id="${a.id}" title="Acknowledge">&#10003;</button>` : '<span class="na-acked-icon" title="Acknowledged">&#10003;</span>'}
+          ${a.acknowledged ? '<span class="na-acked-icon" title="Acknowledged">&#10003;</span>' : `<button class="na-ack-btn" data-ack-id="${a.id}" title="Acknowledge">&#10003;</button>`}
         </div>
       `;
     }).join('');

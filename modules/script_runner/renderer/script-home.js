@@ -168,13 +168,13 @@ const ScriptHome = (() => {
         // Re-render the script-home tab to reflect removal
         const activeId = globalThis.tabManager.getActiveTabId();
         const activeTab = globalThis.tabManager.getTab(activeId);
-        if (activeTab && activeTab.type === 'script-home') {
+        if (activeTab?.type === 'script-home') {
           render(activeTab, document.getElementById('tab-content'));
         }
       } else {
         globalThis.ui.showNotification(result.message || 'Failed to remove script', 'error');
       }
-    } catch (err) {
+    } catch {
       globalThis.ui.showNotification('Failed to remove script', 'error');
     }
   }
@@ -234,7 +234,7 @@ const ScriptHome = (() => {
         return;
       }
       await doImport(result.folderPath);
-    } catch (err) {
+    } catch {
       globalThis.ui.showNotification('Failed to open folder picker', 'error');
     }
   }
@@ -256,10 +256,6 @@ const ScriptHome = (() => {
     }
   }
 
-  function setupFolderDropListener() {
-    // No longer needed since drop handling is inline
-  }
-
   async function doImport(folderPath) {
     try {
       const result = await globalThis.api.invoke('script-runner:import-script', { folderPath });
@@ -268,13 +264,13 @@ const ScriptHome = (() => {
         // Re-render
         const activeId = globalThis.tabManager.getActiveTabId();
         const activeTab = globalThis.tabManager.getTab(activeId);
-        if (activeTab && activeTab.type === 'script-home') {
+        if (activeTab?.type === 'script-home') {
           render(activeTab, document.getElementById('tab-content'));
         }
       } else {
         globalThis.ui.showNotification(result.message || 'Import failed', 'error');
       }
-    } catch (err) {
+    } catch {
       globalThis.ui.showNotification('Failed to import script folder', 'error');
     }
   }

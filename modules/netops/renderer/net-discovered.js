@@ -169,7 +169,7 @@ class DiscoveredNetworksPanel {
               <div class="host-info">
                 <span class="host-ip">${_escDisc(h.ip)}</span>
                 <span class="host-status status-${h.status}">${h.status.toUpperCase()}</span>
-                ${h.latency_ms != null ? `<span class="host-latency">${h.latency_ms}ms</span>` : ''}
+                ${h.latency_ms == null ? '' : `<span class="host-latency">${h.latency_ms}ms</span>`}
               </div>
               <div class="discovered-host-actions">
                 <button class="btn btn-small btn-ping-disc" data-ip="${h.ip}" data-id="${h.id}">Ping</button>
@@ -234,7 +234,8 @@ class DiscoveredNetworksPanel {
         }
       }
 
-      this._toast(`${ip} is ${status}${latency ? ` (${latency}ms)` : ''}`);
+      const latStr = latency ? ` (${latency}ms)` : '';
+      this._toast(`${ip} is ${status}${latStr}`);
     } catch (err) {
       this._error('Ping failed: ' + err.message);
     } finally {

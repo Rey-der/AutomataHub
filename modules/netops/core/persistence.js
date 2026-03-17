@@ -499,7 +499,7 @@ class NetOpsPersistence {
   }
 
   importJson(data, mode = 'merge') {
-    if (!data || data.version !== 1) throw new Error('Invalid backup format');
+    if (data?.version !== 1) throw new Error('Invalid backup format');
 
     if (mode === 'replace') {
       this.db.run('DELETE FROM monitored_hosts');

@@ -29,7 +29,7 @@ class NetHostList {
       <div class="hl-wrapper">
         <div class="hl-header"><div class="skeleton skeleton-text" style="width:120px;height:24px"></div></div>
         <table class="hl-table"><tbody>
-          ${Array(5).fill('<tr class="hl-row"><td colspan="8"><div class="skeleton skeleton-row"></div></td></tr>').join('')}
+          ${[...Array(5)].fill('<tr class="hl-row"><td colspan="8"><div class="skeleton skeleton-row"></div></td></tr>').join('')}
         </tbody></table>
       </div>
     `;
@@ -163,7 +163,8 @@ class NetHostList {
 
   _thCell(label, col) {
     const active = this.sortCol === col;
-    const arrow = active ? (this.sortAsc ? ' \u25B2' : ' \u25BC') : '';
+    let arrow = '';
+    if (active) arrow = this.sortAsc ? ' \u25B2' : ' \u25BC';
     return `<th class="hl-th${active ? ' hl-th-active' : ''}" data-sort="${col}">${label}${arrow}</th>`;
   }
 
@@ -634,7 +635,11 @@ class NetHostList {
     const timeCell = row.querySelector('.hl-td-time');
     if (timeCell) timeCell.textContent = timeStr;
 
-    // Refresh uptime
+    this._refreshUptime(hostId, row);
+    this._refreshSparkline(hostId, row);
+  }
+
+  async _refreshUptime(hostId, row) {
     try {
       const res = await API.invoke('netops:get-uptime-stats', { host_id: hostId, timeRange: '24h' });
       this.uptimeCache[hostId] = res;
@@ -644,19 +649,19 @@ class NetHostList {
         uptimeCell.textContent = pct != null ? `${pct.toFixed(1)}%` : '\u2014';
       }
     } catch { /* ignore */ }
+  }
 
-    // Update sparkline
+  _refreshSparkline(hostId, row) {
     const history = this.historyCache[hostId] || [];
     const sparkContainer = row.querySelector('.hl-td-latency');
-    if (sparkContainer) {
-      const oldSvg = sparkContainer.querySelector('.hl-sparkline');
-      const newSvg = this._sparklineSVG(history);
-      if (oldSvg && newSvg) {
-        const temp = document.createElement('div');
-        temp.innerHTML = newSvg;
-        const svg = temp.firstElementChild;
-        if (svg) oldSvg.replaceWith(svg);
-      }
+    if (!sparkContainer) return;
+    const oldSvg = sparkContainer.querySelector('.hl-sparkline');
+    const newSvg = this._sparklineSVG(history);
+    if (oldSvg && newSvg) {
+      const temp = document.createElement('div');
+      temp.innerHTML = newSvg;
+      const svg = temp.firstElementChild;
+      if (svg) oldSvg.replaceWith(svg);
     }
   }
 
@@ -923,7 +928,7 @@ class NetHostList {
 
 function _hlEsc(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(text || '').replace(/[&<>"']/g, c => map[c]);
+  return String(text || '').replaceAll(/[&<>"']/g, c => map[c]);
 }
 
 function _hlFormatTime(timestamp) {

@@ -212,11 +212,7 @@ class ScriptApp {
       render(tab, container) {
         container.innerHTML = '';
 
-        if (!tab._appInstance) {
-          // First visit: full init (loads data, mounts children, sets up IPC listeners)
-          tab._appInstance = new ScriptApp();
-          tab._appInstance.init(container);
-        } else {
+        if (tab._appInstance) {
           // Subsequent visits: re-render layout into the fresh container, reattach children
           const app = tab._appInstance;
           app.container = container;
@@ -225,6 +221,10 @@ class ScriptApp {
           const browserEl = container.querySelector('#script-browser-container');
           if (sidebarEl && app.topicListInstance) app.topicListInstance.init(sidebarEl);
           if (browserEl && app.scriptBrowserInstance) app.scriptBrowserInstance.init(browserEl);
+        } else {
+          // First visit: full init (loads data, mounts children, sets up IPC listeners)
+          tab._appInstance = new ScriptApp();
+          tab._appInstance.init(container);
         }
       },
       onClose(tab) {
@@ -252,7 +252,7 @@ class ScriptApp {
     
     globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
     globalThis._hub.moduleOpeners['script-runner'] = function openScriptRunner(mod) {
-      if (globalThis.tabManager && globalThis.tabManager.hasTabType('script-home')) {
+      if (globalThis.tabManager?.hasTabType('script-home')) {
         console.log('[script-app] Opening Scripts tab for module:', mod.id);
         globalThis.tabManager.createTab('script-home', 'Scripts', { moduleId: mod.id }, { target: 'module' });
       } else {

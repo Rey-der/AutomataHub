@@ -52,7 +52,7 @@ async function check(host, opts = {}) {
       ipMatch = addresses.includes(expectedIp);
     }
 
-    const online = ipMatch !== null ? ipMatch : addresses.length > 0;
+    const online = ipMatch === null ? addresses.length > 0 : ipMatch;
 
     return {
       online,

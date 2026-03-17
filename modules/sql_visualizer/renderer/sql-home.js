@@ -322,7 +322,8 @@ const SqlHome = (() => {
       const meta = document.createElement('span');
       meta.className = 'sql-bookmark-meta';
       const filterCount = (bm.filters || []).length;
-      meta.textContent = bm.table + (filterCount > 0 ? ` (${filterCount} filter${filterCount > 1 ? 's' : ''})` : '');
+      const plural = filterCount === 1 ? '' : 's';
+      meta.textContent = bm.table + (filterCount > 0 ? ` (${filterCount} filter${plural})` : '');
       item.appendChild(meta);
 
       const delBtn = document.createElement('button');
@@ -476,6 +477,49 @@ const SqlHome = (() => {
     };
   }
 
+  async function _loadDbHealth(content) {
+    try {
+      const health = await globalThis.api.invoke('sql-visualizer:get-db-health');
+      if (health?.tableCount != null) {
+        content.appendChild(createDbHealthIndicator(health));
+      }
+    } catch (err) {
+      console.error('[sql-home] Failed to load DB health:', err);
+    }
+  }
+
+  async function _loadScriptHealth(content) {
+    try {
+      const healthStats = await globalThis.api.invoke('sql-visualizer:get-script-health');
+      if (healthStats?.length > 0) {
+        content.appendChild(createHealthCards(healthStats));
+      }
+    } catch (err) {
+      console.error('[sql-home] Failed to load script health:', err);
+    }
+  }
+
+  async function _loadIntegrity(content) {
+    try {
+      const report = await globalThis.api.invoke('sql-visualizer:get-integrity-report');
+      if (report) {
+        content.appendChild(createIntegrityPanel(report));
+      }
+    } catch (err) {
+      console.error('[sql-home] Failed to load integrity report:', err);
+    }
+  }
+
+  async function _loadBookmarks(content) {
+    try {
+      const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
+      const bookmarks = prefs.bookmarks || [];
+      if (bookmarks.length > 0) {
+        content.appendChild(createBookmarksSection(bookmarks));
+      }
+    } catch { /* ignore */ }
+  }
+
   /**
    * Load dashboard content when database is connected
    */
@@ -485,15 +529,7 @@ const SqlHome = (() => {
 
     const content = document.createElement('div');
 
-    // DB Health indicator
-    try {
-      const health = await globalThis.api.invoke('sql-visualizer:get-db-health');
-      if (health && health.tableCount != null) {
-        content.appendChild(createDbHealthIndicator(health));
-      }
-    } catch (err) {
-      console.error('[sql-home] Failed to load DB health:', err);
-    }
+    await _loadDbHealth(content);
 
     // Load stats
     let stats = [];
@@ -503,39 +539,13 @@ const SqlHome = (() => {
       console.error('[sql-home] Failed to load table stats:', err);
     }
 
-    // Quick stats
     if (stats.length > 0) {
       content.appendChild(createQuickStats(stats));
     }
 
-    // Script Health Cards
-    try {
-      const healthStats = await globalThis.api.invoke('sql-visualizer:get-script-health');
-      if (healthStats && healthStats.length > 0) {
-        content.appendChild(createHealthCards(healthStats));
-      }
-    } catch (err) {
-      console.error('[sql-home] Failed to load script health:', err);
-    }
-
-    // Integrity Panel
-    try {
-      const report = await globalThis.api.invoke('sql-visualizer:get-integrity-report');
-      if (report) {
-        content.appendChild(createIntegrityPanel(report));
-      }
-    } catch (err) {
-      console.error('[sql-home] Failed to load integrity report:', err);
-    }
-
-    // Bookmarks
-    try {
-      const prefs = await globalThis.api.getModulePrefs('sql-visualizer') || {};
-      const bookmarks = prefs.bookmarks || [];
-      if (bookmarks.length > 0) {
-        content.appendChild(createBookmarksSection(bookmarks));
-      }
-    } catch { /* ignore */ }
+    await _loadScriptHealth(content);
+    await _loadIntegrity(content);
+    await _loadBookmarks(content);
 
     // Table cards
     if (stats.length === 0) {

@@ -7,7 +7,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { dialog } = require('electron');
 
-const EXECUTABLE_EXTENSIONS = ['.sh', '.bash', '.py', '.py3', '.js', '.mjs', '.rb', '.pl', '.csx', '.cs'];
+const EXECUTABLE_EXTENSIONS = new Set(['.sh', '.bash', '.py', '.py3', '.js', '.mjs', '.rb', '.pl', '.csx', '.cs']);
 const IGNORED_ENTRIES = new Set(['.DS_Store', 'Thumbs.db', '.git', 'node_modules', '__pycache__', '.idea', '.vscode']);
 
 const EXTENSION_LANGUAGE_MAP = {
@@ -35,7 +35,7 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
 
     const parentEnv = meta.env || {};
     const files = fs.readdirSync(folderPath);
-    const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+    const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.has(path.extname(f).toLowerCase()));
 
     if (executables.length > 0) {
       const mainScript = meta.mainScript || meta.main || executables[0];
@@ -63,7 +63,7 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
       const subMeta = readJsonConfig(subConfig, () => {});
 
       const subFiles = fs.readdirSync(subPath);
-      const subExecs = subFiles.filter((f) => EXECUTABLE_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+      const subExecs = subFiles.filter((f) => EXECUTABLE_EXTENSIONS.has(path.extname(f).toLowerCase()));
       if (subExecs.length === 0) continue;
 
       const subMain = subMeta.main || subMeta.mainScript || subExecs[0];
@@ -76,7 +76,7 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
         language: EXTENSION_LANGUAGE_MAP[ext] || 'Unknown',
         mainScript: subMain,
         scriptPath: subMainPath,
-        env: { ...parentEnv, ...(subMeta.env || {}) },
+        env: { ...parentEnv, ...subMeta.env },
       });
     }
 
@@ -132,7 +132,7 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
     if (IGNORED_ENTRIES.has(path.basename(folderPath))) return { valid: false, error: 'Ignored folder' };
 
     const files = fs.readdirSync(folderPath);
-    const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.includes(path.extname(f).toLowerCase()));
+    const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.has(path.extname(f).toLowerCase()));
     if (executables.length === 0) return { valid: false, error: 'No executables found' };
 
     return { valid: true, executables, name: path.basename(folderPath) };
@@ -245,7 +245,7 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
         // Discover and add the newly imported script
         const folderName = path.basename(folderPath);
         const newScriptPath = path.join(scriptsDir, folderName);
-        const { meta, variants } = discoverVariants(newScriptPath, folderName);
+        const { variants } = discoverVariants(newScriptPath, folderName);
         if (variants.length > 0) {
           const scripts = getAvailableScripts(scriptsDir);
           emit('script-runner:scripts-updated', { scripts });

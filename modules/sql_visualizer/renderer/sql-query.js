@@ -95,7 +95,7 @@ const SqlQuery = (() => {
         state.savedQueries = savedQueries;
         state.showSaved = true;
         render(tab, document.getElementById('tab-content'));
-        if (globalThis.ui && globalThis.ui.showNotification) {
+        if (globalThis.ui?.showNotification) {
           globalThis.ui.showNotification('Query saved: ' + name, 'success');
         }
       } catch (err) {
@@ -129,6 +129,55 @@ const SqlQuery = (() => {
   }
 
   // --- Rendering ---
+
+  function _createToolbar(tab, state) {
+    const toolbar = document.createElement('div');
+    toolbar.className = 'sql-query-toolbar';
+
+    const runBtn = document.createElement('button');
+    runBtn.className = 'btn';
+    runBtn.textContent = 'Run';
+    runBtn.disabled = state.loading;
+    runBtn.addEventListener('click', () => handleRun(tab));
+    toolbar.appendChild(runBtn);
+
+    const hint = document.createElement('span');
+    hint.className = 'sql-shortcut-hint';
+    hint.textContent = '⌘+Enter to run';
+    toolbar.appendChild(hint);
+
+    if (state.result) {
+      const exportBtn = document.createElement('button');
+      exportBtn.className = 'btn btn-sm btn-secondary';
+      exportBtn.textContent = 'Export CSV';
+      exportBtn.addEventListener('click', () => handleExportCsv(state));
+      toolbar.appendChild(exportBtn);
+
+      const info = document.createElement('span');
+      info.className = 'sql-result-info';
+      info.textContent = `${state.result.rowCount} row${state.result.rowCount !== 1 ? 's' : ''} returned`;
+      toolbar.appendChild(info);
+    }
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-sm btn-secondary';
+    saveBtn.textContent = 'Save Query';
+    saveBtn.addEventListener('click', () => saveQuery(tab, state));
+    toolbar.appendChild(saveBtn);
+
+    if (state.savedQueries.length > 0) {
+      const toggleSaved = document.createElement('button');
+      toggleSaved.className = 'btn btn-sm btn-secondary' + (state.showSaved ? ' btn-active' : '');
+      toggleSaved.textContent = 'Saved (' + state.savedQueries.length + ')';
+      toggleSaved.addEventListener('click', () => {
+        state.showSaved = !state.showSaved;
+        render(tab, document.getElementById('tab-content'));
+      });
+      toolbar.appendChild(toggleSaved);
+    }
+
+    return toolbar;
+  }
 
   async function render(tab, container) {
     if (!container) return;
@@ -186,12 +235,10 @@ const SqlQuery = (() => {
       state.sql = textarea.value;
     });
     textarea.addEventListener('keydown', (e) => {
-      // Ctrl/Cmd + Enter to run
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleRun(tab);
       }
-      // Tab inserts spaces
       if (e.key === 'Tab') {
         e.preventDefault();
         const start = textarea.selectionStart;
@@ -204,54 +251,7 @@ const SqlQuery = (() => {
     editorContainer.appendChild(textarea);
     wrapper.appendChild(editorContainer);
 
-    // Toolbar
-    const toolbar = document.createElement('div');
-    toolbar.className = 'sql-query-toolbar';
-
-    const runBtn = document.createElement('button');
-    runBtn.className = 'btn';
-    runBtn.textContent = 'Run';
-    runBtn.disabled = state.loading;
-    runBtn.addEventListener('click', () => handleRun(tab));
-    toolbar.appendChild(runBtn);
-
-    const hint = document.createElement('span');
-    hint.className = 'sql-shortcut-hint';
-    hint.textContent = '⌘+Enter to run';
-    toolbar.appendChild(hint);
-
-    if (state.result) {
-      const exportBtn = document.createElement('button');
-      exportBtn.className = 'btn btn-sm btn-secondary';
-      exportBtn.textContent = 'Export CSV';
-      exportBtn.addEventListener('click', () => handleExportCsv(state));
-      toolbar.appendChild(exportBtn);
-
-      const info = document.createElement('span');
-      info.className = 'sql-result-info';
-      info.textContent = `${state.result.rowCount} row${state.result.rowCount !== 1 ? 's' : ''} returned`;
-      toolbar.appendChild(info);
-    }
-
-    // Save & load buttons
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'btn btn-sm btn-secondary';
-    saveBtn.textContent = 'Save Query';
-    saveBtn.addEventListener('click', () => saveQuery(tab, state));
-    toolbar.appendChild(saveBtn);
-
-    if (state.savedQueries.length > 0) {
-      const toggleSaved = document.createElement('button');
-      toggleSaved.className = 'btn btn-sm btn-secondary' + (state.showSaved ? ' btn-active' : '');
-      toggleSaved.textContent = 'Saved (' + state.savedQueries.length + ')';
-      toggleSaved.addEventListener('click', () => {
-        state.showSaved = !state.showSaved;
-        render(tab, document.getElementById('tab-content'));
-      });
-      toolbar.appendChild(toggleSaved);
-    }
-
-    wrapper.appendChild(toolbar);
+    wrapper.appendChild(_createToolbar(tab, state));
 
     // Saved queries section
     if (state.showSaved && state.savedQueries.length > 0) {
@@ -267,9 +267,9 @@ const SqlQuery = (() => {
     }
 
     // Result table
-    if (state.result && state.result.rows.length > 0) {
+    if (state.result?.rows.length > 0) {
       wrapper.appendChild(createResultTable(state.result));
-    } else if (state.result && state.result.rows.length === 0) {
+    } else if (state.result?.rows.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'sql-table-empty';
       empty.textContent = 'Query returned 0 rows';
