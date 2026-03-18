@@ -160,7 +160,7 @@ const SqlAnalytics = (() => {
         <td>${r.id}</td>
         <td>${escHtml(r.script)}</td>
         <td>${escHtml(r.start_time)}</td>
-        <td>${r.durationMs != null ? formatDuration(r.durationMs) : '—'}</td>
+        <td>${r.durationMs == null ? '—' : formatDuration(r.durationMs)}</td>
         <td><span class="sql-badge sql-badge--${statusClass}">${r.status || 'RUNNING'}</span></td>
       `;
       tbody.appendChild(tr);
@@ -201,16 +201,7 @@ const SqlAnalytics = (() => {
       row.appendChild(createCell(DAY_NAMES[day], 'sql-heatmap-label'));
 
       for (let hour = 0; hour < 24; hour++) {
-        const cell = data.cells.find((c) => c.day === day && c.hour === hour);
-        const count = cell ? cell.count : 0;
-        const intensity = data.maxCount > 0 ? count / data.maxCount : 0;
-
-        const el = document.createElement('div');
-        el.className = 'sql-heatmap-cell';
-        el.style.opacity = count === 0 ? '0.05' : String(0.2 + intensity * 0.8);
-        el.style.backgroundColor = count === 0 ? 'var(--surface-3)' : 'var(--accent)';
-        el.title = `${DAY_NAMES[day]} ${HOUR_LABELS[hour]}: ${count} events`;
-        row.appendChild(el);
+        row.appendChild(buildHeatmapCell(data, day, hour));
       }
 
       heatmap.appendChild(row);
@@ -387,6 +378,19 @@ const SqlAnalytics = (() => {
   }
 
   // --- Util ---
+
+  function buildHeatmapCell(data, day, hour) {
+    const cell = data.cells.find((c) => c.day === day && c.hour === hour);
+    const count = cell ? cell.count : 0;
+    const intensity = data.maxCount > 0 ? count / data.maxCount : 0;
+
+    const el = document.createElement('div');
+    el.className = 'sql-heatmap-cell';
+    el.style.opacity = count === 0 ? '0.05' : String(0.2 + intensity * 0.8);
+    el.style.backgroundColor = count === 0 ? 'var(--surface-3)' : 'var(--accent)';
+    el.title = `${DAY_NAMES[day]} ${HOUR_LABELS[hour]}: ${count} events`;
+    return el;
+  }
 
   function createCell(text, className) {
     const el = document.createElement('div');

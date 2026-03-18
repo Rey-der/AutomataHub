@@ -5,9 +5,8 @@
  * until implemented in Phases 2–6.
  */
 
-if (typeof API === 'undefined') {
-  var API = globalThis.api;
-}
+(function() {
+const API = globalThis.api;
 
 const NETOPS_LS_KEY = 'netops-ui-state';
 
@@ -447,4 +446,6 @@ class NetApp {
     };
   }
   doRegister();
+})();
+
 })();

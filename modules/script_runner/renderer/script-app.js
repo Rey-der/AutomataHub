@@ -4,9 +4,8 @@
  * Similar to NetApp for NetOps module.
  */
 
-if (typeof API === 'undefined') {
-  var API = globalThis.api;
-}
+(function() {
+const API = globalThis.api;
 
 const SCRIPT_RUNNER_LS_KEY = 'script-runner-ui-state';
 const SCRIPT_RUNNER_MAX_HISTORY = 50;
@@ -273,4 +272,6 @@ class ScriptApp {
   }
   
   doRegister();
+})();
+
 })();
