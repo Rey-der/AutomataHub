@@ -37,7 +37,7 @@ let _usesSqlJs = false; // flag to track if using sql.js fallback
 
 // --- Connection ---
 
-function open(dbPath) {
+function open(dbPath, opts) {
   if (_db) close();
 
   if (!Database) {
@@ -50,6 +50,12 @@ function open(dbPath) {
 
   try {
     _db = new Database(dbPath, { readonly: false, fileMustExist: true });
+    // If a password is provided, apply PRAGMA key (SQLCipher compat, future-proof)
+    // Hex-encode to avoid any injection risk — only [0-9a-f] reaches the PRAGMA
+    if (opts?.password) {
+      const hex = Buffer.from(opts.password, 'utf-8').toString('hex');
+      _db.pragma(`key="x'${hex}'"`);
+    }
     _db.pragma('journal_mode = WAL');
     _db.pragma('foreign_keys = ON');
     _dbPath = dbPath;
@@ -153,7 +159,7 @@ async function initSqlJsFallback() {
  * Initialize sql.js and load data from a real SQLite file.
  * Useful when better-sqlite3 fails but we still have the db file.
  */
-async function initSqlJsFallbackWithFile(dbPath) {
+async function initSqlJsFallbackWithFile(dbPath, opts) {
   if (_db) return; // Already initialized
   
   if (!fs.existsSync(dbPath)) {

@@ -13,9 +13,8 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { app } = require('electron');
 
-const DB_DIR = path.join(app.getPath('userData'), 'netops');
+const DB_DIR = path.dirname(__dirname);  // modules/netops/
 const DB_FILE = path.join(DB_DIR, 'netops.sqlite');
 
 const SCHEMA_VERSION = 3;

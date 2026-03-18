@@ -1,7 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 // Channels the hub always allows for push events
-const HUB_CHANNELS = ['app-error'];
+const HUB_CHANNELS = [
+  'app-error',
+  'hub:scan-databases',
+  'hub:get-db-credentials',
+  'hub:set-db-password',
+  'hub:change-db-password',
+  'hub:remove-db-password',
+  'hub:test-db-connection',
+  'hub:db-auth-failed',
+];
 
 // Dynamic allowed channels will be fetched after modules load
 let allowedChannels = [...HUB_CHANNELS];

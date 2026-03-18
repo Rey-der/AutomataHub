@@ -402,6 +402,7 @@ const HomeTab = (() => {
 
     sidebar.appendChild(nav);
     sidebar.appendChild(createInfoButton());
+    sidebar.appendChild(createDbManagerButton());
     return sidebar;
   }
 
@@ -468,6 +469,40 @@ const HomeTab = (() => {
       tooltip.appendChild(currentParagraph);
     }
     return tooltip;
+  }
+
+  // --- DB Manager Button ---
+
+  function createDbManagerButton() {
+    const btn = document.createElement('button');
+    btn.className = 'hub-sidebar-info-btn';
+    btn.setAttribute('aria-label', 'Database Manager');
+
+    const icon = document.createElement('span');
+    icon.style.flexShrink = '0';
+    icon.style.width = '20px';
+    icon.style.display = 'flex';
+    icon.style.alignItems = 'center';
+    icon.style.justifyContent = 'center';
+    icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-1a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/><path d="M14.16 7.394l-1.28-.37a4.97 4.97 0 0 0-.39-.94l.63-1.16a.38.38 0 0 0-.06-.44l-.82-.82a.38.38 0 0 0-.44-.06l-1.16.63a4.97 4.97 0 0 0-.94-.39l-.37-1.28a.38.38 0 0 0-.37-.27h-1.16a.38.38 0 0 0-.37.27l-.37 1.28a4.97 4.97 0 0 0-.94.39L4.9 3.56a.38.38 0 0 0-.44.06l-.82.82a.38.38 0 0 0-.06.44l.63 1.16c-.17.3-.3.61-.39.94l-1.28.37a.38.38 0 0 0-.27.37v1.16c0 .17.11.32.27.37l1.28.37c.09.33.22.64.39.94l-.63 1.16a.38.38 0 0 0 .06.44l.82.82c.12.12.29.14.44.06l1.16-.63c.3.17.61.3.94.39l.37 1.28c.05.16.2.27.37.27h1.16c.17 0 .32-.11.37-.27l.37-1.28c.33-.09.64-.22.94-.39l1.16.63c.15.08.32.06.44-.06l.82-.82a.38.38 0 0 0 .06-.44l-.63-1.16c.17-.3.3-.61.39-.94l1.28-.37a.38.38 0 0 0 .27-.37V7.77a.38.38 0 0 0-.27-.37zM8 11.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>';
+    btn.appendChild(icon);
+
+    const label = document.createElement('span');
+    label.className = 'hub-nav-label';
+    label.textContent = 'DB Manager';
+    btn.appendChild(label);
+
+    btn.addEventListener('click', () => {
+      if (!globalThis.tabManager.hasTabType('db-manager')) return;
+      const existing = globalThis.tabManager.getTabsByType('db-manager');
+      if (existing.length > 0) {
+        globalThis.tabManager.switchTab(existing[0].id);
+      } else {
+        globalThis.tabManager.createTab('db-manager', 'DB Manager', {}, { target: 'main' });
+      }
+    });
+
+    return btn;
   }
 
   // --- Toolbar Builder ---

@@ -1,0 +1,306 @@
+/* ============================================
+ * Database Manager Tab
+ * ============================================ */
+
+.dbm-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-xl);
+  overflow-y: auto;
+}
+
+/* --- Header --- */
+
+.dbm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+  flex-shrink: 0;
+}
+
+.dbm-title {
+  font-size: var(--size-xxl);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.dbm-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.dbm-scan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dbm-scan-btn.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* --- Stats bar --- */
+
+.dbm-stats {
+  display: flex;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  flex-shrink: 0;
+}
+
+.dbm-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+.dbm-stat-value {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* --- DB Grid --- */
+
+.dbm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--space-lg);
+}
+
+/* --- DB Card --- */
+
+.dbm-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: var(--space-lg);
+  transition: border-color 150ms ease;
+}
+
+.dbm-card:hover {
+  border-color: var(--accent);
+}
+
+.dbm-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+  gap: var(--space-sm);
+}
+
+.dbm-card-name {
+  font-size: var(--size-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  word-break: break-all;
+}
+
+.dbm-card-path {
+  font-size: var(--size-xs);
+  color: var(--muted);
+  font-family: var(--font-family-mono);
+  margin: 0 0 var(--space-md) 0;
+  word-break: break-all;
+}
+
+/* --- Badges --- */
+
+.dbm-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--size-xs);
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dbm-badge-hub {
+  background: var(--accent);
+  color: #fff;
+}
+
+.dbm-badge-module {
+  background: #4e3e7a;
+  color: #c9b4f0;
+}
+
+.dbm-badge-project {
+  background: var(--surface-3);
+  color: var(--info);
+}
+
+.dbm-badge-warn {
+  background: #5c4a1e;
+  color: var(--warning);
+}
+
+/* --- Card Meta (size, status) --- */
+
+.dbm-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+}
+
+.dbm-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dbm-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dbm-status-dot.has-password { background: var(--success); }
+.dbm-status-dot.no-password  { background: var(--muted); }
+.dbm-status-dot.test-ok      { background: var(--success); }
+.dbm-status-dot.test-fail    { background: var(--error); }
+.dbm-status-dot.test-pending { background: var(--warning); animation: pulse 1.5s ease-in-out infinite; }
+
+/* --- Card Actions --- */
+
+.dbm-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: auto;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+.dbm-card-actions .btn-sm {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+
+/* --- Inline Password Form --- */
+
+.dbm-pw-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.dbm-pw-form input[type="password"],
+.dbm-pw-form input[type="text"] {
+  width: 100%;
+  padding: 6px var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--size-base);
+  font-family: var(--font-family-ui);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.dbm-pw-form input[type="password"]:focus,
+.dbm-pw-form input[type="text"]:focus {
+  border-color: var(--border-focus);
+}
+
+/* --- Password field wrapper (input + toggle) --- */
+
+.dbm-pw-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dbm-pw-field input {
+  padding-right: 36px !important;
+}
+
+.dbm-pw-toggle {
+  position: absolute;
+  right: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--size-base);
+  color: var(--muted);
+  padding: 4px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.dbm-pw-toggle:hover {
+  opacity: 1;
+}
+
+.dbm-pw-form-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+.dbm-pw-error {
+  font-size: var(--size-xs);
+  color: var(--error);
+  margin: 0;
+}
+
+/* --- Empty State --- */
+
+.dbm-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-2xl) var(--space-xl);
+  color: var(--muted);
+}
+
+.dbm-empty-title {
+  font-size: var(--size-lg);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+/* --- Connection test result --- */
+
+.dbm-test-result {
+  font-size: var(--size-xs);
+  color: var(--muted);
+  margin-top: var(--space-sm);
+  min-height: 16px;
+}
+
+.dbm-test-result.success { color: var(--success); }
+.dbm-test-result.error   { color: var(--error); }
