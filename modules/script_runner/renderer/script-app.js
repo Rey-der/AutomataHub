@@ -252,11 +252,18 @@ class ScriptApp {
     
     globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
     globalThis._hub.moduleOpeners['script-runner'] = function openScriptRunner(mod) {
-      if (globalThis.tabManager?.hasTabType('script-home')) {
-        console.log('[script-app] Opening Scripts tab for module:', mod.id);
-        globalThis.tabManager.createTab('script-home', 'Scripts', { moduleId: mod.id }, { target: 'module' });
-      } else {
-        console.warn('[script-app] Script-home tab type not registered or tabManager not available');
+      const tm = globalThis.tabManager;
+      if (!tm) return;
+
+      // Reuse existing tab
+      const existing = tm.getTabsByType('script-home');
+      if (existing.length > 0) {
+        tm.switchTab(existing[0].id);
+        return;
+      }
+
+      if (tm.hasTabType('script-home')) {
+        tm.createTab('script-home', 'Scripts', { moduleId: mod.id }, { target: 'module' });
       }
     };
     
