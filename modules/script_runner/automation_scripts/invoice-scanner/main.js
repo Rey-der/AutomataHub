@@ -77,22 +77,64 @@ function extractTextFromPdf(buffer) {
 
 /**
  * Tries to find a monetary amount in text.
- * Matches: $123.45, €123,45, 123.45, 1,234.56
+ * Matches: $123.45, €1,234.56, 123.45 (standalone with 2 decimals)
+ *
+ * Uses character scanning instead of regex to avoid backtracking risks.
  */
 function extractAmount(text) {
-  const patterns = [
-    /[$€£]\s?(\d+(?:,\d+)*(?:\.\d+)?)/,
-    /(\d+(?:,\d+)*\.\d{2})\b/,
-  ];
-  for (const pattern of patterns) {
-    const m = text.match(pattern);
-    if (m) {
-      const cleaned = m[1].replaceAll(',', '');
-      const num = Number.parseFloat(cleaned);
-      if (num > 0) return num;
+  const currencyChars = '$€£';
+
+  // Strategy 1: currency symbol followed by a numeric amount
+  for (let i = 0; i < text.length; i++) {
+    if (currencyChars.indexOf(text[i]) === -1) continue;
+    let start = i + 1;
+    if (start < text.length && text[start] === ' ') start++;
+    const num = readAmountAt(text, start);
+    if (num > 0) return num;
+  }
+
+  // Strategy 2: standalone number with exactly 2 decimal places (e.g. 1,234.56)
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c < 48 || c > 57) continue;
+    if (i > 0 && text.charCodeAt(i - 1) >= 48 && text.charCodeAt(i - 1) <= 57) continue;
+    const { value, decimals } = readAmountDetailedAt(text, i);
+    if (value > 0 && decimals === 2) return value;
+  }
+
+  return null;
+}
+
+/**
+ * Reads a numeric amount (digits, comma thousands-separators, optional decimal)
+ * starting at position pos. Returns the parsed float or null.
+ */
+function readAmountAt(text, pos) {
+  return readAmountDetailedAt(text, pos).value;
+}
+
+function readAmountDetailedAt(text, pos) {
+  let num = '';
+  let decimals = -1;
+  let i = pos;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch >= '0' && ch <= '9') {
+      num += ch;
+      if (decimals >= 0) decimals++;
+      i++;
+    } else if (ch === ',' && decimals < 0) {
+      i++; // skip comma (thousands separator, before decimal point only)
+    } else if (ch === '.' && decimals < 0) {
+      num += '.';
+      decimals = 0;
+      i++;
+    } else {
+      break;
     }
   }
-  return null;
+  if (num.length === 0) return { value: null, decimals: 0 };
+  return { value: Number.parseFloat(num), decimals: Math.max(decimals, 0) };
 }
 
 /**
