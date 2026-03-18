@@ -4,7 +4,9 @@
  * Similar to NetApp for NetOps module.
  */
 
-const API = globalThis.api;
+if (typeof API === 'undefined') {
+  var API = globalThis.api;
+}
 
 const SCRIPT_RUNNER_LS_KEY = 'script-runner-ui-state';
 const SCRIPT_RUNNER_MAX_HISTORY = 50;

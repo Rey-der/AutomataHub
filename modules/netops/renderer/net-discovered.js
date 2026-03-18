@@ -4,7 +4,9 @@
  * Communicates with the parent dashboard via callbacks.
  */
 
-const API = globalThis.api;
+if (typeof API === 'undefined') {
+  var API = globalThis.api;
+}
 
 class DiscoveredNetworksPanel {
   /**
