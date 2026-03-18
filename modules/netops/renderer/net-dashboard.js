@@ -5,6 +5,7 @@
 
 (function() {
 const API = globalThis.api;
+globalThis.API = API;
 
 class NetDashboard {
   constructor() {
