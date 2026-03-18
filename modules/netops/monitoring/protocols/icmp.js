@@ -65,9 +65,9 @@ function runPing(hostname) {
       args = ['-c', '1', '-W', String(PING_TIMEOUT_S), hostname];
     }
 
-    const pingCmd = isWin
-      ? 'C:\\Windows\\System32\\ping.exe'
-      : isMac ? '/sbin/ping' : '/usr/bin/ping';
+    let pingCmd = '/usr/bin/ping';
+    if (isWin) pingCmd = String.raw`C:\Windows\System32\ping.exe`;
+    else if (isMac) pingCmd = '/sbin/ping';
 
     const child = execFile(pingCmd, args, { timeout: KILL_TIMEOUT_MS, env: {} }, (err, stdout) => {
       if (err) return reject(err);
