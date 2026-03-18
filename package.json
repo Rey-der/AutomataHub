@@ -25,6 +25,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
+    "rebuild-natives": "node-gyp rebuild --target=28.3.3 --arch=arm64 --dist-url=https://electronjs.org/headers --directory node_modules/better-sqlite3",
     "lint": "echo \"No lint configured yet\"",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",

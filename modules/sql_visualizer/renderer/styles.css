@@ -1,5 +1,5 @@
 /* =============================================
- * SQL Visualizer Module — Styles
+ * SQL Monitor Module — Styles
  * =============================================
  * Loaded dynamically by the hub bootstrap.
  * Uses CSS variables defined in the hub's core styles.
@@ -43,6 +43,209 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* --- DB Management Bar --- */
+
+.sql-db-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 10px var(--space-lg);
+  margin-bottom: var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.sql-db-bar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sql-db-bar-heading {
+  font-size: var(--size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.sql-db-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.sql-db-chips-empty {
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Chip base */
+.sql-db-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+  user-select: none;
+  overflow: hidden;
+}
+
+.sql-db-chip-inner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+}
+
+/* Status dot — driven by .active on parent chip */
+.sql-db-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-secondary);
+  opacity: 0.35;
+  transition: background 150ms ease, opacity 150ms ease;
+}
+
+.sql-db-chip.active .sql-db-status-dot {
+  background: var(--success);
+  opacity: 1;
+}
+
+.sql-db-chip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sql-db-chip-name {
+  font-size: var(--size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  transition: color 150ms ease;
+}
+
+.sql-db-chip-dir {
+  font-size: var(--size-xs);
+  color: var(--text-secondary);
+  opacity: 0.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+/* Active state */
+.sql-db-chip.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  cursor: default;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.sql-db-chip.active .sql-db-chip-name {
+  color: var(--text);
+}
+
+/* Hover — inactive chips only */
+.sql-db-chip:not(.active):hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  background: var(--surface);
+}
+
+.sql-db-chip:not(.active):hover .sql-db-chip-name {
+  color: var(--text);
+}
+
+.sql-db-chip:not(.active):hover .sql-db-status-dot {
+  opacity: 0.55;
+}
+
+/* Remove button — sits flush on the right edge of the chip */
+.sql-db-chip-remove {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  background: none;
+  border: none;
+  border-left: 1px solid transparent;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease, background 120ms ease, border-color 120ms ease;
+  flex-shrink: 0;
+}
+
+.sql-db-chip:hover .sql-db-chip-remove {
+  opacity: 1;
+  border-left-color: var(--border);
+}
+
+.sql-db-chip-remove:hover {
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+}
+
+/* Add Database button */
+.sql-db-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  font-size: var(--size-sm);
+  font-weight: 500;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.sql-db-add-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.sql-db-add-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sql-db-add-icon {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 400;
 }
 
 /* --- Quick Stats --- */

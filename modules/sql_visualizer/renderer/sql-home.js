@@ -1,5 +1,5 @@
 /**
- * SQL Visualizer — sql-home tab renderer.
+ * SQL Monitor — sql-home tab renderer.
  * Dashboard showing table cards with row counts & latest timestamps,
  * quick stats, script health cards, integrity panel, DB health indicator,
  * bookmarks, and navigation to table browser / query editor / timeline / analytics.
@@ -352,6 +352,139 @@ const SqlHome = (() => {
     return section;
   }
 
+  // --- DB Management Bar ---
+
+  async function _renderDbBar(container) {
+    let info = { dbs: [], active: null };
+    try {
+      info = await globalThis.api.invoke('sql-visualizer:get-db-list');
+    } catch { /* not connected yet — show empty bar */ }
+
+    container.innerHTML = '';
+    const bar = document.createElement('div');
+    bar.className = 'sql-db-bar';
+
+    // Left: section title + chip row
+    const left = document.createElement('div');
+    left.className = 'sql-db-bar-left';
+
+    const heading = document.createElement('span');
+    heading.className = 'sql-db-bar-heading';
+    heading.textContent = 'Connected Databases';
+    left.appendChild(heading);
+
+    const chips = document.createElement('div');
+    chips.className = 'sql-db-chips';
+
+    if (info.dbs && info.dbs.length > 0) {
+      for (const dbPath of info.dbs) {
+        const isActive = dbPath === info.active;
+        const filename = dbPath.split(/[/\\]/).pop();
+        const dirPart = dbPath.substring(0, dbPath.length - filename.length - 1).split(/[/\\]/).pop();
+
+        const chip = document.createElement('div');
+        chip.className = 'sql-db-chip' + (isActive ? ' active' : '');
+        chip.title = isActive ? dbPath : `Switch to: ${dbPath}`;
+        chip.setAttribute('role', 'button');
+        chip.setAttribute('tabindex', isActive ? '-1' : '0');
+
+        const chipInner = document.createElement('div');
+        chipInner.className = 'sql-db-chip-inner';
+
+        const statusDot = document.createElement('span');
+        statusDot.className = 'sql-db-status-dot';
+        statusDot.setAttribute('aria-hidden', 'true');
+        chipInner.appendChild(statusDot);
+
+        const textGroup = document.createElement('div');
+        textGroup.className = 'sql-db-chip-text';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'sql-db-chip-name';
+        nameEl.textContent = filename;
+        textGroup.appendChild(nameEl);
+
+        if (dirPart) {
+          const dirEl = document.createElement('span');
+          dirEl.className = 'sql-db-chip-dir';
+          dirEl.textContent = dirPart;
+          textGroup.appendChild(dirEl);
+        }
+
+        chipInner.appendChild(textGroup);
+        chip.appendChild(chipInner);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'sql-db-chip-remove';
+        removeBtn.title = 'Remove from list';
+        removeBtn.setAttribute('aria-label', `Remove ${filename}`);
+        removeBtn.innerHTML = '&times;';
+        removeBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const result = await globalThis.api.invoke('sql-visualizer:remove-db', { path: dbPath });
+          // Immediately clear content — don't wait for checkStatus() event chain
+          if (!result.connected) {
+            const cd = container.nextElementSibling;
+            if (cd) {
+              cd.innerHTML = `
+                <div class="sql-waiting-state" role="status" aria-live="polite">
+                  <div class="sql-waiting-spinner"></div>
+                  <p>No database connected.</p>
+                  <small>Use \u201cAdd Database\u201d above to connect a SQLite file.</small>
+                </div>
+              `;
+            }
+          }
+          await _renderDbBar(container);
+          await DbConnectionManager.checkStatus();
+        });
+        chip.appendChild(removeBtn);
+
+        if (!isActive) {
+          chip.addEventListener('click', async () => {
+            await DbConnectionManager.switchDb(dbPath);
+            await _renderDbBar(container);
+          });
+          chip.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              await DbConnectionManager.switchDb(dbPath);
+              await _renderDbBar(container);
+            }
+          });
+        }
+
+        chips.appendChild(chip);
+      }
+    } else {
+      const empty = document.createElement('span');
+      empty.className = 'sql-db-chips-empty';
+      empty.textContent = 'No databases added — click "Add Database" to get started';
+      chips.appendChild(empty);
+    }
+
+    left.appendChild(chips);
+    bar.appendChild(left);
+
+    // Right: Add DB button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'sql-db-add-btn';
+    addBtn.title = 'Browse for a SQLite database file';
+    addBtn.innerHTML = '<span class="sql-db-add-icon" aria-hidden="true">+</span> Add Database';
+    addBtn.addEventListener('click', async () => {
+      addBtn.disabled = true;
+      const result = await globalThis.api.invoke('sql-visualizer:add-db');
+      addBtn.disabled = false;
+      if (!result.canceled) {
+        await _renderDbBar(container);
+        await DbConnectionManager.checkStatus();
+      }
+    });
+    bar.appendChild(addBtn);
+
+    container.appendChild(bar);
+  }
+
   // --- Empty State ---
 
   function renderEmpty(container) {
@@ -365,7 +498,7 @@ const SqlHome = (() => {
 
     const hint = document.createElement('p');
     hint.className = 'empty-state-hint';
-    hint.textContent = 'Run the smart_desktop_sql migrations to create tables.';
+    hint.textContent = 'No tables found. Add a database via the connector or check that your DB is initialised.';
     empty.appendChild(hint);
 
     container.appendChild(empty);
@@ -388,12 +521,12 @@ const SqlHome = (() => {
     headerText.className = 'home-header-text';
 
     const h1 = document.createElement('h1');
-    h1.textContent = 'SQL Visualizer';
+    h1.textContent = 'SQL Monitor';
     headerText.appendChild(h1);
 
     const subtitle = document.createElement('p');
     subtitle.className = 'subtitle';
-    subtitle.textContent = 'Browse and query the Smart Desktop database';
+    subtitle.textContent = 'Monitor, query, and visualize your SQLite databases';
     headerText.appendChild(subtitle);
 
     header.appendChild(headerText);
@@ -429,10 +562,10 @@ const SqlHome = (() => {
     header.appendChild(headerActions);
     wrapper.appendChild(header);
 
-    // Connection status bar (will be updated via listener)
-    const connectionBarDiv = document.createElement('div');
-    connectionBarDiv.id = `sql-connection-bar-${tab.id}`;
-    wrapper.appendChild(connectionBarDiv);
+    // DB management bar — shows all known databases, allows add/remove/switch
+    const dbBarDiv = document.createElement('div');
+    dbBarDiv.id = `sql-db-bar-${tab.id}`;
+    wrapper.appendChild(dbBarDiv);
 
     // Content area (will be populated when connected)
     const contentDiv = document.createElement('div');
@@ -441,25 +574,26 @@ const SqlHome = (() => {
 
     container.appendChild(wrapper);
 
+    // Render DB management bar immediately
+    _renderDbBar(dbBarDiv);
+
+    // Generation counter: incremented on every load or disconnect.
+    // loadContent checks it before appending to discard stale in-flight results.
+    let loadGeneration = 0;
+
     // Start monitoring and set up connection listener
     const unsubscribe = DbConnectionManager.onStatusChange(async (status) => {
-      // Update connection bar
-      const connectionBar = document.getElementById(`sql-connection-bar-${tab.id}`);
-      if (connectionBar) {
-        connectionBar.innerHTML = '';
-        connectionBar.appendChild(createConnectionStatus(status));
-      }
-
-      // Load content if connected
       if (status.connected) {
-        await loadContent(contentDiv, tab);
-      } else if (contentDiv.innerHTML === '') {
-        // Show waiting message
+        const myGen = ++loadGeneration;
+        await loadContent(contentDiv, tab, myGen, () => loadGeneration);
+      } else {
+        // Invalidate any in-flight load, then show disconnected state
+        loadGeneration++;
         contentDiv.innerHTML = `
           <div class="sql-waiting-state" role="status" aria-live="polite">
             <div class="sql-waiting-spinner"></div>
-            <p>Waiting for database connection...</p>
-            <small>This may take a moment. Check that smart_desktop_sql is initialized.</small>
+            <p>No database connected.</p>
+            <small>Use “Add Database” above to connect a SQLite file.</small>
           </div>
         `;
       }
@@ -521,9 +655,14 @@ const SqlHome = (() => {
   }
 
   /**
-   * Load dashboard content when database is connected
+   * Load dashboard content when database is connected.
+   * @param {HTMLElement} contentDiv
+   * @param {object} tab
+   * @param {number} gen - Load generation; if the current generation counter
+   *   (returned by getGen) no longer matches, the result is discarded.
+   * @param {() => number} getGen - Returns the current generation value.
    */
-  async function loadContent(contentDiv, tab) {
+  async function loadContent(contentDiv, tab, gen = 0, getGen = () => 0) {
     if (!contentDiv) return;
     contentDiv.innerHTML = '';
 
@@ -564,6 +703,8 @@ const SqlHome = (() => {
       content.appendChild(grid);
     }
 
+    // Discard result if a disconnect (or newer load) invalidated this generation
+    if (getGen() !== gen) return;
     contentDiv.appendChild(content);
   }
 
@@ -597,7 +738,7 @@ const SqlHome = (() => {
       }
 
       if (tm.hasTabType('sql-home')) {
-        tm.createTab('sql-home', 'SQL Dashboard', {}, { reuseKey: 'autostart-sql-visualizer' });
+        tm.createTab('sql-home', 'SQL Monitor', {}, { reuseKey: 'autostart-sql-visualizer' });
       }
     };
   }

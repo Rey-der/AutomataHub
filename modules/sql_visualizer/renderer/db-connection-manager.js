@@ -38,13 +38,19 @@ const DbConnectionManager = (() => {
    * Update status and notify listeners if it changed
    */
   function updateStatus(newStatus) {
-    const hasChanged = !currentStatus || 
+    const hasChanged = !currentStatus ||
       newStatus.connected !== currentStatus.connected ||
       newStatus.path !== currentStatus.path;
 
-    if (hasChanged) {
+    // Always notify on disconnect — even if path didn't change —
+    // so content is cleared when the user removes the active database.
+    const forceNotify = !newStatus.connected && currentStatus?.connected === false;
+
+    if (hasChanged || forceNotify) {
       currentStatus = newStatus;
       notifyListeners();
+    } else {
+      currentStatus = newStatus;
     }
 
     // If connected, stop retrying
@@ -56,11 +62,11 @@ const DbConnectionManager = (() => {
   /**
    * Start periodic connection monitoring with exponential backoff
    */
-  function startMonitoring() {
-    // Initial check
-    checkStatus();
+  async function startMonitoring() {
+    // Await the initial check so currentStatus is populated before deciding to retry
+    await checkStatus();
 
-    // If not connected, schedule first retry
+    // Only schedule retries if still not connected after the initial check
     if (!currentStatus?.connected) {
       scheduleNextRetry();
     }
@@ -118,11 +124,20 @@ const DbConnectionManager = (() => {
   }
 
   /**
-   * Register a listener for status changes
+   * Register a listener for status changes.
+   * Immediately invokes the callback with the current status if known,
+   * so new tabs/re-renders don't miss an already-connected state.
    */
   function onStatusChange(callback) {
     listeners.add(callback);
-    return () => listeners.delete(callback); // Return unsubscribe function
+    if (currentStatus !== null) {
+      try {
+        callback(currentStatus);
+      } catch (err) {
+        console.error('[db-connection-manager] Listener error on immediate notify:', err);
+      }
+    }
+    return () => listeners.delete(callback);
   }
 
   /**
@@ -154,6 +169,17 @@ const DbConnectionManager = (() => {
     return status;
   }
 
+  /**
+   * Switch the active database and refresh status
+   */
+  async function switchDb(newPath) {
+    const result = await globalThis.api.invoke('sql-visualizer:switch-db', { path: newPath });
+    if (result.success) {
+      await checkStatus();
+    }
+    return result;
+  }
+
   return {
     startMonitoring,
     stopMonitoring,
@@ -161,5 +187,6 @@ const DbConnectionManager = (() => {
     onStatusChange,
     retryNow,
     checkStatus,
+    switchDb,
   };
 })();
