@@ -257,7 +257,7 @@ class NetHistory {
         <span class="hist-uptime-name">${_histEsc(d.host.alias || d.host.hostname)}</span>
         <div class="hist-uptime-bar-track">
           <div class="hist-uptime-bar-fill hist-uptime-${tone}" style="width:${pct}%">${pct >= 15 ? '<span class="hist-bar-label">Online</span>' : ''}</div>
-          ${(100 - pct) >= 15 ? '<span class="hist-bar-label hist-bar-label-off">Offline</span>' : ''}
+          ${(100 - pct) >= 15 ? `<span class="hist-bar-label hist-bar-label-off" style="left:${pct}%;width:${100 - pct}%">Offline</span>` : ''}
         </div>
         <span class="hist-uptime-checks">${d.online_checks}/${d.total_checks}</span>
         <span class="hist-status-badge hist-status-${statusLabel}">${statusLabel}</span>
