@@ -41,22 +41,10 @@ function open(dbPath) {
   if (_db) close();
 
   if (!Database) {
-    // Try to use sql.js fallback if available
-    if (sql) {
-      _createInMemoryDb();
-      _dbPath = '(in-memory)';
-      return;
-    }
-    throw new Error('better-sqlite3 not available. Install it or use in-memory mode.');
+    throw new Error('better-sqlite3 not available. Please install it.');
   }
 
   if (!dbPath || !fs.existsSync(dbPath)) {
-    // Try sql.js fallback instead of failing
-    if (sql) {
-      _createInMemoryDb();
-      _dbPath = '(in-memory)';
-      return;
-    }
     throw new Error(`Database file not found: ${dbPath || '(no path)'}`);
   }
 

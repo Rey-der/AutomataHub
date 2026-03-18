@@ -13,3 +13,8 @@ logs/
 *.pem
 *.key
 *.cert
+
+# Database files — live data, not committed
+data/*.db
+data/*.db-wal
+data/*.db-shm

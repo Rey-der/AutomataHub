@@ -1,8 +1,8 @@
 {
   "id": "sql-visualizer",
-  "name": "SQL Visualizer",
-  "version": "1.2.0",
-  "description": "Browse, query, and analyze the Smart Desktop database with tables, queries, analytics, and live monitoring",
+  "name": "SQL Monitor",
+  "version": "1.3.0",
+  "description": "Monitor, query, and visualize your SQLite databases with multi-DB support, analytics, and live monitoring",
   "mainEntry": "main-handlers.js",
   "ipcChannels": [
     "sql-visualizer:get-tables",
@@ -21,10 +21,14 @@
     "sql-visualizer:get-error-patterns",
     "sql-visualizer:get-integrity-report",
     "sql-visualizer:get-db-health",
-    "sql-visualizer:get-correlated-records"
+    "sql-visualizer:get-correlated-records",
+    "sql-visualizer:get-db-list",
+    "sql-visualizer:add-db",
+    "sql-visualizer:remove-db",
+    "sql-visualizer:switch-db"
   ],
   "tabTypes": [
-    { "id": "sql-home", "label": "SQL Dashboard" },
+    { "id": "sql-home", "label": "SQL Monitor" },
     { "id": "sql-table-view", "label": "Table View" },
     { "id": "sql-query", "label": "Query Editor" },
     { "id": "sql-timeline", "label": "Execution Timeline" },
