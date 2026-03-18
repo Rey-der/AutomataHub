@@ -8,6 +8,8 @@
  * - Custom agents on monitored hosts
  */
 
+const { randomInt } = require('node:crypto');
+
 /**
  * Create a metrics collector instance.
  */
@@ -19,10 +21,10 @@ function createMetricsCollector() {
      */
     collectNetworkMetrics: function(hostname) {
       // Simulated data - will be replaced with real SNMP/netflow in Phase 2+
-      const traffic_in = Math.random() * 100; // MB/s, 0-100
-      const traffic_out = Math.random() * 80;
-      const packets_in = Math.floor(Math.random() * 10000);
-      const packets_out = Math.floor(Math.random() * 8000);
+      const traffic_in = randomInt(10001) / 100; // MB/s, 0-100
+      const traffic_out = randomInt(8001) / 100;
+      const packets_in = randomInt(10000);
+      const packets_out = randomInt(8000);
 
       return {
         hostname,
@@ -40,8 +42,8 @@ function createMetricsCollector() {
      */
     collectSystemMetrics: function(hostname) {
       // Simulated data - will be replaced with real system queries in Phase 2+
-      const cpu = Math.random() * 100;
-      const memory = Math.random() * 100;
+      const cpu = randomInt(10001) / 100;
+      const memory = randomInt(10001) / 100;
       const memoryUsed = Math.floor(memory * 32 / 100); // Assuming 32GB total
       
       return {
@@ -60,15 +62,15 @@ function createMetricsCollector() {
      */
     collectBufferMetrics: function(hostname) {
       // Simulated data - will be replaced with real buffer stats in Phase 2+
-      const hits = Math.floor(Math.random() * 1000000);
-      const misses = Math.floor(Math.random() * 100000);
+      const hits = randomInt(1000000);
+      const misses = randomInt(100000);
       const total = hits + misses;
       const hitRate = total > 0 ? (hits / total * 100) : 0;
 
       // Simulate miss distribution
-      const smallMiss = Math.random() * 10;
-      const mediumMiss = Math.random() * 50;
-      const largeMiss = Math.random() * 100;
+      const smallMiss = randomInt(1001) / 100;
+      const mediumMiss = randomInt(5001) / 100;
+      const largeMiss = randomInt(10001) / 100;
 
       return {
         hostname,
