@@ -141,10 +141,21 @@ class NetHistory {
 
         <!-- Uptime bars -->
         <div class="hist-section">
-          <div class="hist-section-title">Uptime Overview</div>
+          <div class="hist-section-header">
+            <div class="hist-section-title">Uptime Overview</div>
+            <button class="hist-refresh-btn" id="hist-refresh-btn" title="Refresh data">↻ Refresh</button>
+          </div>
           ${this.uptimeData.length === 0
             ? '<p class="hist-empty">No uptime data available.</p>'
-            : this.uptimeData.map(d => this._renderUptimeBar(d)).join('')}
+            : `${this._renderUptimeSummary()}
+               <div class="hist-uptime-header">
+                 <span class="hist-uptime-hdr-name">Host</span>
+                 <span class="hist-uptime-hdr-bar">Availability</span>
+                 <span class="hist-uptime-hdr-pct">Uptime</span>
+                 <span class="hist-uptime-hdr-checks">Checks</span>
+                 <span class="hist-uptime-hdr-status">Status</span>
+               </div>
+               ${this.uptimeData.map(d => this._renderUptimeBar(d)).join('')}`}
         </div>
 
         <!-- Status timeline -->
@@ -152,7 +163,15 @@ class NetHistory {
           <div class="hist-section-title">Status Timeline</div>
           ${this.timelineData.length === 0
             ? '<p class="hist-empty">No timeline data available.</p>'
-            : `<div class="hist-timeline">${this.timelineData.map(d => this._renderTimelineRow(d)).join('')}</div>`}
+            : `<div class="hist-tl-legend">
+                 <span class="hist-tl-legend-item"><span class="hist-tl-swatch hist-tl-online"></span> Online</span>
+                 <span class="hist-tl-legend-item"><span class="hist-tl-swatch hist-tl-offline"></span> Offline</span>
+                 <span class="hist-tl-legend-item"><span class="hist-tl-swatch hist-tl-unknown"></span> Unknown</span>
+               </div>
+               <div class="hist-timeline">
+                 ${this.timelineData.map(d => this._renderTimelineRow(d)).join('')}
+                 ${this._renderTimeAxis()}
+               </div>`}
         </div>
 
         <!-- Event log -->
@@ -187,12 +206,49 @@ class NetHistory {
 
   /* ── Uptime bar ─────────────────────────────────────────────── */
 
+  _renderUptimeSummary() {
+    const total = this.uptimeData.length;
+    const avgUptime = total > 0 ? this.uptimeData.reduce((s, d) => s + d.uptime_percent, 0) / total : 0;
+    const onlineCount = this.uptimeData.filter(d => d.host.last_status === 'online').length;
+    const offlineCount = total - onlineCount;
+    const totalChecks = this.uptimeData.reduce((s, d) => s + d.total_checks, 0);
+    let avgTone;
+    if (avgUptime >= 99) avgTone = 'good';
+    else if (avgUptime >= 90) avgTone = 'warn';
+    else avgTone = 'bad';
+    return `
+      <div class="hist-summary">
+        <div class="hist-summary-card">
+          <span class="hist-summary-value hist-uptime-${avgTone}">${avgUptime.toFixed(1)}%</span>
+          <span class="hist-summary-label">Avg Uptime</span>
+        </div>
+        <div class="hist-summary-card">
+          <span class="hist-summary-value">${total}</span>
+          <span class="hist-summary-label">Total Hosts</span>
+        </div>
+        <div class="hist-summary-card">
+          <span class="hist-summary-value" style="color:var(--success)">${onlineCount}</span>
+          <span class="hist-summary-label">Online</span>
+        </div>
+        <div class="hist-summary-card">
+          <span class="hist-summary-value" style="color:${offlineCount > 0 ? 'var(--error)' : 'var(--text-muted)'}">${offlineCount}</span>
+          <span class="hist-summary-label">Offline</span>
+        </div>
+        <div class="hist-summary-card">
+          <span class="hist-summary-value">${totalChecks.toLocaleString()}</span>
+          <span class="hist-summary-label">Total Checks</span>
+        </div>
+      </div>
+    `;
+  }
+
   _renderUptimeBar(d) {
     const pct = d.uptime_percent;
     let tone;
     if (pct >= 99) tone = 'good';
     else if (pct >= 90) tone = 'warn';
     else tone = 'bad';
+    const statusLabel = d.host.last_status || 'unknown';
     return `
       <div class="hist-uptime-row" data-host-id="${d.host.id}">
         <span class="hist-uptime-name">${_histEsc(d.host.alias || d.host.hostname)}</span>
@@ -200,6 +256,8 @@ class NetHistory {
           <div class="hist-uptime-bar-fill hist-uptime-${tone}" style="width:${pct}%"></div>
         </div>
         <span class="hist-uptime-pct hist-uptime-${tone}">${pct.toFixed(1)}%</span>
+        <span class="hist-uptime-checks">${d.online_checks}/${d.total_checks}</span>
+        <span class="hist-status-badge hist-status-${statusLabel}">${statusLabel}</span>
       </div>
     `;
   }
@@ -228,6 +286,26 @@ class NetHistory {
         <div class="hist-tl-track">${blocks}</div>
       </div>
     `;
+  }
+
+  _renderTimeAxis() {
+    const rangeMs = _histRangeMs(this.filterRange);
+    const now = Date.now();
+    const start = now - rangeMs;
+    const ticks = 6;
+    let labels = '';
+    for (let i = 0; i <= ticks; i++) {
+      const t = new Date(start + (rangeMs * i / ticks));
+      let label;
+      if (this.filterRange === '24h') {
+        label = t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      } else {
+        label = t.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      const left = (i / ticks) * 100;
+      labels += `<span class="hist-tl-tick" style="left:${left}%">${label}</span>`;
+    }
+    return `<div class="hist-tl-axis"><div class="hist-tl-axis-inner">${labels}</div></div>`;
   }
 
   /* ── Event log ──────────────────────────────────────────────── */
@@ -333,6 +411,11 @@ class NetHistory {
     const exportBtn = this.container.querySelector('#hist-export-btn');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => this.exportCSV());
+    }
+
+    const refreshBtn = this.container.querySelector('#hist-refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => this._reload());
     }
 
     this.container.querySelectorAll('.hist-tl-row[data-host-id]').forEach(row => {

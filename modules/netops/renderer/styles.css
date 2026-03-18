@@ -2761,6 +2761,153 @@
   border-color: var(--accent);
 }
 
+/* ── History section header with actions ─────────────── */
+
+.hist-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.hist-section-header .hist-section-title {
+  margin-bottom: 0;
+}
+.hist-refresh-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.hist-refresh-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* ── Uptime summary cards ────────────────────────────── */
+
+.hist-summary {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.hist-summary-card {
+  flex: 1;
+  min-width: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.hist-summary-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1.2;
+}
+.hist-summary-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* ── Uptime table header ─────────────────────────────── */
+
+.hist-uptime-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.hist-uptime-hdr-name  { min-width: 140px; }
+.hist-uptime-hdr-bar   { flex: 1; text-align: center; }
+.hist-uptime-hdr-pct   { min-width: 52px; text-align: right; }
+.hist-uptime-hdr-checks { min-width: 70px; text-align: center; }
+.hist-uptime-hdr-status { min-width: 64px; text-align: center; }
+
+/* ── Uptime row extra columns ────────────────────────── */
+
+.hist-uptime-checks {
+  min-width: 70px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.hist-status-badge {
+  min-width: 64px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+.hist-status-online  { background: rgba(78, 201, 176, 0.15); color: var(--success); }
+.hist-status-offline { background: rgba(218, 54, 51, 0.15); color: var(--error); }
+.hist-status-unknown { background: rgba(128, 128, 128, 0.15); color: #888; }
+
+/* ── Timeline legend ─────────────────────────────────── */
+
+.hist-tl-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.hist-tl-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.hist-tl-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* ── Timeline time axis ──────────────────────────────── */
+
+.hist-tl-axis {
+  display: flex;
+  padding-left: 140px; /* match label width */
+  margin-top: 4px;
+}
+.hist-tl-axis-inner {
+  flex: 1;
+  position: relative;
+  height: 20px;
+  border-top: 1px solid var(--border);
+}
+.hist-tl-tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--text-muted);
+  top: 4px;
+  white-space: nowrap;
+}
+
 /* ================================================================
    Phase 7 — UI State Persistence & Polish
    ================================================================ */
