@@ -3,9 +3,8 @@
  * Discovered networks are handled by DiscoveredNetworksPanel (net-discovered.js).
  */
 
-if (typeof API === 'undefined') {
-  var API = globalThis.api;
-}
+(function() {
+const API = globalThis.api;
 
 class NetDashboard {
   constructor() {
@@ -431,3 +430,5 @@ function escapeHtml(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   return String(text || '').replaceAll(/[&<>"']/g, c => map[c]);
 }
+
+})();

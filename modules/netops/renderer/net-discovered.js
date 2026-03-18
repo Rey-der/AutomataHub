@@ -4,9 +4,8 @@
  * Communicates with the parent dashboard via callbacks.
  */
 
-if (typeof API === 'undefined') {
-  var API = globalThis.api;
-}
+(function() {
+const API = globalThis.api;
 
 class DiscoveredNetworksPanel {
   /**
@@ -323,3 +322,7 @@ function _escDisc(text) {
   el.textContent = text || '';
   return el.innerHTML;
 }
+
+globalThis.DiscoveredNetworksPanel = DiscoveredNetworksPanel;
+
+})();

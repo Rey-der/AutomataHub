@@ -3,9 +3,8 @@
  * Displays status pills, aggregate metrics, and 6 interactive charts.
  */
 
-if (typeof API === 'undefined') {
-  var API = globalThis.api;
-}
+(function() {
+const API = globalThis.api;
 
 class NetMetricsDashboard {
   constructor() {
@@ -942,3 +941,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // Note: This class is integrated into the main NetOps Monitor tab
 // via net-dashboard.js. No separate tab registration needed.
+
+globalThis.NetMetricsDashboard = NetMetricsDashboard;
+
+})();
