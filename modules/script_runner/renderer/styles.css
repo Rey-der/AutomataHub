@@ -10,11 +10,18 @@
 
 .script-card .card-footer {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
   justify-content: flex-end;
   margin-top: auto;
   padding-top: var(--space-md);
   border-top: 1px solid var(--border);
+}
+
+.script-card .card-footer .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
 }
 
 /* --- Execution Tab --- */
@@ -732,7 +739,7 @@
   overflow-y: auto;
   padding: var(--space-lg);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-md);
   background: var(--surface);
 }
@@ -747,6 +754,8 @@
   border-radius: 6px;
   transition: all 150ms ease;
   cursor: pointer;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .script-card:hover {
