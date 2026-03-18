@@ -3024,9 +3024,9 @@
   min-width: 52px;
   text-align: center;
 }
-.na-sev-critical { background: #3b1111; color: #fecaca; }
-.na-sev-warning  { background: #3b2a0a; color: #fef08a; }
-.na-sev-info     { background: #0c1f3b; color: #bfdbfe; }
+.na-sev-critical { background: #450a0a; color: #fee2e2; }
+.na-sev-warning  { background: #422006; color: #fefce8; }
+.na-sev-info     { background: #172554; color: #dbeafe; }
 
 /* Alert list rows */
 .na-alert-list { display: flex; flex-direction: column; gap: 2px; }

@@ -29,7 +29,7 @@ class NetHostList {
       <div class="hl-wrapper">
         <div class="hl-header"><div class="skeleton skeleton-text" style="width:120px;height:24px"></div></div>
         <table class="hl-table"><tbody>
-          ${new Array(5).fill('<tr class="hl-row"><td colspan="8"><div class="skeleton skeleton-row"></div></td></tr>').join('')}
+          ${'<tr class="hl-row"><td colspan="8"><div class="skeleton skeleton-row"></div></td></tr>'.repeat(5)}
         </tbody></table>
       </div>
     `;
