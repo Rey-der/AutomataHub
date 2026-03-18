@@ -240,7 +240,7 @@ class NetHostDetail {
     const status = check.status || 'unknown';
     const lat = check.latency_ms == null ? '\u2014' : `${check.latency_ms}ms`;
     return `
-      <tr class="hd-check-row">`
+      <tr class="hd-check-row">
         <td class="hd-check-time">${dateStr} ${timeStr}</td>
         <td class="hd-check-status"><span class="hd-dot hd-dot-${status}"></span>${status}</td>
         <td class="hd-check-lat">${lat}</td>
