@@ -68,7 +68,24 @@ try {
 
 // 4. Boot tab manager and show home
 globalThis.tabManager = new TabManager();
+
+// Register hub-level tab types that loaded before TabManager existed
+if (globalThis.dbManagerTab?.register) {
+  globalThis.dbManagerTab.register(globalThis.tabManager);
+}
+
 globalThis.tabManager.switchTab('home');
+
+// 4b. Listen for DB auth failures (always, even when DB Manager tab is closed)
+globalThis.api.on('hub:db-auth-failed', (data) => {
+  if (data?.dbPath) {
+    const name = data.dbPath.split('/').pop();
+    globalThis.ui.showNotification(
+      `Stored password for ${name} failed (${data.module || 'unknown module'})`,
+      'warning', 5000
+    );
+  }
+});
 
 // 5. Auto-start modules with autoStart preference
 // Use setTimeout to let module renderer scripts finish registering their tab types

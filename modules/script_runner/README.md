@@ -2,6 +2,10 @@
 
 > Script Runner module for [AutomataHub](https://github.com/Rey-der/AutomataHub) — execute and manage local automation scripts with org user-defined topics and live terminal output.
 
+<p align="center">
+  <img src="../../resources/screenshots/script_runner/script_runner.gif" alt="Script Runner" width="800" />
+</p>
+
 ## What It Does
 
 This module adds script execution and organization capabilities to AutomataHub:

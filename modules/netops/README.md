@@ -2,6 +2,10 @@
 
 Real-time network monitoring, host status tracking, and network scanning for infrastructure automation.
 
+<p align="center">
+  <img src="../../resources/screenshots/netops/netops.gif" alt="NetOps Monitor" width="800" />
+</p>
+
 ## Features
 
 ### Live Dashboard

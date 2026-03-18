@@ -7,10 +7,9 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { app } = require('electron');
 const initSqlJs = require('sql.js');
 
-const DB_DIR = path.join(app.getPath('userData'), 'script-runner');
+const DB_DIR = path.dirname(__dirname);  // modules/script_runner/
 const DB_FILE = path.join(DB_DIR, 'script-runner.sqlite');
 
 const FLUSH_INTERVAL_MS = 60_000;

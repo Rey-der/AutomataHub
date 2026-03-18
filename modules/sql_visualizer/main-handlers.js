@@ -14,6 +14,9 @@ const analyzer = require(path.join(__dirname, 'query-analyzer'));
 // Hub utilities — resolved at setup() time via paths.root
 let ERROR_MESSAGES, friendlyError;
 
+// Hub credential helper — supplied via ctx.getDbCredential
+let _getDbCredential = null;
+
 // Multi-DB state
 let _dbList = [];       // ordered list of known DB paths
 let _activeDbPath = null;  // currently connected DB path
@@ -30,15 +33,17 @@ function _saveDbList() {
  * This mirrors the startup logic so add/switch/remove all behave consistently.
  */
 async function _openWithFallback(dbPath) {
+  const password = _getDbCredential ? _getDbCredential(dbPath) : null;
+  const opts = password ? { password } : undefined;
   try {
-    dbBridge.open(dbPath);
+    dbBridge.open(dbPath, opts);
     console.log(`[sql-monitor] _openWithFallback: opened via better-sqlite3: ${dbPath}`);
     return { success: true };
   } catch (err) {
     const betterErr = err.message;
     console.error(`[sql-monitor] _openWithFallback: better-sqlite3 failed (${betterErr}) — trying sql.js fallback...`);
     try {
-      await dbBridge.initSqlJsFallbackWithFile(dbPath);
+      await dbBridge.initSqlJsFallbackWithFile(dbPath, opts);
       if (dbBridge.isConnected()) {
         console.log(`[sql-monitor] _openWithFallback: sql.js fallback succeeded for: ${dbPath}`);
         return { success: true, usedFallback: true };
@@ -72,6 +77,11 @@ function resolveDbPath(hubRoot) {
 function setup(ctx) {
   const { ipcBridge, paths } = ctx;
 
+  // Store hub credential helper if available
+  if (typeof ctx.getDbCredential === 'function') {
+    _getDbCredential = ctx.getDbCredential;
+  }
+
   // Resolve hub utilities
   const hubApp = path.join(paths.root, 'app');
   ({ ERROR_MESSAGES, friendlyError } = require(path.join(hubApp, 'core', 'errors')));
@@ -91,17 +101,23 @@ function setup(ctx) {
     || (_dbList.length > 0 ? _dbList[0] : null)
     || (isFirstRun ? resolveDbPath(paths.root) : null);
   if (dbPath) {
+    const initPassword = _getDbCredential ? _getDbCredential(dbPath) : null;
+    const initOpts = initPassword ? { password: initPassword } : undefined;
     try {
-      dbBridge.open(dbPath);
+      dbBridge.open(dbPath, initOpts);
       console.log(`[sql-monitor] Connected to database: ${dbPath}`);
       _activeDbPath = dbPath;
       if (!_dbList.includes(dbPath)) _dbList.push(dbPath);
       _saveDbList();
     } catch (err) {
       console.error(`[sql-monitor] Failed to open database with better-sqlite3: ${err.message}`);
+      if (initPassword) {
+        console.warn(`[hub] Stored password for ${dbPath} failed — module may prompt user`);
+        ctx.send('hub:db-auth-failed', { dbPath, module: 'sql-visualizer' });
+      }
       console.error('  Attempting sql.js fallback with direct data loading...');
       // Try sql.js fallback, but load actual data from the real database file
-      dbBridge.initSqlJsFallbackWithFile(dbPath).then(() => {
+      dbBridge.initSqlJsFallbackWithFile(dbPath, initOpts).then(() => {
         if (dbBridge.isConnected()) {
           // Keep _activeDbPath and _dbList in sync for the fallback case
           _activeDbPath = dbPath;
