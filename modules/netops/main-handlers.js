@@ -78,7 +78,7 @@ function setup(config) {
   }
 
   async function pingAndUpdate(hostId, hostname, hostConfig) {
-    const result = await monitor.ping(hostname, hostConfig);
+    const result = await Promise.resolve(monitor.ping(hostname, hostConfig));
     const status = result.online ? 'online' : 'offline';
     const latency_ms = result.latency_ms ?? result.latency ?? null;
     const ts = new Date().toISOString();

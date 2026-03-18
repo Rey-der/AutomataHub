@@ -29,7 +29,7 @@ class NetHostList {
       <div class="hl-wrapper">
         <div class="hl-header"><div class="skeleton skeleton-text" style="width:120px;height:24px"></div></div>
         <table class="hl-table"><tbody>
-          ${[...Array(5)].fill('<tr class="hl-row"><td colspan="8"><div class="skeleton skeleton-row"></div></td></tr>').join('')}
+          ${[...new Array(5)].fill('<tr class="hl-row"><td colspan="8"><div class="skeleton skeleton-row"></div></td></tr>').join('')}
         </tbody></table>
       </div>
     `;
@@ -177,8 +177,8 @@ class NetHostList {
     const history = this.historyCache[host.id] || [];
     const lastCheck = cached?.timestamp || host.last_check;
 
-    const latStr = latency != null ? `${latency}ms` : '\u2014';
-    const uptimeStr = uptime != null ? `${uptime.toFixed(1)}%` : '\u2014';
+    const latStr = latency == null ? '\u2014' : `${latency}ms`;
+    const uptimeStr = uptime == null ? '\u2014' : `${uptime.toFixed(1)}%`;
     const timeStr = lastCheck ? _hlFormatTime(lastCheck) : '\u2014';
 
     const disabled = !host.enabled;
@@ -630,7 +630,7 @@ class NetHostList {
     if (statusCell) statusCell.innerHTML = `<span class="hl-status-dot hl-dot-${status}"></span>${status}`;
 
     const latCell = row.querySelector('.hl-lat-val');
-    if (latCell) latCell.textContent = latency != null ? `${latency}ms` : '\u2014';
+    if (latCell) latCell.textContent = latency == null ? '\u2014' : `${latency}ms`;
 
     const timeCell = row.querySelector('.hl-td-time');
     if (timeCell) timeCell.textContent = timeStr;
@@ -646,7 +646,7 @@ class NetHostList {
       const uptimeCell = row.querySelector('.hl-td-uptime');
       if (uptimeCell) {
         const pct = res.uptime_percent;
-        uptimeCell.textContent = pct != null ? `${pct.toFixed(1)}%` : '\u2014';
+        uptimeCell.textContent = pct == null ? '\u2014' : `${pct.toFixed(1)}%`;
       }
     } catch { /* ignore */ }
   }

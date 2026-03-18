@@ -84,7 +84,7 @@ function register(ipcBridge, { executor, send, paths, ensureDir, ERROR_MESSAGES 
       ensureDir(logsDir);
 
       const now = new Date();
-      const datePart = now.toISOString().replaceAll(/T/g, '_').replaceAll(/:/g, '-').replaceAll(/\..+/g, '');
+      const datePart = now.toISOString().replaceAll('T', '_').replaceAll(':', '-').replaceAll(/\..+/g, '');
       const safeName = String(scriptName || 'log').replaceAll(/[^a-z0-9_-]/gi, '_');
       const fileName = `${safeName}_${datePart}.txt`;
       const filePath = path.join(logsDir, fileName);

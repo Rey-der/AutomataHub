@@ -576,7 +576,7 @@ class TopicList {
     a.download = `topics-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    globalThis.ui?.showNotification?.(`Exported ${topics.length} topic${topics.length !== 1 ? 's' : ''}`, 'success');
+    globalThis.ui?.showNotification?.(`Exported ${topics.length} topic${topics.length === 1 ? '' : 's'}`, 'success');
   }
 
   _handleImportTopics() {
@@ -612,11 +612,13 @@ class TopicList {
 
         await this.app.loadTopics();
         this.render();
+        const plural = imported === 1 ? '' : 's';
         const msg = skipped > 0
           ? `Imported ${imported}, skipped ${skipped} (duplicates or invalid)`
-          : `Imported ${imported} topic${imported === 1 ? '' : 's'}`;
+          : `Imported ${imported} topic${plural}`;
         globalThis.ui?.showNotification?.(msg, 'success');
       } catch (err) {
+        console.error('[script-runner] Import topics error:', err.message);
         globalThis.ui?.showNotification?.('Failed to parse JSON file', 'error');
       }
     });

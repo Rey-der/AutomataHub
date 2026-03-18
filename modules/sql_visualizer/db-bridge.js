@@ -239,7 +239,7 @@ function _getSchema() {
  * Parse PRAGMA table_info result from sql.js format to match better-sqlite3.
  */
 function _parseTableInfo(result) {
-  if (!result || !result.values) return [];
+  if (!result?.values) return [];
   const cid = result.columns.indexOf('cid');
   const name = result.columns.indexOf('name');
   const type = result.columns.indexOf('type');
@@ -328,35 +328,31 @@ function getRowCount(table) {
  * Dashboard stats: row count + latest timestamp per table.
  * Tries common timestamp columns (timestamp, start_time, backup_date, processing_timestamp).
  */
+function _getLatestTimestamp(table, colNames) {
+  const TIMESTAMP_COLS = ['timestamp', 'start_time', 'backup_date', 'processing_timestamp', 'invoice_date'];
+  for (const tsCol of TIMESTAMP_COLS) {
+    if (!colNames.has(tsCol)) continue;
+    if (_usesSqlJs) {
+      const result = _db.exec(`SELECT "${tsCol}" AS ts FROM "${table}" ORDER BY "${tsCol}" DESC LIMIT 1`);
+      if (result.length > 0 && result[0].values.length > 0) return result[0].values[0][0];
+    } else {
+      const row = _db.prepare(`SELECT "${tsCol}" AS ts FROM "${table}" ORDER BY "${tsCol}" DESC LIMIT 1`).get();
+      if (row?.ts) return row.ts;
+    }
+    break;
+  }
+  return null;
+}
+
 function getTableStats() {
   const tables = getTables();
   const stats = [];
-
-  const TIMESTAMP_COLS = ['timestamp', 'start_time', 'backup_date', 'processing_timestamp', 'invoice_date'];
 
   for (const table of tables) {
     const count = getRowCount(table);
     const cols = _getSchema()[table];
     const colNames = new Set(cols.map((c) => c.name));
-
-    let latest = null;
-    for (const tsCol of TIMESTAMP_COLS) {
-      if (colNames.has(tsCol)) {
-        if (_usesSqlJs) {
-          const result = _db.exec(`SELECT "${tsCol}" AS ts FROM "${table}" ORDER BY "${tsCol}" DESC LIMIT 1`);
-          if (result.length > 0 && result[0].values.length > 0) {
-            latest = result[0].values[0][0];
-          }
-        } else {
-          const row = _db.prepare(`SELECT "${tsCol}" AS ts FROM "${table}" ORDER BY "${tsCol}" DESC LIMIT 1`).get();
-          if (row && row.ts) {
-            latest = row.ts;
-          }
-        }
-        break;
-      }
-    }
-
+    const latest = _getLatestTimestamp(table, colNames);
     stats.push({ table, count, latest });
   }
 

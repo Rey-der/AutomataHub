@@ -76,10 +76,10 @@ class NetMetricsDashboard {
         <div class="skeleton-header" style="height: 60px; background: var(--surface); margin-bottom: 16px; border-radius: 6px;"></div>
         <div class="skeleton-pills" style="height: 120px; background: var(--surface); margin-bottom: 16px; border-radius: 6px;"></div>
         <div class="skeleton-kpi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
-          ${[...Array(6)].fill().map(() => '<div style="height: 100px; background: var(--surface); border-radius: 6px;"></div>').join('')}
+          ${[...new Array(6)].fill(null).map(() => '<div style="height: 100px; background: var(--surface); border-radius: 6px;"></div>').join('')}
         </div>
         <div class="skeleton-charts" style="display: grid; gap: 20px;">
-          ${[...Array(3)].fill().map(() => '<div style="height: 300px; background: var(--surface); border-radius: 6px;"></div>').join('')}
+          ${[...new Array(3)].fill(null).map(() => '<div style="height: 300px; background: var(--surface); border-radius: 6px;"></div>').join('')}
         </div>
       </div>
     `;
@@ -152,7 +152,7 @@ class NetMetricsDashboard {
             aggregates
           });
           
-          if (netCount > 0 && networkMetrics.metrics) {
+          if (netCount > 0 && networkMetrics?.metrics) {
             console.log('[net-metrics] Latest network metric:', networkMetrics.metrics[networkMetrics.metrics.length - 1]);
           }
 
@@ -216,7 +216,7 @@ class NetMetricsDashboard {
       await this.loadMetrics();
       
       // Only refresh charts if we're still visible (container still exists)
-      if (this.container && this.container.parentElement) {
+      if (this.container?.parentElement) {
         console.log('[net-metrics] ✅ Refreshing charts for updated metrics');
         this.refreshAllCharts();
         this.updateKPICards();
@@ -238,7 +238,7 @@ class NetMetricsDashboard {
     this.autoRefreshInterval = setInterval(async () => {
       await this.loadMetrics();
       // Update display with newly loaded metrics
-      if (this.container && this.container.parentElement) {
+      if (this.container?.parentElement) {
         this.refreshAllCharts();
         this.updateKPICards();
       }
@@ -686,7 +686,6 @@ class NetMetricsDashboard {
       cpuTrend,
       avgMemory,
       memoryTrend,
-      totalTrafficIn,
       totalTrafficIn: stats.totalTrafficIn,
       totalTrafficOut: stats.totalTrafficOut,
       uptime,
@@ -735,7 +734,7 @@ class NetMetricsDashboard {
     if (count === 0) return 0;
     firstHalf /= count;
     secondHalf /= count;
-    return firstHalf !== 0 ? ((secondHalf - firstHalf) / firstHalf) * 100 : 0;
+    return firstHalf === 0 ? 0 : ((secondHalf - firstHalf) / firstHalf) * 100;
   }
 
   _cacheTrend(cache, metric) {
@@ -766,7 +765,7 @@ class NetMetricsDashboard {
         this.timeRange = range;
         await this.loadMetrics();
         // Update display with newly loaded metrics for selected time range
-        if (this.container && this.container.parentElement) {
+        if (this.container?.parentElement) {
           this.refreshAllCharts();
           this.updateKPICards();
         }
@@ -786,14 +785,13 @@ class NetMetricsDashboard {
     const latency = statusData?.latency_ms;
 
     pill.className = `status-pill status-${status}`;
-    if (latency != null) {
-      const latencyEl = pill.querySelector('.pill-latency');
-      if (latencyEl) {
-        latencyEl.textContent = `${latency}ms`;
-      } else {
-        const content = pill.querySelector('.pill-content');
-        content.innerHTML += `<div class="pill-latency">${latency}ms</div>`;
-      }
+    if (latency == null) return;
+    const latencyEl = pill.querySelector('.pill-latency');
+    if (latencyEl) {
+      latencyEl.textContent = `${latency}ms`;
+    } else {
+      const content = pill.querySelector('.pill-content');
+      content.innerHTML += `<div class="pill-latency">${latency}ms</div>`;
     }
   }
 

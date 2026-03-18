@@ -39,7 +39,7 @@ async function check(host, opts = {}) {
   } catch (err) {
     // If permission denied or not available, fall back to TCP
     if (isPermanentFailure(err)) {
-      const result = await tcpCheck.check(host, opts);
+      const result = await Promise.resolve(tcpCheck.check(host, opts));
       result.detail = { ...result.detail, icmpFallback: true, icmpError: err.message };
       return result;
     }
