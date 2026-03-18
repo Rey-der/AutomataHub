@@ -2929,7 +2929,7 @@
 }
 .hist-status-online  { background: rgba(78, 201, 176, 0.15); color: var(--success); }
 .hist-status-offline { background: rgba(218, 54, 51, 0.15); color: var(--error); }
-.hist-status-unknown { background: rgba(128, 128, 128, 0.15); color: #a0a0a0; }
+.hist-status-unknown { background: rgba(128, 128, 128, 0.15); color: var(--text-dim); }
 
 /* ── Timeline legend ─────────────────────────────────── */
 

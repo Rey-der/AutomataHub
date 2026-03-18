@@ -91,6 +91,7 @@
 
 .variant-badges {
   display: flex;
+  align-items: center;
   gap: 4px;
   flex-wrap: wrap;
 }
@@ -2081,14 +2082,6 @@
 }
 
 /* .sc-fav-btn hover/active colours are handled by core.css .card-toggle + .toggle-favorite */
-
-/* Keep variant badges next to the action buttons */
-.variant-badges {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
 
 /* ---- Responsive: auto-collapse sidebar below 900px ---- */
 @media (max-width: 900px) {

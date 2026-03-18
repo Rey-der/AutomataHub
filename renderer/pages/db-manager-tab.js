@@ -215,7 +215,7 @@ const DbManagerTab = (() => {
     // Insert before card actions
     const actionsEl = card.querySelector('.dbm-card-actions');
     if (actionsEl) {
-      card.insertBefore(form, actionsEl);
+      actionsEl.before(form);
     } else {
       card.appendChild(form);
     }
@@ -287,7 +287,7 @@ const DbManagerTab = (() => {
 
     const actionsEl = card.querySelector('.dbm-card-actions');
     if (actionsEl) {
-      card.insertBefore(form, actionsEl);
+      actionsEl.before(form);
     } else {
       card.appendChild(form);
     }
@@ -297,6 +297,63 @@ const DbManagerTab = (() => {
   // ---------------------------------------------------------------------------
   // Card builder
   // ---------------------------------------------------------------------------
+
+  function _buildCardMeta(db) {
+    const meta = document.createElement('div');
+    meta.className = 'dbm-card-meta';
+
+    const sizeSpan = document.createElement('span');
+    sizeSpan.textContent = formatSize(db.sizeBytes);
+    meta.appendChild(sizeSpan);
+
+    const status = document.createElement('span');
+    status.className = 'dbm-status';
+    const dot = document.createElement('span');
+    dot.className = 'dbm-status-dot ' + (hasPassword(db.path) ? 'has-password' : 'no-password');
+    status.appendChild(dot);
+    const statusLabel = document.createElement('span');
+    statusLabel.textContent = hasPassword(db.path) ? 'Password set' : 'No password';
+    status.appendChild(statusLabel);
+    meta.appendChild(status);
+
+    const testResult = testResults[db.path];
+    if (testResult) {
+      const testStatus = document.createElement('span');
+      testStatus.className = 'dbm-status';
+      const testDot = document.createElement('span');
+      testDot.className = 'dbm-status-dot ' + (testResult.success ? 'test-ok' : 'test-fail');
+      testStatus.appendChild(testDot);
+      const testLabel = document.createElement('span');
+      testLabel.textContent = testResult.success ? 'Connected' : 'Failed';
+      testStatus.appendChild(testLabel);
+      meta.appendChild(testStatus);
+    }
+
+    if (hasAuthFailure(db.path)) {
+      const warnBadge = document.createElement('span');
+      warnBadge.className = 'dbm-badge dbm-badge-warn';
+      warnBadge.textContent = 'Auth failed';
+      meta.appendChild(warnBadge);
+    }
+
+    return meta;
+  }
+
+  function _buildTestDetail(db) {
+    const testResult = testResults[db.path];
+    const testDetail = document.createElement('div');
+    testDetail.className = 'dbm-test-result';
+    if (testResult) {
+      if (testResult.success && testResult.tables) {
+        testDetail.classList.add('success');
+        testDetail.textContent = `${testResult.tables.length} table(s): ${testResult.tables.slice(0, 5).join(', ')}${testResult.tables.length > 5 ? '...' : ''}`;
+      } else if (!testResult.success && testResult.error) {
+        testDetail.classList.add('error');
+        testDetail.textContent = testResult.error;
+      }
+    }
+    return testDetail;
+  }
 
   function buildCard(db) {
     const card = document.createElement('div');
@@ -321,61 +378,11 @@ const DbManagerTab = (() => {
     pathEl.textContent = db.relativePath;
     card.appendChild(pathEl);
 
-    // Meta: size + status
-    const meta = document.createElement('div');
-    meta.className = 'dbm-card-meta';
-
-    const sizeSpan = document.createElement('span');
-    sizeSpan.textContent = formatSize(db.sizeBytes);
-    meta.appendChild(sizeSpan);
-
-    const status = document.createElement('span');
-    status.className = 'dbm-status';
-    const dot = document.createElement('span');
-    dot.className = 'dbm-status-dot ' + (hasPassword(db.path) ? 'has-password' : 'no-password');
-    status.appendChild(dot);
-    const statusLabel = document.createElement('span');
-    statusLabel.textContent = hasPassword(db.path) ? 'Password set' : 'No password';
-    status.appendChild(statusLabel);
-    meta.appendChild(status);
-
-    // Connection test indicator
-    const testResult = testResults[db.path];
-    if (testResult) {
-      const testStatus = document.createElement('span');
-      testStatus.className = 'dbm-status';
-      const testDot = document.createElement('span');
-      testDot.className = 'dbm-status-dot ' + (testResult.success ? 'test-ok' : 'test-fail');
-      testStatus.appendChild(testDot);
-      const testLabel = document.createElement('span');
-      testLabel.textContent = testResult.success ? 'Connected' : 'Failed';
-      testStatus.appendChild(testLabel);
-      meta.appendChild(testStatus);
-    }
-
-    // Auth failure warning
-    if (hasAuthFailure(db.path)) {
-      const warnBadge = document.createElement('span');
-      warnBadge.className = 'dbm-badge dbm-badge-warn';
-      warnBadge.textContent = 'Auth failed';
-      meta.appendChild(warnBadge);
-    }
-
-    card.appendChild(meta);
+    // Meta: size + status + test indicator + auth warning
+    card.appendChild(_buildCardMeta(db));
 
     // Test result details
-    const testDetail = document.createElement('div');
-    testDetail.className = 'dbm-test-result';
-    if (testResult) {
-      if (testResult.success && testResult.tables) {
-        testDetail.classList.add('success');
-        testDetail.textContent = `${testResult.tables.length} table(s): ${testResult.tables.slice(0, 5).join(', ')}${testResult.tables.length > 5 ? '...' : ''}`;
-      } else if (!testResult.success && testResult.error) {
-        testDetail.classList.add('error');
-        testDetail.textContent = testResult.error;
-      }
-    }
-    card.appendChild(testDetail);
+    card.appendChild(_buildTestDetail(db));
 
     // Action buttons
     const actions = document.createElement('div');

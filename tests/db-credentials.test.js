@@ -21,10 +21,10 @@ const CREDS_FILE = path.join(TMP_DIR, 'db-credentials.json');
 
 // Simple XOR-based reversible "encryption" for testing (NOT real crypto)
 function fakeEncrypt(str) {
-  return Buffer.from(str.split('').map((c, i) => c.charCodeAt(0) ^ ((i + 42) % 256)));
+  return Buffer.from(str.split('').map((c, i) => c.codePointAt(0) ^ ((i + 42) % 256)));
 }
 function fakeDecrypt(buf) {
-  return Array.from(buf).map((b, i) => String.fromCharCode(b ^ ((i + 42) % 256))).join('');
+  return Array.from(buf).map((b, i) => String.fromCodePoint(b ^ ((i + 42) % 256))).join('');
 }
 
 const electronMock = {

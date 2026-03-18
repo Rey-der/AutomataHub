@@ -48,8 +48,8 @@ async function _openWithFallback(dbPath) {
         console.log(`[sql-monitor] _openWithFallback: sql.js fallback succeeded for: ${dbPath}`);
         return { success: true, usedFallback: true };
       }
-    } catch (err2) {
-      const fallbackErr = err2.message;
+    } catch (error_) {
+      const fallbackErr = error_.message;
       console.error(`[sql-monitor] _openWithFallback: sql.js fallback also failed: ${fallbackErr}`);
       return { success: false, error: `better-sqlite3: ${betterErr} | sql.js: ${fallbackErr}` };
     }
@@ -70,6 +70,45 @@ function resolveDbPath(hubRoot) {
   if (fs.existsSync(local)) return local;
 
   return null;
+}
+
+function _initDatabaseConnection(ctx, hubRoot, isFirstRun) {
+  const dbPath = _activeDbPath
+    || (_dbList.length > 0 ? _dbList[0] : null)
+    || (isFirstRun ? resolveDbPath(hubRoot) : null);
+  if (!dbPath) {
+    console.log('[sql-monitor] No database configured. Use the DB connector in the UI to add one.');
+    return;
+  }
+
+  const initPassword = _getDbCredential ? _getDbCredential(dbPath) : null;
+  const initOpts = initPassword ? { password: initPassword } : undefined;
+  try {
+    dbBridge.open(dbPath, initOpts);
+    console.log(`[sql-monitor] Connected to database: ${dbPath}`);
+    _activeDbPath = dbPath;
+    if (!_dbList.includes(dbPath)) _dbList.push(dbPath);
+    _saveDbList();
+  } catch (err) {
+    console.error(`[sql-monitor] Failed to open database with better-sqlite3: ${err.message}`);
+    if (initPassword) {
+      console.warn(`[hub] Stored password for ${dbPath} failed — module may prompt user`);
+      ctx.send('hub:db-auth-failed', { dbPath, module: 'sql-visualizer' });
+    }
+    console.error('  Attempting sql.js fallback with direct data loading...');
+    dbBridge.initSqlJsFallbackWithFile(dbPath, initOpts).then(() => {
+      if (dbBridge.isConnected()) {
+        _activeDbPath = dbPath;
+        if (!_dbList.includes(dbPath)) _dbList.push(dbPath);
+        _saveDbList();
+        console.log('[sql-monitor] Using sql.js with data from ' + dbPath);
+      } else {
+        console.error('[sql-monitor] Both better-sqlite3 and sql.js fallback failed');
+      }
+    }).catch(error_ => {
+      console.error('[sql-monitor] sql.js fallback error:', error_.message);
+    });
+  }
 }
 
 // --- Module setup/teardown ---
@@ -94,46 +133,8 @@ function setup(ctx) {
   _dbList = isFirstRun ? [] : [...savedPrefs.dbList];
   _activeDbPath = savedPrefs.activeDbPath || null;
 
-  // Open database connection:
-  // - If we have a saved active DB or a saved list, use those (respects user removals).
-  // - On first run only, auto-detect via resolveDbPath so the DB appears in the connector.
-  const dbPath = _activeDbPath
-    || (_dbList.length > 0 ? _dbList[0] : null)
-    || (isFirstRun ? resolveDbPath(paths.root) : null);
-  if (dbPath) {
-    const initPassword = _getDbCredential ? _getDbCredential(dbPath) : null;
-    const initOpts = initPassword ? { password: initPassword } : undefined;
-    try {
-      dbBridge.open(dbPath, initOpts);
-      console.log(`[sql-monitor] Connected to database: ${dbPath}`);
-      _activeDbPath = dbPath;
-      if (!_dbList.includes(dbPath)) _dbList.push(dbPath);
-      _saveDbList();
-    } catch (err) {
-      console.error(`[sql-monitor] Failed to open database with better-sqlite3: ${err.message}`);
-      if (initPassword) {
-        console.warn(`[hub] Stored password for ${dbPath} failed — module may prompt user`);
-        ctx.send('hub:db-auth-failed', { dbPath, module: 'sql-visualizer' });
-      }
-      console.error('  Attempting sql.js fallback with direct data loading...');
-      // Try sql.js fallback, but load actual data from the real database file
-      dbBridge.initSqlJsFallbackWithFile(dbPath, initOpts).then(() => {
-        if (dbBridge.isConnected()) {
-          // Keep _activeDbPath and _dbList in sync for the fallback case
-          _activeDbPath = dbPath;
-          if (!_dbList.includes(dbPath)) _dbList.push(dbPath);
-          _saveDbList();
-          console.log('[sql-monitor] Using sql.js with data from ' + dbPath);
-        } else {
-          console.error('[sql-monitor] Both better-sqlite3 and sql.js fallback failed');
-        }
-      }).catch(err2 => {
-        console.error('[sql-monitor] sql.js fallback error:', err2.message);
-      });
-    }
-  } else {
-    console.log('[sql-monitor] No database configured. Use the DB connector in the UI to add one.');
-  }
+  // Open database connection
+  _initDatabaseConnection(ctx, paths.root, isFirstRun);
 
   // --- IPC Handlers ---
 
@@ -349,16 +350,16 @@ function setup(ctx) {
     // when the sql.js fallback path was used during setup.
     const alreadyConnected = dbBridge.isConnected() && dbBridge.getDbPath() === chosen;
     let openError = null;
-    if (!alreadyConnected) {
+    if (alreadyConnected) {
+      // Ensure _activeDbPath is in sync even if we skip the open
+      _activeDbPath = chosen;
+    } else {
       const openResult = await _openWithFallback(chosen);
       if (openResult.success) {
         _activeDbPath = chosen;
       } else {
         openError = openResult.error;
       }
-    } else {
-      // Ensure _activeDbPath is in sync even if we skip the open
-      _activeDbPath = chosen;
     }
     _saveDbList();
     return { path: chosen, dbs: [..._dbList], active: _activeDbPath, autoSwitched: !alreadyConnected, openError };

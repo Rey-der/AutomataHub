@@ -104,28 +104,10 @@ function scanForDatabases(rootDir, modulesDir, userDataDir) {
   }
 
   // 1. Scan data/ directory (hub-level databases)
-  const dataDir = path.join(rootDir, 'data');
-  for (const dbPath of _walk(dataDir, 3)) {
-    addResult(dbPath, 'hub');
-  }
+  _scanDataDir(rootDir, addResult);
 
   // 2. Scan each module directory (in-project)
-  if (fs.existsSync(modDir)) {
-    let moduleEntries;
-    try {
-      moduleEntries = fs.readdirSync(modDir, { withFileTypes: true });
-    } catch {
-      moduleEntries = [];
-    }
-    for (const entry of moduleEntries) {
-      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
-      const thisModDir = path.join(modDir, entry.name);
-      const moduleId = _readModuleId(thisModDir) || entry.name;
-      for (const dbPath of _walk(thisModDir, 4)) {
-        addResult(dbPath, `module:${moduleId}`);
-      }
-    }
-  }
+  _scanModulesDir(modDir, addResult);
 
   // 3. Scan project root (top-level only, depth 1) for any stray DBs
   for (const dbPath of _walk(rootDir, 1)) {
@@ -133,23 +115,51 @@ function scanForDatabases(rootDir, modulesDir, userDataDir) {
   }
 
   // 4. Scan Electron userData directory for module databases stored outside the project
-  if (userDataDir && fs.existsSync(userDataDir)) {
-    let udEntries;
-    try {
-      udEntries = fs.readdirSync(userDataDir, { withFileTypes: true });
-    } catch {
-      udEntries = [];
-    }
-    for (const entry of udEntries) {
-      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
-      const subDir = path.join(userDataDir, entry.name);
-      for (const dbPath of _walk(subDir, 3)) {
-        addResult(dbPath, `module:${entry.name}`, userDataDir);
-      }
-    }
-  }
+  _scanUserDataDir(userDataDir, addResult);
 
   return results;
+}
+
+function _scanDataDir(rootDir, addResult) {
+  const dataDir = path.join(rootDir, 'data');
+  for (const dbPath of _walk(dataDir, 3)) {
+    addResult(dbPath, 'hub');
+  }
+}
+
+function _scanModulesDir(modDir, addResult) {
+  if (!fs.existsSync(modDir)) return;
+  let moduleEntries;
+  try {
+    moduleEntries = fs.readdirSync(modDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of moduleEntries) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+    const thisModDir = path.join(modDir, entry.name);
+    const moduleId = _readModuleId(thisModDir) || entry.name;
+    for (const dbPath of _walk(thisModDir, 4)) {
+      addResult(dbPath, `module:${moduleId}`);
+    }
+  }
+}
+
+function _scanUserDataDir(userDataDir, addResult) {
+  if (!userDataDir || !fs.existsSync(userDataDir)) return;
+  let udEntries;
+  try {
+    udEntries = fs.readdirSync(userDataDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of udEntries) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+    const subDir = path.join(userDataDir, entry.name);
+    for (const dbPath of _walk(subDir, 3)) {
+      addResult(dbPath, `module:${entry.name}`, userDataDir);
+    }
+  }
 }
 
 module.exports = { scanForDatabases };
