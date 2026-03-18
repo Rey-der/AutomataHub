@@ -847,6 +847,8 @@
   flex: 1;
   overflow: auto;
   padding: var(--space-md) var(--space-xl);
+  cursor: grab;
+  user-select: none;
 }
 
 .sql-tl-empty,
@@ -1649,11 +1651,6 @@
 .sql-tl-zoom-btn {
   margin-left: var(--space-xs);
   font-size: 0.8rem;
-}
-
-.sql-tl-gantt-area {
-  cursor: grab;
-  user-select: none;
 }
 
 /* --- Connection Manager UI --- */

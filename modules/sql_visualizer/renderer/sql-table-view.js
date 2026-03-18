@@ -224,6 +224,61 @@ const SqlTableView = (() => {
     }
   }
 
+  function _createDataCell(col, value, tab, state) {
+    const td = document.createElement('td');
+
+    if (value === null || value === undefined) {
+      td.className = 'sql-null';
+      td.textContent = 'NULL';
+      return td;
+    }
+
+    if (typeof value === 'string' && isJsonString(value)) {
+      td.appendChild(createJsonCell(value));
+      return td;
+    }
+
+    td.textContent = String(value);
+
+    if (state.tableName === 'execution_tracking' && col.name === 'id') {
+      td.classList.add('sql-link');
+      td.title = 'View correlated logs & errors';
+      td.addEventListener('click', (e) => {
+        e.stopPropagation();
+        globalThis.tabManager.createTab('sql-timeline', 'Timeline', {}, { reuseKey: 'sql-timeline' });
+      });
+    }
+    if (col.name === 'script' && typeof value === 'string') {
+      td.classList.add('sql-link');
+      td.title = 'View all entries for this script';
+      td.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateToScript(tab, state, value);
+      });
+    }
+
+    return td;
+  }
+
+  function _createDataRow(row, state, tbody, tab) {
+    const tr = document.createElement('tr');
+    tr.classList.add('sql-data-row');
+    if (state.selectedRow === row) tr.classList.add('sql-row-selected');
+
+    tr.addEventListener('click', () => {
+      state.selectedRow = row;
+      tbody.querySelectorAll('.sql-row-selected').forEach((el) => el.classList.remove('sql-row-selected'));
+      tr.classList.add('sql-row-selected');
+      renderDetailPanel(tab, state);
+    });
+
+    for (const col of state.columns) {
+      tr.appendChild(_createDataCell(col, row[col.name], tab, state));
+    }
+
+    return tr;
+  }
+
   function renderTable(container, tab, state) {
     container.innerHTML = '';
 
@@ -266,52 +321,7 @@ const SqlTableView = (() => {
     // Data rows
     const tbody = document.createElement('tbody');
     for (const row of state.rows) {
-      const tr = document.createElement('tr');
-      tr.classList.add('sql-data-row');
-      if (state.selectedRow === row) tr.classList.add('sql-row-selected');
-
-      // Row click → open detail panel
-      tr.addEventListener('click', () => {
-        state.selectedRow = row;
-        // Highlight
-        tbody.querySelectorAll('.sql-row-selected').forEach((el) => el.classList.remove('sql-row-selected'));
-        tr.classList.add('sql-row-selected');
-        renderDetailPanel(tab, state);
-      });
-
-      for (const col of state.columns) {
-        const td = document.createElement('td');
-        const value = row[col.name];
-
-        if (value === null || value === undefined) {
-          td.className = 'sql-null';
-          td.textContent = 'NULL';
-        } else if (typeof value === 'string' && isJsonString(value)) {
-          td.appendChild(createJsonCell(value));
-        } else {
-          td.textContent = String(value);
-
-          // Cross-table navigation links
-          if (state.tableName === 'execution_tracking' && col.name === 'id') {
-            td.classList.add('sql-link');
-            td.title = 'View correlated logs & errors';
-            td.addEventListener('click', (e) => {
-              e.stopPropagation();
-              globalThis.tabManager.createTab('sql-timeline', 'Timeline', {}, { reuseKey: 'sql-timeline' });
-            });
-          }
-          if (col.name === 'script' && typeof value === 'string') {
-            td.classList.add('sql-link');
-            td.title = 'View all entries for this script';
-            td.addEventListener('click', (e) => {
-              e.stopPropagation();
-              navigateToScript(tab, state, value);
-            });
-          }
-        }
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
+      tbody.appendChild(_createDataRow(row, state, tbody, tab));
     }
     table.appendChild(tbody);
     container.appendChild(table);
