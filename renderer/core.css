@@ -815,6 +815,10 @@ button:disabled {
   font-weight: 600;
   margin: 0;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .script-card .script-language {
@@ -837,6 +841,7 @@ button:disabled {
 
 .script-card .card-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
