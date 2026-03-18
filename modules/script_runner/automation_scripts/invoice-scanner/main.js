@@ -81,8 +81,8 @@ function extractTextFromPdf(buffer) {
  */
 function extractAmount(text) {
   const patterns = [
-    /[$€£]\s?(\d(?:[,\d]*\d)?(?:\.\d+)?)/,
-    /(\d(?:[,\d]*\d)?\.\d{2})\b/,
+    /[$€£]\s?(\d+(?:,\d+)*(?:\.\d+)?)/,
+    /(\d+(?:,\d+)*\.\d{2})\b/,
   ];
   for (const pattern of patterns) {
     const m = text.match(pattern);
