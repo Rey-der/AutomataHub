@@ -81,16 +81,7 @@ class ScriptBrowser {
           </div>
         </div>
 
-        <div class="topic-picker-overlay" id="variant-picker-overlay" style="display:none">
-          <div class="topic-picker-backdrop" id="variant-picker-backdrop"></div>
-          <div class="topic-picker-modal" id="variant-picker-modal">
-            <div class="topic-picker-header">
-              <span id="variant-picker-title">Choose Variant</span>
-              <button class="topic-picker-close" id="btn-close-variant-picker">&#x2715;</button>
-            </div>
-            <div class="topic-picker-list" id="variant-picker-list"></div>
-          </div>
-        </div>
+        <div class="sr-variant-menu" id="variant-menu" style="display:none;"></div>
       </div>
     `;
 
@@ -220,9 +211,10 @@ class ScriptBrowser {
     // Run buttons
     this.container.querySelectorAll('.card-footer .btn-primary').forEach((btn) => {
       btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const scriptId = btn.dataset.scriptId;
         const script = this.app.scripts.find((s) => s.id === scriptId || s.folder === scriptId);
-        if (script) this._handleRunScript(script);
+        if (script) this._handleRunScript(script, btn);
       });
     });
 
@@ -285,7 +277,13 @@ class ScriptBrowser {
       if (e.key === 'Escape') {
         this._closeTopicPicker();
         this._closeScriptDetail();
+        this._closeVariantMenu();
       }
+    });
+
+    // Click outside closes variant menu
+    document.addEventListener('click', () => {
+      this._closeVariantMenu();
     });
 
     // Remove zone (drag script here to remove from topic)
@@ -347,17 +345,19 @@ class ScriptBrowser {
     }
   }
 
-  async _handleRunScript(script) {
+  async _handleRunScript(script, btn) {
     const variants = script.variants || [];
-    let chosen = script;
 
     if (variants.length > 1) {
-      chosen = await this._pickVariant(script);
-      if (!chosen) return; // user cancelled
-    } else if (variants.length === 1) {
-      chosen = variants[0];
+      this._showVariantMenu(script, btn);
+      return;
     }
 
+    const chosen = variants.length === 1 ? variants[0] : script;
+    this._openExecution(script, chosen);
+  }
+
+  _openExecution(script, chosen) {
     if (globalThis.tabManager) {
       globalThis.tabManager.createTab('script-execution', `${script.name}`, {
         scriptPath: chosen.scriptPath || script.scriptPath,
@@ -368,44 +368,40 @@ class ScriptBrowser {
     }
   }
 
-  _pickVariant(script) {
-    return new Promise((resolve) => {
-      const overlay = this.container.querySelector('#variant-picker-overlay');
-      const titleEl = this.container.querySelector('#variant-picker-title');
-      const list = this.container.querySelector('#variant-picker-list');
-      const backdrop = this.container.querySelector('#variant-picker-backdrop');
-      const closeBtn = this.container.querySelector('#btn-close-variant-picker');
-      if (!overlay || !list) { resolve(null); return; }
+  _showVariantMenu(script, btn) {
+    this._closeVariantMenu();
+    const menu = this.container.querySelector('#variant-menu');
+    if (!menu || !btn) return;
 
-      if (titleEl) titleEl.textContent = `Run "${script.name}" — choose variant`;
+    menu.innerHTML = (script.variants || []).map((v) => `
+      <button class="sr-variant-item" data-variant-label="${this._escapeHtml(v.label)}">
+        <span class="script-language">${this._escapeHtml(v.language || v.label)}</span>
+        <span class="sr-variant-name">${this._escapeHtml(v.label)}</span>
+      </button>
+    `).join('');
 
-      list.innerHTML = (script.variants || []).map((v) => `
-        <button class="topic-picker-item" data-variant-label="${this._escapeHtml(v.label)}">
-          <span class="script-language">${this._escapeHtml(v.language || v.label)}</span>
-          <span class="topic-picker-name">${this._escapeHtml(v.label)}</span>
-        </button>
-      `).join('');
-
-      const close = (result) => {
-        overlay.style.display = 'none';
-        backdrop.removeEventListener('click', onBackdrop);
-        closeBtn.removeEventListener('click', onClose);
-        document.removeEventListener('keydown', onKey);
-        resolve(result);
-      };
-
-      _bindVariantItems(list, script.variants, close);
-
-      const onBackdrop = () => close(null);
-      const onClose = () => close(null);
-      const onKey = (e) => { if (e.key === 'Escape') close(null); };
-
-      backdrop.addEventListener('click', onBackdrop);
-      closeBtn.addEventListener('click', onClose);
-      document.addEventListener('keydown', onKey);
-
-      overlay.style.display = 'flex';
+    menu.querySelectorAll('.sr-variant-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const chosen = script.variants.find((x) => x.label === item.dataset.variantLabel);
+        this._closeVariantMenu();
+        if (chosen) this._openExecution(script, chosen);
+      });
     });
+
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = `${rect.bottom + 4}px`;
+    menu.style.right = `${globalThis.innerWidth - rect.right}px`;
+    menu.style.left = '';
+    menu.style.display = 'block';
+
+    this._variantMenuOpen = true;
+  }
+
+  _closeVariantMenu() {
+    const menu = this.container?.querySelector('#variant-menu');
+    if (menu) menu.style.display = 'none';
+    this._variantMenuOpen = false;
   }
 
   _handleAddToTopic(script) {
@@ -632,14 +628,6 @@ class ScriptBrowser {
   }
 
   destroy() {
-    // Cleanup if needed
+    this._closeVariantMenu();
   }
-}
-
-function _bindVariantItems(list, variants, close) {
-  list.querySelectorAll('.topic-picker-item').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      close(variants.find((x) => x.label === btn.dataset.variantLabel) ?? null);
-    });
-  });
 }

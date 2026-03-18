@@ -1038,6 +1038,52 @@
 }
 
 /* ============================================================================
+   VARIANT DROPDOWN MENU (mirrors NetOps .hl-action-menu)
+   ============================================================================ */
+
+.sr-variant-menu {
+  position: fixed;
+  min-width: 140px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.sr-variant-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: var(--fg);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sr-variant-item:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sr-variant-item .script-language {
+  pointer-events: none;
+}
+
+.sr-variant-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ============================================================================
    SCRIPT DETAIL PANEL
    ============================================================================ */
 
