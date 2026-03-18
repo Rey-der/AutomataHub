@@ -3,7 +3,9 @@
  * Discovered networks are handled by DiscoveredNetworksPanel (net-discovered.js).
  */
 
-const API = globalThis.api;
+if (typeof API === 'undefined') {
+  var API = globalThis.api;
+}
 
 class NetDashboard {
   constructor() {

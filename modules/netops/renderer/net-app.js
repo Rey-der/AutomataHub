@@ -5,7 +5,9 @@
  * until implemented in Phases 2–6.
  */
 
-const API = globalThis.api;
+if (typeof API === 'undefined') {
+  var API = globalThis.api;
+}
 
 const NETOPS_LS_KEY = 'netops-ui-state';
 

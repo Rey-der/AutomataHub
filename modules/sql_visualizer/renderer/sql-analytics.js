@@ -424,6 +424,7 @@ const SqlAnalytics = (() => {
   }
 
   function onClose() {
+  }
 
   return { render, onClose };
 })();

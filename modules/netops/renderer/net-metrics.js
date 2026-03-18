@@ -3,7 +3,9 @@
  * Displays status pills, aggregate metrics, and 6 interactive charts.
  */
 
-const API = globalThis.api;
+if (typeof API === 'undefined') {
+  var API = globalThis.api;
+}
 
 class NetMetricsDashboard {
   constructor() {
