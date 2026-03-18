@@ -2603,7 +2603,6 @@
 }
 .hist-bar-label-off {
   position: absolute;
-  right: 0;
   top: 0;
   height: 100%;
   display: flex;
@@ -2616,7 +2615,6 @@
   letter-spacing: 0.4px;
   pointer-events: none;
   white-space: nowrap;
-  padding: 0 6px;
 }
 .hist-uptime-good { background: var(--success); color: var(--success); }
 .hist-uptime-warn { background: var(--warning); color: var(--warning); }
