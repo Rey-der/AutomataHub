@@ -255,7 +255,9 @@ class NetHostDetail {
   _renderHeartbeat() {
     if (this.heartbeats.length === 0) return '<div class="hd-hb-empty">No heartbeat data</div>';
     return this.heartbeats.map((b, i) => {
-      const cls = b.status === 'online' ? 'up' : (b.status === 'offline' ? 'down' : 'unk');
+      let cls = 'unk';
+      if (b.status === 'online') cls = 'up';
+      else if (b.status === 'offline') cls = 'down';
       const lat = b.latency_ms == null ? '' : `${b.latency_ms}ms`;
       const time = b.timestamp ? new Date(b.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
       return `<div class="hd-hb-seg hd-hb-${cls}" title="${time} ${b.status} ${lat}" data-idx="${i}"></div>`;
