@@ -82,26 +82,31 @@ function extractTextFromPdf(buffer) {
  * Uses character scanning instead of regex to avoid backtracking risks.
  */
 function extractAmount(text) {
-  const currencyChars = '$€£';
+  return findCurrencyAmount(text) ?? findStandaloneAmount(text);
+}
 
-  // Strategy 1: currency symbol followed by a numeric amount
+/** Strategy 1: currency symbol followed by a numeric amount. */
+function findCurrencyAmount(text) {
+  const currencyChars = '$€£';
   for (let i = 0; i < text.length; i++) {
-    if (currencyChars.indexOf(text[i]) === -1) continue;
+    if (!currencyChars.includes(text[i])) continue;
     let start = i + 1;
     if (start < text.length && text[start] === ' ') start++;
     const num = readAmountAt(text, start);
     if (num > 0) return num;
   }
+  return null;
+}
 
-  // Strategy 2: standalone number with exactly 2 decimal places (e.g. 1,234.56)
+/** Strategy 2: standalone number with exactly 2 decimal places (e.g. 1,234.56). */
+function findStandaloneAmount(text) {
   for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
+    const c = text.codePointAt(i);
     if (c < 48 || c > 57) continue;
-    if (i > 0 && text.charCodeAt(i - 1) >= 48 && text.charCodeAt(i - 1) <= 57) continue;
+    if (i > 0 && text.codePointAt(i - 1) >= 48 && text.codePointAt(i - 1) <= 57) continue;
     const { value, decimals } = readAmountDetailedAt(text, i);
     if (value > 0 && decimals === 2) return value;
   }
-
   return null;
 }
 
