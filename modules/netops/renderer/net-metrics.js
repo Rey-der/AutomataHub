@@ -571,15 +571,15 @@ class NetMetricsDashboard {
     if (this.singleHostId) {
       const cache = this.metricsCache.get(this.singleHostId);
       if (cache) {
-        allNetworkMetrics.push(...(cache.network || []));
-        allSystemMetrics.push(...(cache.system || []));
-        allBufferMetrics.push(...(cache.buffer || []));
+        for (const m of (cache.network || [])) allNetworkMetrics.push(m);
+        for (const m of (cache.system  || [])) allSystemMetrics.push(m);
+        for (const m of (cache.buffer  || [])) allBufferMetrics.push(m);
       }
     } else {
       this.metricsCache.forEach((cache) => {
-        allNetworkMetrics.push(...(cache.network || []));
-        allSystemMetrics.push(...(cache.system || []));
-        allBufferMetrics.push(...(cache.buffer || []));
+        for (const m of (cache.network || [])) allNetworkMetrics.push(m);
+        for (const m of (cache.system  || [])) allSystemMetrics.push(m);
+        for (const m of (cache.buffer  || [])) allBufferMetrics.push(m);
       });
     }
 

@@ -63,7 +63,7 @@ class NetHostList {
 
   getSortedHosts() {
     const sm = this.app.statusMap;
-    let hosts = [...this.app.hosts];
+    let hosts = Array.from(this.app.hosts);
 
     // Filter
     if (this.filter) {
@@ -232,7 +232,7 @@ class NetHostList {
   _sparklineSVG(history) {
     if (!history || history.length < 2) return '';
     // history is newest-first from store; reverse for left-to-right chronological
-    const pts = [...history].reverse().slice(-20);
+    const pts = Array.from(history).reverse().slice(-20);
     const latencies = pts.map(p => p.latency_ms ?? null);
     const valid = latencies.filter(v => v != null);
     if (valid.length < 2) return '';
@@ -739,7 +739,7 @@ class NetHostList {
     this.container.addEventListener('keydown', (e) => {
       const row = e.target.closest('.hl-row');
       if (!row) return;
-      const rows = [...this.container.querySelectorAll('.hl-row')];
+      const rows = Array.from(this.container.querySelectorAll('.hl-row'));
       const idx = rows.indexOf(row);
       if (e.key === 'ArrowDown' && idx < rows.length - 1) {
         rows[idx + 1].focus();

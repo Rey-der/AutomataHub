@@ -1550,17 +1550,17 @@
 
 .toast-notification.success {
   border-color: var(--success, #27ae60);
-  background: rgba(39, 174, 96, 0.1);
+  background: rgba(39, 174, 96, 0.18);
 }
 
 .toast-notification.error {
   border-color: var(--error, #e74c3c);
-  background: rgba(231, 76, 60, 0.1);
+  background: rgba(231, 76, 60, 0.18);
 }
 
 .toast-notification.info {
   border-color: var(--accent, #4A90E2);
-  background: rgba(74, 144, 226, 0.1);
+  background: rgba(74, 144, 226, 0.18);
 }
 
 /* ============================================================================
@@ -1634,7 +1634,7 @@
 
 .run-entry-time {
   flex: 1;
-  color: var(--muted, #888);
+  color: var(--muted, #a0a0a0);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1642,7 +1642,7 @@
 
 .run-entry-duration {
   font-variant-numeric: tabular-nums;
-  color: var(--muted, #888);
+  color: var(--muted, #a0a0a0);
   white-space: nowrap;
 }
 
