@@ -164,7 +164,15 @@ async function init() {
   });
 }
 
-init().catch((err) => console.error('[hub] Fatal error:', err));
+async function bootstrap() {
+  try {
+    await init();
+  } catch (err) {
+    console.error('[hub] Fatal error:', err);
+  }
+}
+
+bootstrap();
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
