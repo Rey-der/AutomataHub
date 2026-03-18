@@ -7,6 +7,7 @@
 
 (function() {
 const API = globalThis.api;
+globalThis.API = API;
 
 const NETOPS_LS_KEY = 'netops-ui-state';
 

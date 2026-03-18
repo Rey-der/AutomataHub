@@ -6,6 +6,7 @@
 
 (function() {
 const API = globalThis.api;
+globalThis.API = API;
 
 const SCRIPT_RUNNER_LS_KEY = 'script-runner-ui-state';
 const SCRIPT_RUNNER_MAX_HISTORY = 50;
