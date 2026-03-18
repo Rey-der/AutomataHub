@@ -249,46 +249,6 @@ const SqlHome = (() => {
     return `${size.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
   }
 
-  // --- Connection Status with Retry UI ---
-
-  function createConnectionStatus(status) {
-    const bar = document.createElement('div');
-    bar.className = 'sql-connection-bar';
-    bar.setAttribute('role', 'status');
-    bar.setAttribute('aria-live', 'polite');
-
-    const dot = document.createElement('span');
-    dot.className = status.connected ? 'sql-dot sql-dot-connected' : 'sql-dot sql-dot-disconnected';
-    bar.appendChild(dot);
-
-    const text = document.createElement('span');
-    text.className = 'sql-connection-text';
-    
-    if (status.connected) {
-      text.textContent = `Connected: ${status.path}`;
-    } else {
-      text.textContent = status.message || 'Not connected — attempting to reconnect...';
-    }
-    bar.appendChild(text);
-
-    // Add retry button if not connected
-    if (!status.connected) {
-      const retryBtn = document.createElement('button');
-      retryBtn.className = 'btn btn-sm sql-retry-btn';
-      retryBtn.textContent = 'Retry Now';
-      retryBtn.addEventListener('click', async () => {
-        retryBtn.disabled = true;
-        retryBtn.textContent = 'Retrying...';
-        await DbConnectionManager.retryNow();
-        retryBtn.disabled = false;
-        retryBtn.textContent = 'Retry Now';
-      });
-      bar.appendChild(retryBtn);
-    }
-
-    return bar;
-  }
-
   // --- Bookmarks Section ---
 
   function createBookmarksSection(bookmarks) {
@@ -354,6 +314,84 @@ const SqlHome = (() => {
 
   // --- DB Management Bar ---
 
+  function _buildDbChip(dbPath, isActive, container) {
+    const filename = dbPath.split(/[/\\]/).pop();
+    const dirPart = dbPath.substring(0, dbPath.length - filename.length - 1).split(/[/\\]/).pop();
+
+    const chip = document.createElement('div');
+    chip.className = 'sql-db-chip' + (isActive ? ' active' : '');
+    chip.title = isActive ? dbPath : `Switch to: ${dbPath}`;
+    chip.setAttribute('role', 'button');
+    chip.setAttribute('tabindex', isActive ? '-1' : '0');
+
+    const chipInner = document.createElement('div');
+    chipInner.className = 'sql-db-chip-inner';
+
+    const statusDot = document.createElement('span');
+    statusDot.className = 'sql-db-status-dot';
+    statusDot.setAttribute('aria-hidden', 'true');
+    chipInner.appendChild(statusDot);
+
+    const textGroup = document.createElement('div');
+    textGroup.className = 'sql-db-chip-text';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'sql-db-chip-name';
+    nameEl.textContent = filename;
+    textGroup.appendChild(nameEl);
+
+    if (dirPart) {
+      const dirEl = document.createElement('span');
+      dirEl.className = 'sql-db-chip-dir';
+      dirEl.textContent = dirPart;
+      textGroup.appendChild(dirEl);
+    }
+
+    chipInner.appendChild(textGroup);
+    chip.appendChild(chipInner);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'sql-db-chip-remove';
+    removeBtn.title = 'Remove from list';
+    removeBtn.setAttribute('aria-label', `Remove ${filename}`);
+    removeBtn.innerHTML = '&times;';
+    removeBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const result = await globalThis.api.invoke('sql-visualizer:remove-db', { path: dbPath });
+      if (!result.connected) {
+        const cd = container.nextElementSibling;
+        if (cd) {
+          cd.innerHTML = `
+            <div class="sql-waiting-state" role="status" aria-live="polite">
+              <div class="sql-waiting-spinner"></div>
+              <p>No database connected.</p>
+              <small>Use \u201cAdd Database\u201d above to connect a SQLite file.</small>
+            </div>
+          `;
+        }
+      }
+      await _renderDbBar(container);
+      await DbConnectionManager.checkStatus();
+    });
+    chip.appendChild(removeBtn);
+
+    if (!isActive) {
+      chip.addEventListener('click', async () => {
+        await DbConnectionManager.switchDb(dbPath);
+        await _renderDbBar(container);
+      });
+      chip.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          await DbConnectionManager.switchDb(dbPath);
+          await _renderDbBar(container);
+        }
+      });
+    }
+
+    return chip;
+  }
+
   async function _renderDbBar(container) {
     let info = { dbs: [], active: null };
     try {
@@ -378,83 +416,7 @@ const SqlHome = (() => {
 
     if (info.dbs && info.dbs.length > 0) {
       for (const dbPath of info.dbs) {
-        const isActive = dbPath === info.active;
-        const filename = dbPath.split(/[/\\]/).pop();
-        const dirPart = dbPath.substring(0, dbPath.length - filename.length - 1).split(/[/\\]/).pop();
-
-        const chip = document.createElement('div');
-        chip.className = 'sql-db-chip' + (isActive ? ' active' : '');
-        chip.title = isActive ? dbPath : `Switch to: ${dbPath}`;
-        chip.setAttribute('role', 'button');
-        chip.setAttribute('tabindex', isActive ? '-1' : '0');
-
-        const chipInner = document.createElement('div');
-        chipInner.className = 'sql-db-chip-inner';
-
-        const statusDot = document.createElement('span');
-        statusDot.className = 'sql-db-status-dot';
-        statusDot.setAttribute('aria-hidden', 'true');
-        chipInner.appendChild(statusDot);
-
-        const textGroup = document.createElement('div');
-        textGroup.className = 'sql-db-chip-text';
-
-        const nameEl = document.createElement('span');
-        nameEl.className = 'sql-db-chip-name';
-        nameEl.textContent = filename;
-        textGroup.appendChild(nameEl);
-
-        if (dirPart) {
-          const dirEl = document.createElement('span');
-          dirEl.className = 'sql-db-chip-dir';
-          dirEl.textContent = dirPart;
-          textGroup.appendChild(dirEl);
-        }
-
-        chipInner.appendChild(textGroup);
-        chip.appendChild(chipInner);
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'sql-db-chip-remove';
-        removeBtn.title = 'Remove from list';
-        removeBtn.setAttribute('aria-label', `Remove ${filename}`);
-        removeBtn.innerHTML = '&times;';
-        removeBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const result = await globalThis.api.invoke('sql-visualizer:remove-db', { path: dbPath });
-          // Immediately clear content — don't wait for checkStatus() event chain
-          if (!result.connected) {
-            const cd = container.nextElementSibling;
-            if (cd) {
-              cd.innerHTML = `
-                <div class="sql-waiting-state" role="status" aria-live="polite">
-                  <div class="sql-waiting-spinner"></div>
-                  <p>No database connected.</p>
-                  <small>Use \u201cAdd Database\u201d above to connect a SQLite file.</small>
-                </div>
-              `;
-            }
-          }
-          await _renderDbBar(container);
-          await DbConnectionManager.checkStatus();
-        });
-        chip.appendChild(removeBtn);
-
-        if (!isActive) {
-          chip.addEventListener('click', async () => {
-            await DbConnectionManager.switchDb(dbPath);
-            await _renderDbBar(container);
-          });
-          chip.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              await DbConnectionManager.switchDb(dbPath);
-              await _renderDbBar(container);
-            }
-          });
-        }
-
-        chips.appendChild(chip);
+        chips.appendChild(_buildDbChip(dbPath, dbPath === info.active, container));
       }
     } else {
       const empty = document.createElement('span');

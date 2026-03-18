@@ -167,19 +167,26 @@ const ScriptExecution = (() => {
     return placeholder;
   }
 
+  function _saveEditContent(tab, state) {
+    const taEl = document.getElementById(`script-edit-${tab.id}`);
+    if (taEl) state.scriptOverride = taEl.value;
+  }
+
+  function _loadPreviewContent(tab, state) {
+    if (state.scriptOverride !== null) return;
+    const preEl = document.getElementById(`script-preview-${tab.id}`);
+    const raw = preEl ? preEl.textContent : '';
+    if (raw && raw !== 'Loading\u2026') state.scriptOverride = raw;
+  }
+
   function _toggleEditMode(tab, state) {
     if (state.editMode) {
-      const taEl = document.getElementById(`script-edit-${tab.id}`);
-      if (taEl) state.scriptOverride = taEl.value;
-      state.editMode = false;
+      _saveEditContent(tab, state);
     } else {
-      if (state.scriptOverride === null) {
-        const preEl = document.getElementById(`script-preview-${tab.id}`);
-        const raw = preEl ? preEl.textContent : '';
-        if (raw && raw !== 'Loading\u2026') state.scriptOverride = raw;
-      }
-      state.editMode = true;
+      _loadPreviewContent(tab, state);
     }
+    state.editMode = !state.editMode;
+
     // Re-render the active in-module session view
     const app = _getApp();
     if (app && app.activeSessionId === tab.id) {
