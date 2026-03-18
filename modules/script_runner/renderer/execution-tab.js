@@ -89,6 +89,152 @@ const ScriptExecution = (() => {
 
   // --- Rendering ---
 
+  function _loadScriptIntoEditArea(tab, state) {
+    if (state.scriptOverride !== null || !tab.scriptPath) return;
+    globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
+      .then((res) => {
+        const el = document.getElementById(`script-edit-${tab.id}`);
+        if (!el) return;
+        el.value = res.success ? res.content : `(Could not load: ${res.error})`;
+        if (res.success) state.scriptOverride = res.content;
+      }).catch(() => {});
+  }
+
+  function _loadScriptIntoPreview(tab, state) {
+    if (state.scriptOverride !== null || !tab.scriptPath) return;
+    globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
+      .then((res) => {
+        const el = document.getElementById(`script-preview-${tab.id}`);
+        if (!el) return;
+        if (res.success) el.textContent = res.content;
+        else { el.textContent = `(Could not load script: ${res.error})`; el.classList.add('script-preview-error'); }
+      }).catch(() => {
+        const el = document.getElementById(`script-preview-${tab.id}`);
+        if (el) { el.textContent = '(Failed to read script)'; el.classList.add('script-preview-error'); }
+      });
+  }
+
+  function _createPlaceholder(tab, state) {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'terminal-placeholder';
+
+    const phHeader = document.createElement('div');
+    phHeader.className = 'terminal-placeholder-header';
+
+    const phLeft = document.createElement('div');
+    phLeft.className = 'ph-left';
+
+    const phText = document.createElement('span');
+    phText.className = 'terminal-placeholder-text';
+    phText.textContent = 'Ready to run';
+    phLeft.appendChild(phText);
+
+    const phHint = document.createElement('span');
+    phHint.className = 'terminal-placeholder-hint';
+    phHint.textContent = '\u2014 click \u201CRun\u201D to start';
+    phLeft.appendChild(phHint);
+
+    phHeader.appendChild(phLeft);
+
+    const penBtn = document.createElement('button');
+    penBtn.className = 'script-edit-btn' + (state.editMode ? ' active' : '');
+    penBtn.title = state.editMode ? 'Done editing' : 'Edit script for this run';
+    penBtn.textContent = state.editMode ? '\u2713 Done' : '\u270F Edit';
+    phHeader.appendChild(penBtn);
+
+    placeholder.appendChild(phHeader);
+
+    if (state.editMode) {
+      const ta = document.createElement('textarea');
+      ta.className = 'script-edit-area';
+      ta.id = `script-edit-${tab.id}`;
+      ta.spellcheck = false;
+      ta.value = state.scriptOverride ?? 'Loading\u2026';
+      placeholder.appendChild(ta);
+      _loadScriptIntoEditArea(tab, state);
+      setTimeout(() => { const el = document.getElementById(`script-edit-${tab.id}`); if (el) el.focus(); }, 0);
+    } else {
+      const codeBlock = document.createElement('pre');
+      codeBlock.className = 'script-preview' + (state.scriptOverride === null ? '' : ' script-preview-edited');
+      codeBlock.id = `script-preview-${tab.id}`;
+      codeBlock.textContent = state.scriptOverride ?? 'Loading\u2026';
+      placeholder.appendChild(codeBlock);
+      _loadScriptIntoPreview(tab, state);
+    }
+
+    penBtn.addEventListener('click', () => _toggleEditMode(tab, state));
+
+    return placeholder;
+  }
+
+  function _toggleEditMode(tab, state) {
+    if (state.editMode) {
+      const taEl = document.getElementById(`script-edit-${tab.id}`);
+      if (taEl) state.scriptOverride = taEl.value;
+      state.editMode = false;
+    } else {
+      if (state.scriptOverride === null) {
+        const preEl = document.getElementById(`script-preview-${tab.id}`);
+        const raw = preEl ? preEl.textContent : '';
+        if (raw && raw !== 'Loading\u2026') state.scriptOverride = raw;
+      }
+      state.editMode = true;
+    }
+    if (globalThis.tabManager.getActiveTabId() === tab.id) {
+      render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
+    }
+  }
+
+  function _createToolbar(tab, state) {
+    const toolbar = document.createElement('footer');
+    toolbar.className = 'execution-toolbar';
+
+    const info = document.createElement('span');
+    info.className = 'toolbar-info';
+    info.id = `toolbar-info-${tab.id}`;
+    info.textContent = buildInfoText(state);
+    toolbar.appendChild(info);
+
+    const runBtn = document.createElement('button');
+    runBtn.className = 'btn';
+    runBtn.textContent = '\u25B6 Run';
+    runBtn.disabled = state.isRunning;
+    runBtn.addEventListener('click', () => handleRun(tab));
+    toolbar.appendChild(runBtn);
+
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'btn btn-danger btn-sm';
+    stopBtn.textContent = '\u25A0 Stop';
+    stopBtn.disabled = !state.isRunning;
+    stopBtn.addEventListener('click', () => handleStop(tab.id));
+    toolbar.appendChild(stopBtn);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-success btn-sm';
+    saveBtn.textContent = 'Save Logs';
+    saveBtn.disabled = state.lines.length === 0;
+    saveBtn.addEventListener('click', () => handleSaveLogs(tab));
+    toolbar.appendChild(saveBtn);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'btn btn-secondary btn-sm';
+    clearBtn.textContent = 'Clear';
+    clearBtn.disabled = state.lines.length === 0;
+    clearBtn.addEventListener('click', () => handleClear(tab.id));
+    toolbar.appendChild(clearBtn);
+
+    if (!state.isRunning && state.exitCode !== null && state.exitCode !== 0) {
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'btn btn-retry btn-sm';
+      retryBtn.textContent = 'Retry';
+      retryBtn.title = 'Run the script again';
+      retryBtn.addEventListener('click', () => handleRun(tab));
+      toolbar.appendChild(retryBtn);
+    }
+
+    return toolbar;
+  }
+
   function render(tab, container) {
     if (!container) return;
     container.innerHTML = '';
@@ -151,147 +297,13 @@ const ScriptExecution = (() => {
     terminal.id = `terminal-${tab.id}`;
 
     if (state.lines.length === 0) {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'terminal-placeholder';
-
-      const phHeader = document.createElement('div');
-      phHeader.className = 'terminal-placeholder-header';
-
-      const phLeft = document.createElement('div');
-      phLeft.className = 'ph-left';
-
-      const phText = document.createElement('span');
-      phText.className = 'terminal-placeholder-text';
-      phText.textContent = 'Ready to run';
-      phLeft.appendChild(phText);
-
-      const phHint = document.createElement('span');
-      phHint.className = 'terminal-placeholder-hint';
-      phHint.textContent = '\u2014 click \u201CRun\u201D to start';
-      phLeft.appendChild(phHint);
-
-      phHeader.appendChild(phLeft);
-
-      const penBtn = document.createElement('button');
-      penBtn.className = 'script-edit-btn' + (state.editMode ? ' active' : '');
-      penBtn.title = state.editMode ? 'Done editing' : 'Edit script for this run';
-      penBtn.textContent = state.editMode ? '\u2713 Done' : '\u270F Edit';
-      phHeader.appendChild(penBtn);
-
-      placeholder.appendChild(phHeader);
-
-      if (state.editMode) {
-        const ta = document.createElement('textarea');
-        ta.className = 'script-edit-area';
-        ta.id = `script-edit-${tab.id}`;
-        ta.spellcheck = false;
-        ta.value = state.scriptOverride ?? 'Loading\u2026';
-        placeholder.appendChild(ta);
-        if (state.scriptOverride === null && tab.scriptPath) {
-          globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
-            .then((res) => {
-              const el = document.getElementById(`script-edit-${tab.id}`);
-              if (!el) return;
-              el.value = res.success ? res.content : `(Could not load: ${res.error})`;
-              if (res.success) state.scriptOverride = res.content;
-            }).catch(() => {});
-        }
-        setTimeout(() => { const el = document.getElementById(`script-edit-${tab.id}`); if (el) el.focus(); }, 0);
-      } else {
-        const codeBlock = document.createElement('pre');
-        codeBlock.className = 'script-preview' + (state.scriptOverride === null ? '' : ' script-preview-edited');
-        codeBlock.id = `script-preview-${tab.id}`;
-        codeBlock.textContent = state.scriptOverride ?? 'Loading\u2026';
-        placeholder.appendChild(codeBlock);
-        if (state.scriptOverride === null && tab.scriptPath) {
-          globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
-            .then((res) => {
-              const el = document.getElementById(`script-preview-${tab.id}`);
-              if (!el) return;
-              if (res.success) el.textContent = res.content;
-              else { el.textContent = `(Could not load script: ${res.error})`; el.classList.add('script-preview-error'); }
-            }).catch(() => {
-              const el = document.getElementById(`script-preview-${tab.id}`);
-              if (el) { el.textContent = '(Failed to read script)'; el.classList.add('script-preview-error'); }
-            });
-        }
-      }
-
-      terminal.appendChild(placeholder);
-
-      penBtn.addEventListener('click', () => {
-        const s = getState(tab.id);
-        if (s.editMode) {
-          const taEl = document.getElementById(`script-edit-${tab.id}`);
-          if (taEl) s.scriptOverride = taEl.value;
-          s.editMode = false;
-        } else {
-          if (s.scriptOverride === null) {
-            const preEl = document.getElementById(`script-preview-${tab.id}`);
-            const raw = preEl ? preEl.textContent : '';
-            if (raw && raw !== 'Loading\u2026') s.scriptOverride = raw;
-          }
-          s.editMode = true;
-        }
-        if (globalThis.tabManager.getActiveTabId() === tab.id) {
-          render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
-        }
-      });
+      terminal.appendChild(_createPlaceholder(tab, state));
     } else {
       renderLines(terminal, state);
     }
 
     wrapper.appendChild(terminal);
-
-    // Toolbar
-    const toolbar = document.createElement('footer');
-    toolbar.className = 'execution-toolbar';
-
-    const info = document.createElement('span');
-    info.className = 'toolbar-info';
-    info.id = `toolbar-info-${tab.id}`;
-    info.textContent = buildInfoText(state);
-    toolbar.appendChild(info);
-
-    const runBtn = document.createElement('button');
-    runBtn.className = 'btn';
-    runBtn.textContent = '\u25B6 Run';
-    runBtn.disabled = state.isRunning;
-    runBtn.addEventListener('click', () => handleRun(tab));
-    toolbar.appendChild(runBtn);
-
-    const stopBtn = document.createElement('button');
-    stopBtn.className = 'btn btn-danger btn-sm';
-    stopBtn.textContent = '\u25A0 Stop';
-    stopBtn.disabled = !state.isRunning;
-    stopBtn.addEventListener('click', () => handleStop(tab.id));
-    toolbar.appendChild(stopBtn);
-
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'btn btn-success btn-sm';
-    saveBtn.textContent = 'Save Logs';
-    saveBtn.disabled = state.lines.length === 0;
-    saveBtn.addEventListener('click', () => handleSaveLogs(tab));
-    toolbar.appendChild(saveBtn);
-
-    const clearBtn = document.createElement('button');
-    clearBtn.className = 'btn btn-secondary btn-sm';
-    clearBtn.textContent = 'Clear';
-    clearBtn.disabled = state.lines.length === 0;
-    clearBtn.addEventListener('click', () => handleClear(tab.id));
-    toolbar.appendChild(clearBtn);
-
-    // Retry button — only shown after a failed run
-    if (!state.isRunning && state.exitCode !== null && state.exitCode !== 0) {
-      const retryBtn = document.createElement('button');
-      retryBtn.className = 'btn btn-retry btn-sm';
-      retryBtn.textContent = 'Retry';
-      retryBtn.title = 'Run the script again';
-      retryBtn.addEventListener('click', () => handleRun(tab));
-      toolbar.appendChild(retryBtn);
-    }
-
-    wrapper.appendChild(toolbar);
+    wrapper.appendChild(_createToolbar(tab, state));
     container.appendChild(wrapper);
 
     // Auto-run on first render if requested (deferred to avoid reentrant render)
@@ -439,6 +451,32 @@ const ScriptExecution = (() => {
 
   // --- Live append (called from IPC listeners) ---
 
+  function _truncateHead(state, terminal) {
+    const overflow = state.lines.length - MAX_LINES;
+    state.lines.splice(0, overflow);
+
+    if (!terminal) return;
+
+    const children = terminal.querySelectorAll('.terminal-line');
+    for (let i = 0; i < overflow && i < children.length; i++) {
+      children[i].remove();
+    }
+
+    if (state.truncated) return;
+    state.truncated = true;
+    const notice = document.createElement('div');
+    notice.className = 'terminal-line terminal-system';
+    const ts = document.createElement('span');
+    ts.className = 'timestamp';
+    ts.textContent = '';
+    notice.appendChild(ts);
+    const c = document.createElement('span');
+    c.className = 'content';
+    c.textContent = `--- Earlier output truncated (showing last ${MAX_LINES} lines) ---`;
+    notice.appendChild(c);
+    terminal.insertBefore(notice, terminal.firstChild);
+  }
+
   function appendOutput(tabId, text, timestamp, type = 'stdout') {
     const state = getState(tabId);
     const entry = { text, timestamp, type };
@@ -453,39 +491,14 @@ const ScriptExecution = (() => {
       if (tip) {
         tipEntry = { text: `Tip: ${tip}`, timestamp, type: 'system' };
         state.lines.push(tipEntry);
-        // tipEntry not counted in lineCount — it's metadata, not script output
       }
     }
 
     const isActive = globalThis.tabManager.getActiveTabId() === tabId;
     const terminal = isActive ? document.getElementById(`terminal-${tabId}`) : null;
 
-    // Truncate head if exceeding limit
     if (state.lines.length > MAX_LINES) {
-      const overflow = state.lines.length - MAX_LINES;
-      state.lines.splice(0, overflow);
-
-      if (terminal) {
-        const children = terminal.querySelectorAll('.terminal-line');
-        for (let i = 0; i < overflow && i < children.length; i++) {
-          children[i].remove();
-        }
-
-        if (!state.truncated) {
-          state.truncated = true;
-          const notice = document.createElement('div');
-          notice.className = 'terminal-line terminal-system';
-          const ts = document.createElement('span');
-          ts.className = 'timestamp';
-          ts.textContent = '';
-          notice.appendChild(ts);
-          const c = document.createElement('span');
-          c.className = 'content';
-          c.textContent = `--- Earlier output truncated (showing last ${MAX_LINES} lines) ---`;
-          notice.appendChild(c);
-          terminal.insertBefore(notice, terminal.firstChild);
-        }
-      }
+      _truncateHead(state, terminal);
     }
 
     if (!terminal) return;
@@ -495,13 +508,11 @@ const ScriptExecution = (() => {
     if (placeholder) placeholder.remove();
 
     terminal.appendChild(createLineEl(entry));
-    // Append tip inline after the error line if it's still in state (not truncated away)
     if (tipEntry && state.lines.includes(tipEntry)) {
       terminal.appendChild(createLineEl(tipEntry));
     }
     terminal.scrollTop = terminal.scrollHeight;
 
-    // Update toolbar info
     const info = document.getElementById(`toolbar-info-${tabId}`);
     if (info) info.textContent = buildInfoText(state);
   }

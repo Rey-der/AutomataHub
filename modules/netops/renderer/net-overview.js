@@ -101,7 +101,8 @@ class NetOverview {
       else unknown++;
 
       const lat = cached?.latency_ms;
-      if (lat != null) { totalLatency += lat; latencyCount++; }
+      if (lat == null) return;
+      totalLatency += lat; latencyCount++;
     });
 
     const total = hosts.length || 1;
@@ -123,7 +124,7 @@ class NetOverview {
     this.container.innerHTML = `
       <div class="overview">
         <div class="overview-kpis" id="ov-kpis">
-          ${[...Array(5)].fill('<div class="kpi-tile skeleton"></div>').join('')}
+          ${[...new Array(5)].fill('<div class="kpi-tile skeleton"></div>').join('')}
         </div>
         <section class="overview-section">
           <h3>Hosts at a Glance</h3>
@@ -223,7 +224,7 @@ class NetOverview {
 
     for (const b of beats) {
       const cls = _hbClass(b.status);
-      const latStr = b.latency_ms != null ? `${b.latency_ms}ms` : '\u2014';
+      const latStr = b.latency_ms == null ? '\u2014' : `${b.latency_ms}ms`;
       const time = new Date(b.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const title = `${time} \u2022 ${b.status} \u2022 ${latStr}`;
       segments.push(`<span class="hb-seg ${cls}" title="${_escAttr(title)}"></span>`);
@@ -298,7 +299,7 @@ function _escHtml(text) {
 }
 
 function _escAttr(text) {
-  return _escHtml(text).replaceAll(/\n/g, ' ');
+  return _escHtml(text).replaceAll('\n', ' ');
 }
 
 function _hbClass(status) {

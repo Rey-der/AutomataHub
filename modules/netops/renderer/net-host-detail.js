@@ -238,9 +238,9 @@ class NetHostDetail {
     const timeStr = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateStr = time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const status = check.status || 'unknown';
-    const lat = check.latency_ms != null ? `${check.latency_ms}ms` : '\u2014';
+    const lat = check.latency_ms == null ? '\u2014' : `${check.latency_ms}ms`;
     return `
-      <tr class="hd-check-row">
+      <tr class="hd-check-row">`
         <td class="hd-check-time">${dateStr} ${timeStr}</td>
         <td class="hd-check-status"><span class="hd-dot hd-dot-${status}"></span>${status}</td>
         <td class="hd-check-lat">${lat}</td>
@@ -255,8 +255,8 @@ class NetHostDetail {
   _renderHeartbeat() {
     if (this.heartbeats.length === 0) return '<div class="hd-hb-empty">No heartbeat data</div>';
     return this.heartbeats.map((b, i) => {
-      const cls = b.status === 'online' ? 'up' : b.status === 'offline' ? 'down' : 'unk';
-      const lat = b.latency_ms != null ? `${b.latency_ms}ms` : '';
+      const cls = b.status === 'online' ? 'up' : (b.status === 'offline' ? 'down' : 'unk');
+      const lat = b.latency_ms == null ? '' : `${b.latency_ms}ms`;
       const time = b.timestamp ? new Date(b.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
       return `<div class="hd-hb-seg hd-hb-${cls}" title="${time} ${b.status} ${lat}" data-idx="${i}"></div>`;
     }).join('');

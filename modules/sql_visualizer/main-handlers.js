@@ -43,17 +43,7 @@ function setup(ctx) {
 
   // Open database connection
   const dbPath = resolveDbPath(paths.root);
-  if (!dbPath) {
-    console.error('[sql-visualizer] Database not found at expected locations.');
-    console.error('  Expected: ' + path.resolve(paths.root, '..', 'smart_desktop_sql', 'data', 'smart_desktop.db'));
-    console.error('  Set SMART_DESKTOP_DB env var to override.');
-    // Try sql.js fallback
-    dbBridge.initSqlJsFallback().then(() => {
-      if (dbBridge.isConnected()) {
-        console.log('[sql-visualizer] Using in-memory database (sql.js fallback)');
-      }
-    });
-  } else {
+  if (dbPath) {
     try {
       dbBridge.open(dbPath);
       console.log(`[sql-visualizer] Connected to database: ${dbPath}`);
@@ -71,6 +61,16 @@ function setup(ctx) {
         console.error('[sql-visualizer] sql.js fallback error:', err.message);
       });
     }
+  } else {
+    console.error('[sql-visualizer] Database not found at expected locations.');
+    console.error('  Expected: ' + path.resolve(paths.root, '..', 'smart_desktop_sql', 'data', 'smart_desktop.db'));
+    console.error('  Set SMART_DESKTOP_DB env var to override.');
+    // Try sql.js fallback
+    dbBridge.initSqlJsFallback().then(() => {
+      if (dbBridge.isConnected()) {
+        console.log('[sql-visualizer] Using in-memory database (sql.js fallback)');
+      }
+    });
   }
 
   // --- IPC Handlers ---

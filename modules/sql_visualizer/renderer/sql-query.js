@@ -155,7 +155,7 @@ const SqlQuery = (() => {
 
       const info = document.createElement('span');
       info.className = 'sql-result-info';
-      info.textContent = `${state.result.rowCount} row${state.result.rowCount !== 1 ? 's' : ''} returned`;
+      info.textContent = `${state.result.rowCount} row${state.result.rowCount === 1 ? '' : 's'} returned`;
       toolbar.appendChild(info);
     }
 
@@ -479,7 +479,7 @@ const SqlQuery = (() => {
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      a.remove();
       URL.revokeObjectURL(url);
       globalThis.ui.showNotification('Exported query-result.csv', 'success');
     } catch (err) {

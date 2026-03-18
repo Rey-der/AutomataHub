@@ -23,6 +23,35 @@ const EXTENSION_LANGUAGE_MAP = {
   '.cs': 'C#',
 };
 
+function validateFolder(folderPath) {
+  if (!fs.existsSync(folderPath)) return { valid: false, error: 'Folder not found' };
+  const stat = fs.statSync(folderPath);
+  if (!stat.isDirectory()) return { valid: false, error: 'Not a directory' };
+  if (IGNORED_ENTRIES.has(path.basename(folderPath))) return { valid: false, error: 'Ignored folder' };
+
+  const files = fs.readdirSync(folderPath);
+  const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.has(path.extname(f).toLowerCase()));
+  if (executables.length === 0) return { valid: false, error: 'No executables found' };
+
+  return { valid: true, executables, name: path.basename(folderPath) };
+}
+
+function importScriptFolder(sourcePath, scriptsDir) {
+  const folderName = path.basename(sourcePath);
+  const destPath = path.join(scriptsDir, folderName);
+
+  if (fs.existsSync(destPath)) {
+    return { success: false, message: `Script folder "${folderName}" already exists` };
+  }
+
+  try {
+    fs.cpSync(sourcePath, destPath, { recursive: true });
+    return { success: true, message: `Imported "${folderName}" successfully` };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
 function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInside, ensureDir, readJsonConfig, ERROR_MESSAGES }) {
   // --- Script Discovery ---
 
@@ -121,39 +150,6 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
     }
 
     return scripts;
-  }
-
-  // --- Folder Validation ---
-
-  function validateFolder(folderPath) {
-    if (!fs.existsSync(folderPath)) return { valid: false, error: 'Folder not found' };
-    const stat = fs.statSync(folderPath);
-    if (!stat.isDirectory()) return { valid: false, error: 'Not a directory' };
-    if (IGNORED_ENTRIES.has(path.basename(folderPath))) return { valid: false, error: 'Ignored folder' };
-
-    const files = fs.readdirSync(folderPath);
-    const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.has(path.extname(f).toLowerCase()));
-    if (executables.length === 0) return { valid: false, error: 'No executables found' };
-
-    return { valid: true, executables, name: path.basename(folderPath) };
-  }
-
-  // --- Import/Remove ---
-
-  function importScriptFolder(sourcePath, scriptsDir) {
-    const folderName = path.basename(sourcePath);
-    const destPath = path.join(scriptsDir, folderName);
-
-    if (fs.existsSync(destPath)) {
-      return { success: false, message: `Script folder "${folderName}" already exists` };
-    }
-
-    try {
-      fs.cpSync(sourcePath, destPath, { recursive: true });
-      return { success: true, message: `Imported "${folderName}" successfully` };
-    } catch (err) {
-      return { success: false, message: err.message };
-    }
   }
 
   function removeScriptFolder(scriptId, scriptsDir) {

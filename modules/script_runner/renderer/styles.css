@@ -1567,13 +1567,13 @@
 
 .run-status-success {
   background: rgba(39, 174, 96, 0.15);
-  color: #4ade80;
+  color: #86efac;
   border: 1px solid rgba(39, 174, 96, 0.3);
 }
 
 .run-status-error {
   background: rgba(231, 76, 60, 0.15);
-  color: #f87171;
+  color: #fca5a5;
   border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
@@ -1597,7 +1597,7 @@
 
 .execution-toolbar .btn-retry {
   background: rgba(243, 156, 18, 0.12);
-  color: #fbbf24;
+  color: #fcd34d;
   border: 1px solid rgba(243, 156, 18, 0.35);
 }
 

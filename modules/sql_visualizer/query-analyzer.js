@@ -121,7 +121,7 @@ function getPerformanceStats(script) {
 
   const durations = runs.map((r) => {
     const ms = new Date(r.end_time) - new Date(r.start_time);
-    return { ...r, durationMs: ms >= 0 ? ms : 0 };
+    return { ...r, durationMs: Math.max(0, ms) };
   });
 
   if (durations.length === 0) {

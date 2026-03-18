@@ -394,13 +394,7 @@ class ScriptBrowser {
         resolve(result);
       };
 
-      list.querySelectorAll('.topic-picker-item').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const label = btn.dataset.variantLabel;
-          const v = script.variants.find((x) => x.label === label);
-          close(v || null);
-        });
-      });
+      _bindVariantItems(list, script.variants, close);
 
       const onBackdrop = () => close(null);
       const onClose = () => close(null);
@@ -472,6 +466,7 @@ class ScriptBrowser {
         globalThis.ui?.showNotification?.(result.error || 'Failed to add to topic', 'error');
       }
     } catch (err) {
+      console.error('[script-runner] Add to topic error:', err.message);
       globalThis.ui?.showNotification?.('Failed to add to topic', 'error');
     } finally {
       this.setLoading(false);
@@ -536,7 +531,7 @@ class ScriptBrowser {
       ...new Set(
         this.app.scripts.flatMap((s) => (s.variants || []).map((v) => v.language).filter(Boolean))
       ),
-    ].sort();
+    ].sort((a, b) => a.localeCompare(b));
 
     if (languages.length === 0) return '';
 
@@ -639,4 +634,12 @@ class ScriptBrowser {
   destroy() {
     // Cleanup if needed
   }
+}
+
+function _bindVariantItems(list, variants, close) {
+  list.querySelectorAll('.topic-picker-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      close(variants.find((x) => x.label === btn.dataset.variantLabel) ?? null);
+    });
+  });
 }

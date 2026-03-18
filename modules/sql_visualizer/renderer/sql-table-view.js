@@ -33,7 +33,7 @@ const SqlTableView = (() => {
 
   function removeState(tabId) {
     const state = tabStates.get(tabId);
-    if (state && state._refreshTimer) clearInterval(state._refreshTimer);
+    if (state?._refreshTimer) clearInterval(state._refreshTimer);
     tabStates.delete(tabId);
   }
 
@@ -588,7 +588,7 @@ const SqlTableView = (() => {
           createdAt: Date.now(),
         });
         await globalThis.api.setModulePrefs('sql-visualizer', { bookmarks });
-        if (globalThis.ui && globalThis.ui.showNotification) {
+        if (globalThis.ui?.showNotification) {
           globalThis.ui.showNotification('Bookmark saved: ' + name, 'success');
         }
       } catch (err) {
@@ -646,7 +646,7 @@ const SqlTableView = (() => {
         toggle.textContent = '▼';
       }
     });
-    wrapper.insertBefore(toggle, preview);
+    preview.before(toggle);
 
     return wrapper;
   }
@@ -822,7 +822,7 @@ const SqlTableView = (() => {
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    a.remove();
     URL.revokeObjectURL(url);
   }
 

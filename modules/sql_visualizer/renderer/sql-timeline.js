@@ -6,7 +6,6 @@
  */
 
 const SqlTimeline = (() => {
-  const tabStates = new Map();
 
   // --- Time Range helpers ---
 
@@ -33,7 +32,6 @@ const SqlTimeline = (() => {
       viewEnd: null,
       _dragOrigin: null,  // { x, viewStart, viewEnd } while dragging
     };
-    tabStates.set(tab.id, state);
 
     const wrapper = document.createElement('div');
     wrapper.className = 'sql-timeline-tab';
@@ -133,7 +131,7 @@ const SqlTimeline = (() => {
       bar.style.width = `${widthPct}%`;
       if (overlaps.has(exec.id)) bar.classList.add('sql-tl-bar--overlap');
 
-      const dur = exec.durationMs != null ? formatDuration(exec.durationMs) : 'running…';
+      const dur = exec.durationMs == null ? 'running…' : formatDuration(exec.durationMs);
       bar.title = `${exec.script}\n${exec.start_time} → ${exec.end_time || '(running)'}\nDuration: ${dur}\nStatus: ${exec.status || 'RUNNING'}`;
       bar.addEventListener('click', () => showDetail(state, exec));
       track.appendChild(bar);
@@ -375,7 +373,7 @@ const SqlTimeline = (() => {
     // Execution info
     const info = document.createElement('div');
     info.className = 'sql-tl-detail-info';
-    const dur = exec.durationMs != null ? formatDuration(exec.durationMs) : 'running…';
+    const dur = exec.durationMs == null ? 'running…' : formatDuration(exec.durationMs);
     info.innerHTML = `
       <h3>${escHtml(exec.script)} — Execution #${exec.id}</h3>
       <div class="sql-tl-detail-meta">
@@ -429,8 +427,7 @@ const SqlTimeline = (() => {
     return div.innerHTML;
   }
 
-  function onClose(tab) {
-    tabStates.delete(tab.id);
+  function onClose(_tab) {
   }
 
   return { render, onClose };
