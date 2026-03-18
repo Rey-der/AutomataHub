@@ -429,8 +429,18 @@ class NetApp {
     if (!globalThis._hub) { setTimeout(doRegister, 0); return; }
     globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
     globalThis._hub.moduleOpeners['netops'] = function openNetOps(mod) {
-      if (globalThis.tabManager?.hasTabType('netops-dashboard')) {
-        globalThis.tabManager.createTab('netops-dashboard', 'NetOps Monitor', { moduleId: mod.id }, { target: 'module' });
+      const tm = globalThis.tabManager;
+      if (!tm) return;
+
+      // Reuse existing tab
+      const existing = tm.getTabsByType('netops-dashboard');
+      if (existing.length > 0) {
+        tm.switchTab(existing[0].id);
+        return;
+      }
+
+      if (tm.hasTabType('netops-dashboard')) {
+        tm.createTab('netops-dashboard', 'NetOps Monitor', { moduleId: mod.id }, { target: 'module' });
       }
     };
   }

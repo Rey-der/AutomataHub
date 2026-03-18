@@ -587,7 +587,18 @@ const SqlHome = (() => {
     globalThis._hub = globalThis._hub || {};
     globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
     globalThis._hub.moduleOpeners['sql-visualizer'] = () => {
-      globalThis.tabManager.createTab('sql-home', 'SQL Dashboard', {}, { reuseKey: 'autostart-sql-visualizer' });
+      const tm = globalThis.tabManager;
+      if (!tm) return;
+
+      const existing = tm.getTabsByType('sql-home');
+      if (existing.length > 0) {
+        tm.switchTab(existing[0].id);
+        return;
+      }
+
+      if (tm.hasTabType('sql-home')) {
+        tm.createTab('sql-home', 'SQL Dashboard', {}, { reuseKey: 'autostart-sql-visualizer' });
+      }
     };
   }
 

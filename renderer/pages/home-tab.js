@@ -113,11 +113,18 @@ const HomeTab = (() => {
     const defaultType = mod.tabTypes[0];
     const typeId = defaultType.id || defaultType;
 
+    // Try module-specific opener first
     if (globalThis._hub?.moduleOpeners?.[mod.id]) {
-      globalThis._hub.moduleOpeners[mod.id](mod);
-      return;
+      try {
+        globalThis._hub.moduleOpeners[mod.id](mod);
+        return;
+      } catch (err) {
+        console.error(`[home] Module opener for "${mod.id}" failed:`, err);
+        // Fall through to generic tab creation
+      }
     }
 
+    // Reuse existing tab if one is already open
     const existing = globalThis.tabManager.getTabsByType(typeId);
     if (existing.length > 0) {
       globalThis.tabManager.switchTab(existing[0].id);
