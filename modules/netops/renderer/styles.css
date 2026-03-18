@@ -2929,7 +2929,7 @@
 }
 .hist-status-online  { background: rgba(78, 201, 176, 0.15); color: var(--success); }
 .hist-status-offline { background: rgba(218, 54, 51, 0.15); color: var(--error); }
-.hist-status-unknown { background: rgba(128, 128, 128, 0.15); color: #888; }
+.hist-status-unknown { background: rgba(128, 128, 128, 0.15); color: #a0a0a0; }
 
 /* ── Timeline legend ─────────────────────────────────── */
 
@@ -3098,10 +3098,10 @@
   border: 1px solid var(--border);
 }
 .hl-proto-ping, .hl-proto-tcp, .hd-proto-ping, .hd-proto-tcp { color: var(--accent); border-color: var(--accent); }
-.hl-proto-icmp, .hd-proto-icmp { color: #06b6d4; border-color: #06b6d4; }
-.hl-proto-http, .hd-proto-http { color: #a78bfa; border-color: #a78bfa; }
-.hl-proto-https, .hd-proto-https { color: #4ade80; border-color: #4ade80; }
-.hl-proto-dns, .hd-proto-dns { color: #facc15; border-color: #facc15; }
+.hl-proto-icmp, .hd-proto-icmp { color: #22d3ee; border-color: #22d3ee; }
+.hl-proto-http, .hd-proto-http { color: #c4b5fd; border-color: #c4b5fd; }
+.hl-proto-https, .hd-proto-https { color: #86efac; border-color: #86efac; }
+.hl-proto-dns, .hd-proto-dns { color: #fde047; border-color: #fde047; }
 
 .hl-td-proto { width: 60px; text-align: center; }
 

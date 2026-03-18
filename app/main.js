@@ -285,7 +285,7 @@ async function init() {
   });
 }
 
-async function bootstrap() {
+async function bootstrap() { // NOSONAR — CJS module, top-level await not available
   try {
     await init();
   } catch (err) {

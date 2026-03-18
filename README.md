@@ -205,7 +205,6 @@ my-module/
 
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Rey-der_AutomataHub&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Rey-der_AutomataHub)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Rey-der_AutomataHub&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Rey-der_AutomataHub)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Rey-der_AutomataHub&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Rey-der_AutomataHub)
 
 ```bash
 npm start     # Start the app
