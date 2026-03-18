@@ -25,7 +25,7 @@ async function _loadSqlJs() {
   }
 }
 
-const sqlJsPromise = _loadSqlJs();
+const sqlJsPromise = _loadSqlJs(); // NOSONAR — CJS module, top-level await not available
 
 const path = require('node:path');
 const fs = require('node:fs');

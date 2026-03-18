@@ -172,7 +172,7 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+bootstrap(); // NOSONAR — CJS module, top-level await not available
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
