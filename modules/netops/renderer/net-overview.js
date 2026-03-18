@@ -124,7 +124,7 @@ class NetOverview {
     this.container.innerHTML = `
       <div class="overview">
         <div class="overview-kpis" id="ov-kpis">
-          ${new Array(5).fill('<div class="kpi-tile skeleton"></div>').join('')}
+          ${'<div class="kpi-tile skeleton"></div>'.repeat(5)}
         </div>
         <section class="overview-section">
           <h3>Hosts at a Glance</h3>

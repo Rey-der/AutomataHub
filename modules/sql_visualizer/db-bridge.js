@@ -14,7 +14,7 @@ try {
 let sql = null; // sql.js fallback
 let sqlJsReady = false; // flag to track if sql.js is loaded
 
-async function _loadSqlJs() {
+async function _loadSqlJs() { // NOSONAR — CJS module, top-level await not available
   try {
     const initSqlJs = require('sql.js');
     sql = await initSqlJs();
@@ -25,7 +25,7 @@ async function _loadSqlJs() {
   }
 }
 
-const sqlJsPromise = _loadSqlJs(); // NOSONAR — CJS module, top-level await not available
+const sqlJsPromise = _loadSqlJs();
 
 const path = require('node:path');
 const fs = require('node:fs');
