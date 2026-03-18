@@ -148,6 +148,10 @@ class NetHistory {
           ${this.uptimeData.length === 0
             ? '<p class="hist-empty">No uptime data available.</p>'
             : `${this._renderUptimeSummary()}
+               <div class="hist-uptime-legend">
+                 <span class="hist-uptime-legend-item"><span class="hist-uptime-swatch hist-uptime-swatch-online"></span> Online</span>
+                 <span class="hist-uptime-legend-item"><span class="hist-uptime-swatch hist-uptime-swatch-offline"></span> Offline</span>
+               </div>
                <div class="hist-uptime-header">
                  <span class="hist-uptime-hdr-name">Host</span>
                  <span class="hist-uptime-hdr-bar">Availability</span>
@@ -253,7 +257,8 @@ class NetHistory {
       <div class="hist-uptime-row" data-host-id="${d.host.id}">
         <span class="hist-uptime-name">${_histEsc(d.host.alias || d.host.hostname)}</span>
         <div class="hist-uptime-bar-track">
-          <div class="hist-uptime-bar-fill hist-uptime-${tone}" style="width:${pct}%"></div>
+          <div class="hist-uptime-bar-fill hist-uptime-${tone}" style="width:${pct}%">${pct >= 15 ? '<span class="hist-bar-label">Online</span>' : ''}</div>
+          ${(100 - pct) >= 15 ? '<span class="hist-bar-label hist-bar-label-off">Offline</span>' : ''}
         </div>
         <span class="hist-uptime-pct hist-uptime-${tone}">${pct.toFixed(1)}%</span>
         <span class="hist-uptime-checks">${d.online_checks}/${d.total_checks}</span>
