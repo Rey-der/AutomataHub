@@ -13,7 +13,8 @@ try {
 
 let sql = null; // sql.js fallback
 let sqlJsReady = false; // flag to track if sql.js is loaded
-const sqlJsPromise = (async () => {
+
+async function _loadSqlJs() {
   try {
     const initSqlJs = require('sql.js');
     sql = await initSqlJs();
@@ -22,7 +23,9 @@ const sqlJsPromise = (async () => {
     // sql.js not available - log but don't fail
     console.debug('[db-bridge] sql.js initialization:', e.message);
   }
-})();
+}
+
+const sqlJsPromise = _loadSqlJs();
 
 const path = require('node:path');
 const fs = require('node:fs');

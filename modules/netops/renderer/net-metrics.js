@@ -76,10 +76,10 @@ class NetMetricsDashboard {
         <div class="skeleton-header" style="height: 60px; background: var(--surface); margin-bottom: 16px; border-radius: 6px;"></div>
         <div class="skeleton-pills" style="height: 120px; background: var(--surface); margin-bottom: 16px; border-radius: 6px;"></div>
         <div class="skeleton-kpi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
-          ${[...new Array(6)].fill(null).map(() => '<div style="height: 100px; background: var(--surface); border-radius: 6px;"></div>').join('')}
+          ${Array.from({ length: 6 }, () => '<div style="height: 100px; background: var(--surface); border-radius: 6px;"></div>').join('')}
         </div>
         <div class="skeleton-charts" style="display: grid; gap: 20px;">
-          ${[...new Array(3)].fill(null).map(() => '<div style="height: 300px; background: var(--surface); border-radius: 6px;"></div>').join('')}
+          ${Array.from({ length: 3 }, () => '<div style="height: 300px; background: var(--surface); border-radius: 6px;"></div>').join('')}
         </div>
       </div>
     `;

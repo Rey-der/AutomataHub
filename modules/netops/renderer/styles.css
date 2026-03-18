@@ -3024,9 +3024,9 @@
   min-width: 52px;
   text-align: center;
 }
-.na-sev-critical { background: rgba(239,68,68,0.15); color: #fca5a5; }
-.na-sev-warning  { background: rgba(245,158,11,0.15); color: #fcd34d; }
-.na-sev-info     { background: rgba(59,130,246,0.15); color: #93c5fd; }
+.na-sev-critical { background: rgba(239,68,68,0.15); color: #fecaca; }
+.na-sev-warning  { background: rgba(245,158,11,0.15); color: #fef08a; }
+.na-sev-info     { background: rgba(59,130,246,0.15); color: #bfdbfe; }
 
 /* Alert list rows */
 .na-alert-list { display: flex; flex-direction: column; gap: 2px; }
