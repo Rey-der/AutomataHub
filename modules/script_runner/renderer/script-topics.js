@@ -44,8 +44,8 @@ class TopicList {
             <button class="topic-item ${this.app.selectedTopicId === null ? 'active' : ''}" 
                     id="btn-all-scripts">
               <span class="topic-color-dot" style="background: transparent;"></span>
-              All Scripts
-              <span class="topic-count">${this.app.scripts.length}</span>
+              <span class="topic-name">All Scripts</span>
+              <span class="topic-count">${this.app.allScripts.length}</span>
             </button>
           </div>
           ${this._renderTopicItems()}

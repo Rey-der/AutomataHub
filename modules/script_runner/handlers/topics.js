@@ -33,7 +33,10 @@ function register(ipcBridge, { store, persistence, emit }) {
       };
 
       store.addTopic(topic);
-      if (persistence) await persistence.saveTopic(topic);
+      if (persistence) {
+        await persistence.saveTopic(topic);
+        persistence.flush();
+      }
 
       emit('script-runner:topic-created', { topic });
       console.log('[script-runner] Created topic:', name);
@@ -51,7 +54,10 @@ function register(ipcBridge, { store, persistence, emit }) {
       if (!topic_id) return { success: false, error: 'Topic ID is required' };
 
       const topic = store.updateTopic(topic_id, updates);
-      if (persistence) await persistence.saveTopic(topic);
+      if (persistence) {
+        await persistence.saveTopic(topic);
+        persistence.flush();
+      }
 
       emit('script-runner:topic-updated', { topic });
       console.log('[script-runner] Updated topic:', topic_id);
@@ -69,7 +75,10 @@ function register(ipcBridge, { store, persistence, emit }) {
       if (!topic_id) return { success: false, error: 'Topic ID is required' };
 
       store.removeTopic(topic_id);
-      if (persistence) await persistence.removeTopic(topic_id);
+      if (persistence) {
+        await persistence.removeTopic(topic_id);
+        persistence.flush();
+      }
 
       emit('script-runner:topic-deleted', { topic_id });
       console.log('[script-runner] Deleted topic:', topic_id);

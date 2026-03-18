@@ -38,7 +38,7 @@ function setup(config) {
   const scriptsDir = path.join(__dirname, 'automation_scripts');
 
   // Resolve database path for automation scripts
-  // Priority: SMART_DESKTOP_DB env var → sibling project relative to hub root
+  // Priority: SMART_DESKTOP_DB env var → data/ inside hub root (new canonical location)
   const scriptEnv = {};
   const envDbPath = process.env.SMART_DESKTOP_DB;
   let resolvedDb = null;
@@ -46,9 +46,9 @@ function setup(config) {
   if (envDbPath && fs.existsSync(envDbPath)) {
     resolvedDb = envDbPath;
   } else {
-    const sibling = path.resolve(paths.root, '..', 'smart_desktop_sql', 'data', 'smart_desktop.db');
-    if (fs.existsSync(sibling)) {
-      resolvedDb = sibling;
+    const local = path.resolve(paths.root, 'data', 'smart_desktop.db');
+    if (fs.existsSync(local)) {
+      resolvedDb = local;
     }
   }
 
@@ -57,7 +57,7 @@ function setup(config) {
     console.log('[script-runner] Database resolved:', resolvedDb);
   } else {
     console.warn('[script-runner] SMART_DESKTOP_DB not found — scripts requiring DB access will fail.');
-    console.warn('[script-runner]   Expected: ' + path.resolve(paths.root, '..', 'smart_desktop_sql', 'data', 'smart_desktop.db'));
+    console.warn('[script-runner]   Expected: ' + path.resolve(paths.root, 'data', 'smart_desktop.db'));
     console.warn('[script-runner]   Set SMART_DESKTOP_DB env var to override.');
   }
 
