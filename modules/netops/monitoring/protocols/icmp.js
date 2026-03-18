@@ -65,7 +65,11 @@ function runPing(hostname) {
       args = ['-c', '1', '-W', String(PING_TIMEOUT_S), hostname];
     }
 
-    const child = execFile('ping', args, { timeout: KILL_TIMEOUT_MS }, (err, stdout) => {
+    const safePath = process.platform === 'win32'
+      ? `${process.env.SystemRoot || 'C:\\Windows'}\\System32`
+      : '/usr/bin:/usr/sbin:/bin:/sbin';
+
+    const child = execFile('ping', args, { timeout: KILL_TIMEOUT_MS, env: { PATH: safePath } }, (err, stdout) => {
       if (err) return reject(err);
       const latency = parseLatency(stdout);
       if (latency !== null) return resolve(latency);

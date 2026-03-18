@@ -3,6 +3,7 @@
  * All monitored hosts, discovered networks, metrics, and status live here.
  * Future: swap arrays/maps for sql.js persistence.
  */
+const { randomInt } = require('node:crypto');
 
 const MAX_METRICS = 2880; // 24 hours at 30-second intervals
 
@@ -28,7 +29,7 @@ class NetOpsStore {
   // --- ID generation & normalisation ---
 
   generateId() {
-    return Date.now() + Math.floor(Math.random() * 10000);
+    return Date.now() + randomInt(10000);
   }
 
   /** Normalise an id to Number so === comparisons succeed across IPC. */

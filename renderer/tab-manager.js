@@ -103,7 +103,7 @@ class TabManager {
     }
 
     const target = opts.target || 'module';
-    const id = `${type}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const id = `${type}-${Date.now()}-${crypto.getRandomValues(new Uint32Array(1))[0] % 1000}`;
     const tab = {
       id,
       type,

@@ -55,11 +55,16 @@ function extractTextFromPdf(buffer) {
   const btEtRegex = /BT\s([\s\S]*?)ET/g;
   let match;
   while ((match = btEtRegex.exec(text)) !== null) {
-    // Extract strings inside parentheses (Tj/TJ operators)
-    const parenRegex = /\(([^)]*)\)/g;
-    let pMatch;
-    while ((pMatch = parenRegex.exec(match[1])) !== null) {
-      chunks.push(pMatch[1]);
+    // Extract strings inside parentheses (Tj/TJ operators) using indexOf
+    const block = match[1];
+    let i = 0;
+    while (i < block.length) {
+      const open = block.indexOf('(', i);
+      if (open === -1) break;
+      const close = block.indexOf(')', open + 1);
+      if (close === -1) break;
+      chunks.push(block.substring(open + 1, close));
+      i = close + 1;
     }
   }
   return chunks.join(' ').trim();
@@ -71,8 +76,8 @@ function extractTextFromPdf(buffer) {
  */
 function extractAmount(text) {
   const patterns = [
-    /[$€£]\s?([\d,]+\.?\d*)/,
-    /([\d,]+\.\d{2})\b/,
+    /[$€£]\s?(\d[\d,]*\.?\d*)/,
+    /(\d[\d,]*\.\d{2})\b/,
   ];
   for (const pattern of patterns) {
     const m = text.match(pattern);
