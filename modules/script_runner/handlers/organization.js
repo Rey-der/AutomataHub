@@ -12,7 +12,10 @@ function register(ipcBridge, { store, persistence, emit }) {
       }
 
       store.addScriptToTopic(script_id, topic_id, position || 0);
-      if (persistence) await persistence.saveAssociation(script_id, topic_id, position || 0);
+      if (persistence) {
+        await persistence.saveAssociation(script_id, topic_id, position || 0);
+        persistence.flush();
+      }
 
       emit('script-runner:script-added-to-topic', { script_id, topic_id });
       console.log('[script-runner] Added script to topic:', script_id, topic_id);
@@ -32,7 +35,10 @@ function register(ipcBridge, { store, persistence, emit }) {
       }
 
       store.removeScriptFromTopic(script_id, topic_id);
-      if (persistence) await persistence.removeAssociation(script_id, topic_id);
+      if (persistence) {
+        await persistence.removeAssociation(script_id, topic_id);
+        persistence.flush();
+      }
 
       emit('script-runner:script-removed-from-topic', { script_id, topic_id });
       console.log('[script-runner] Removed script from topic:', script_id, topic_id);
@@ -52,9 +58,12 @@ function register(ipcBridge, { store, persistence, emit }) {
       }
 
       store.reorderTopicScripts(topic_id, script_ids);
-      script_ids.forEach((scriptId, index) => {
-        if (persistence) persistence.saveAssociation(scriptId, topic_id, index);
-      });
+      if (persistence) {
+        script_ids.forEach((scriptId, index) => {
+          persistence.saveAssociation(scriptId, topic_id, index);
+        });
+        persistence.flush();
+      }
 
       emit('script-runner:topic-scripts-reordered', { topic_id, script_ids });
       console.log('[script-runner] Reordered scripts in topic:', topic_id);

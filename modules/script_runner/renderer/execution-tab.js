@@ -1,7 +1,7 @@
 /**
- * Script Runner — execution tab renderer.
+ * Script Runner — execution tab / in-module session renderer.
  * Provides a live terminal view for running scripts.
- * Registers the "script-execution" tab type with TabManager.
+ * Sessions are managed by ScriptApp; this module handles rendering and IPC.
  */
 
 const ScriptExecution = (() => {
@@ -180,9 +180,40 @@ const ScriptExecution = (() => {
       }
       state.editMode = true;
     }
-    if (globalThis.tabManager.getActiveTabId() === tab.id) {
-      render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
+    // Re-render the active in-module session view
+    const app = _getApp();
+    if (app && app.activeSessionId === tab.id) {
+      const content = app.container?.querySelector('#sr-content');
+      if (content) render(tab, content);
     }
+  }
+
+  // Helper: get current ScriptApp instance
+  function _getApp() {
+    const tm = globalThis.tabManager;
+    if (!tm) return null;
+    const homeTabs = tm.getTabsByType?.('script-home') || [];
+    return homeTabs[0]?._appInstance || null;
+  }
+
+  // Helper: notify ScriptApp that a session status changed
+  function _notifyStatus(sessionId, status) {
+    const app = _getApp();
+    if (!app) return;
+    const session = app.sessions.get(sessionId);
+    if (session) {
+      session.status = status;
+      app.onSessionStatusChange(sessionId);
+    }
+  }
+
+  // Helper: get the rendering container for the active in-module session
+  function _getActiveContainer(sessionId) {
+    const app = _getApp();
+    if (app && app.activeSessionId === sessionId) {
+      return app.container?.querySelector('#sr-content') || null;
+    }
+    return null;
   }
 
   function _createToolbar(tab, state) {
@@ -380,7 +411,7 @@ const ScriptExecution = (() => {
     state.startTime = Date.now();
 
     startTimer(tab.id);
-    globalThis.tabManager.updateTabStatus(tab.id, 'running');
+    _notifyStatus(tab.id, 'running');
 
     globalThis.api.invoke('script-runner:run-script', {
       scriptPath: tab.scriptPath,
@@ -391,14 +422,13 @@ const ScriptExecution = (() => {
     }).catch(() => {
       state.isRunning = false;
       stopTimer(tab.id);
-      globalThis.tabManager.updateTabStatus(tab.id, 'error');
-      globalThis.ui.showNotification('Failed to start script', 'error');
+      _notifyStatus(tab.id, 'error');
+      globalThis.ui?.showNotification?.('Failed to start script', 'error');
     });
 
-    // Re-render if this tab is active to update button states
-    if (globalThis.tabManager.getActiveTabId() === tab.id) {
-      render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
-    }
+    // Re-render if this session is currently viewed
+    const container = _getActiveContainer(tab.id);
+    if (container) render(tab, container);
   }
 
   function handleStop(tabId) {
@@ -443,10 +473,10 @@ const ScriptExecution = (() => {
 
     globalThis.api.invoke('script-runner:clear-terminal', { tabId });
 
-    if (globalThis.tabManager.getActiveTabId() === tabId) {
-      const tab = globalThis.tabManager.getTab(tabId);
-      if (tab) render(tab, document.getElementById('tab-content'));
-    }
+    const container = _getActiveContainer(tabId);
+    const app = _getApp();
+    const session = app?.sessions.get(tabId);
+    if (container && session) render(session, container);
   }
 
   // --- Live append (called from IPC listeners) ---
@@ -494,7 +524,7 @@ const ScriptExecution = (() => {
       }
     }
 
-    const isActive = globalThis.tabManager.getActiveTabId() === tabId;
+    const isActive = _getApp()?.activeSessionId === tabId;
     const terminal = isActive ? document.getElementById(`terminal-${tabId}`) : null;
 
     if (state.lines.length > MAX_LINES) {
@@ -536,21 +566,22 @@ const ScriptExecution = (() => {
     if (elapsedEl) elapsedEl.textContent = formatElapsed(runtime);
 
     const status = exitCode === 0 ? 'success' : 'error';
-    globalThis.tabManager.updateTabStatus(tabId, status);
+    _notifyStatus(tabId, status);
 
     const msg = signal
       ? `Process terminated (signal: ${signal})`
       : `Process exited with code ${exitCode} (${formatElapsed(runtime)})`;
     appendOutput(tabId, msg, new Date().toISOString(), 'system');
 
-    if (globalThis.tabManager.getActiveTabId() === tabId) {
-      const tab = globalThis.tabManager.getTab(tabId);
-      if (tab) render(tab, document.getElementById('tab-content'));
-    }
+    // Re-render toolbar to show / hide Retry button
+    const container = _getActiveContainer(tabId);
+    const app = _getApp();
+    const session = app?.sessions.get(tabId);
+    if (container && session) render(session, container);
   }
 
   function onQueueStatus(tabId, position) {
-    globalThis.tabManager.updateTabStatus(tabId, 'queued');
+    _notifyStatus(tabId, 'queued');
     appendOutput(tabId, `Queued at position ${position}`, new Date().toISOString(), 'system');
   }
 
@@ -581,24 +612,15 @@ const ScriptExecution = (() => {
   return { render, getState, removeState, appendOutput, onComplete, setupListeners };
 })();
 
-// --- Register with TabManager ---
+// --- Setup IPC listeners as soon as the module loads ---
 
-(function register() {
-  function doRegister() {
-    if (!globalThis.tabManager) {
-      setTimeout(doRegister, 0);
+(function setup() {
+  function doSetup() {
+    if (!globalThis.api) {
+      setTimeout(doSetup, 0);
       return;
     }
-
-    globalThis.tabManager.registerTabType('script-execution', {
-      render: ScriptExecution.render,
-      onClose: (tab) => ScriptExecution.removeState(tab.id),
-      maxTabs: 4,
-    });
-
-    // Setup IPC event listeners for live output
     ScriptExecution.setupListeners();
   }
-
-  doRegister();
+  doSetup();
 })();

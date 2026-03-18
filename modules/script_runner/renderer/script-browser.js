@@ -121,13 +121,15 @@ class ScriptBrowser {
       .join('');
 
     const scriptId = script.id || script.folder;
+    const isFav = this.app.isFavorite(scriptId);
 
     return `
       <div class="script-card" data-script-id="${this._escapeHtml(scriptId)}" draggable="true" title="Drag to topic to assign">
         <div class="card-header">
           <h3 class="script-name">${this._escapeHtml(script.name)}</h3>
-          <div class="variant-badges">
-            ${languageTags}
+          <div class="card-header-actions">
+            <button class="card-toggle toggle-favorite sc-fav-btn${isFav ? ' active' : ''}" data-script-id="${this._escapeHtml(scriptId)}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '&#9829;' : '&#9825;'}</button>
+            <div class="variant-badges">${languageTags}</div>
           </div>
         </div>
         
@@ -137,7 +139,7 @@ class ScriptBrowser {
         
         <div class="card-footer">
           <button class="btn btn-primary" data-script-id="${this._escapeHtml(scriptId)}">
-            Open
+            Run
           </button>
           <button class="btn btn-secondary" data-script-id="${this._escapeHtml(scriptId)}" title="Add to topic">
             + Topic
@@ -205,6 +207,14 @@ class ScriptBrowser {
       
       card.addEventListener('dragend', (e) => {
         card.classList.remove('dragging');
+      });
+    });
+
+    // Favorite buttons
+    this.container.querySelectorAll('.sc-fav-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.app.toggleFavorite(btn.dataset.scriptId);
       });
     });
 
@@ -358,14 +368,7 @@ class ScriptBrowser {
   }
 
   _openExecution(script, chosen) {
-    if (globalThis.tabManager) {
-      globalThis.tabManager.createTab('script-execution', `${script.name}`, {
-        scriptPath: chosen.scriptPath || script.scriptPath,
-        scriptName: script.name,
-        scriptId: script.id || script.folder,
-        scriptEnv: chosen.env || script.env || {},
-      });
-    }
+    this.app.openExecution(script, chosen);
   }
 
   _showVariantMenu(script, btn) {
