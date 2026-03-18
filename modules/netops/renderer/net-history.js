@@ -8,6 +8,7 @@ class NetHistory {
     this.app = app;
     this.filterHost = 'all';
     this.filterRange = '24h';
+    this.timelineRange = '24h';
     this.uptimeData = [];
     this.timelineData = [];
     this.events = [];
@@ -59,8 +60,8 @@ class NetHistory {
   async loadTimeline() {
     const hosts = this._filteredHosts();
     let limit;
-    if (this.filterRange === '30d') limit = 500;
-    else if (this.filterRange === '7d') limit = 300;
+    if (this.timelineRange === '30d') limit = 500;
+    else if (this.timelineRange === '7d') limit = 300;
     else limit = 150;
     const results = await Promise.allSettled(
       hosts.map(h => API.invoke('netops:get-status-history', { host_id: h.id, limit }))
@@ -163,7 +164,17 @@ class NetHistory {
 
         <!-- Status timeline -->
         <div class="hist-section">
-          <div class="hist-section-title">Status Timeline</div>
+          <div class="hist-section-header">
+            <div class="hist-section-title">Status Timeline</div>
+            <select class="hist-tl-range-select" id="hist-tl-range-select">
+              <option value="1h"${this.timelineRange === '1h' ? ' selected' : ''}>Last 1h</option>
+              <option value="6h"${this.timelineRange === '6h' ? ' selected' : ''}>Last 6h</option>
+              <option value="12h"${this.timelineRange === '12h' ? ' selected' : ''}>Last 12h</option>
+              <option value="24h"${this.timelineRange === '24h' ? ' selected' : ''}>Last 24h</option>
+              <option value="7d"${this.timelineRange === '7d' ? ' selected' : ''}>Last 7 Days</option>
+              <option value="30d"${this.timelineRange === '30d' ? ' selected' : ''}>Last 30 Days</option>
+            </select>
+          </div>
           ${this.timelineData.length === 0
             ? '<p class="hist-empty">No timeline data available.</p>'
             : `<div class="hist-tl-legend">
@@ -268,7 +279,7 @@ class NetHistory {
   /* ── Timeline ───────────────────────────────────────────────── */
 
   _renderTimelineRow(d) {
-    const rangeMs = _histRangeMs(this.filterRange);
+    const rangeMs = _histRangeMs(this.timelineRange);
     const rangeStart = Date.now() - rangeMs;
     const rangeEnd = Date.now();
 
@@ -279,7 +290,7 @@ class NetHistory {
       const left = ((segStart - rangeStart) / rangeMs) * 100;
       const width = ((segEnd - segStart) / rangeMs) * 100;
       const durStr = _histDuration(segEnd - segStart);
-      const timeStr = new Date(segStart).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const timeStr = new Date(segStart).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
       return `<div class="hist-tl-block hist-tl-${seg.status}" style="left:${left}%;width:${Math.max(width, 0.3)}%" title="${seg.status} \u2014 ${timeStr} (${durStr})"></div>`;
     }).join('');
 
@@ -292,7 +303,7 @@ class NetHistory {
   }
 
   _renderTimeAxis() {
-    const rangeMs = _histRangeMs(this.filterRange);
+    const rangeMs = _histRangeMs(this.timelineRange);
     const now = Date.now();
     const start = now - rangeMs;
     const ticks = 6;
@@ -300,10 +311,10 @@ class NetHistory {
     for (let i = 0; i <= ticks; i++) {
       const t = new Date(start + (rangeMs * i / ticks));
       let label;
-      if (this.filterRange === '24h') {
-        label = t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      if (this.timelineRange === '24h' || this.timelineRange === '12h' || this.timelineRange === '6h' || this.timelineRange === '1h') {
+        label = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
       } else {
-        label = t.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        label = t.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
       }
       const left = (i / ticks) * 100;
       labels += `<span class="hist-tl-tick" style="left:${left}%">${label}</span>`;
@@ -319,8 +330,8 @@ class NetHistory {
 
   _renderEventRow(evt) {
     const time = new Date(evt.timestamp);
-    const dateStr = time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const timeStr = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateStr = time.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+    const timeStr = time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     const host = this.app.hosts.find(h => h.id === evt.host_id);
     const name = host ? (host.alias || host.hostname) : `Host #${evt.host_id}`;
     const lat = evt.latency_ms == null ? '\u2014' : `${evt.latency_ms}ms`;
@@ -421,6 +432,14 @@ class NetHistory {
       refreshBtn.addEventListener('click', () => this._reload());
     }
 
+    const tlRangeSel = this.container.querySelector('#hist-tl-range-select');
+    if (tlRangeSel) {
+      tlRangeSel.addEventListener('change', () => {
+        this.timelineRange = tlRangeSel.value;
+        this._reloadTimeline();
+      });
+    }
+
     this.container.querySelectorAll('.hist-tl-row[data-host-id]').forEach(row => {
       row.addEventListener('click', () => this.app.navigateTo('host-detail', Number(row.dataset.hostId)));
     });
@@ -432,6 +451,11 @@ class NetHistory {
 
   async _reload() {
     await this.loadAll();
+    this.render();
+  }
+
+  async _reloadTimeline() {
+    await this.loadTimeline();
     this.render();
   }
 
@@ -450,7 +474,7 @@ function _histEsc(text) {
 }
 
 function _histRangeMs(range) {
-  const map = { '1h': 3600000, '6h': 21600000, '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
+  const map = { '1h': 3600000, '6h': 21600000, '12h': 43200000, '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
   return map[range] || map['24h'];
 }
 

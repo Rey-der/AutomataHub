@@ -2816,6 +2816,20 @@
   color: var(--text);
   border-color: var(--accent);
 }
+.hist-tl-range-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.hist-tl-range-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 
 /* ── Uptime summary cards ────────────────────────────── */
 
