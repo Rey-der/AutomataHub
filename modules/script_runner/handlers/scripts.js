@@ -8,7 +8,7 @@ const fs = require('node:fs');
 const { dialog } = require('electron');
 
 const EXECUTABLE_EXTENSIONS = new Set(['.sh', '.bash', '.py', '.py3', '.js', '.mjs', '.rb', '.pl', '.csx', '.cs']);
-const IGNORED_ENTRIES = new Set(['.DS_Store', 'Thumbs.db', '.git', 'node_modules', '__pycache__', '.idea', '.vscode']);
+const IGNORED_ENTRIES = new Set(['.DS_Store', 'Thumbs.db', '.git', 'node_modules', '__pycache__', '.idea', '.vscode', '_lib']);
 
 const EXTENSION_LANGUAGE_MAP = {
   '.sh': 'Bash',
