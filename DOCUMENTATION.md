@@ -43,7 +43,7 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 │                                                              │
 │  ┌─────────────┐  ┌──────────────────────────────────────┐   │
 │  │   main.js   │  │          core/                       │   │
-│  │             │  │  module-loader.js  module-registry.js │   │
+│  │             │  │  module-loader.js  module-registry.js│   │
 │  │ - Window    │  │  ipc-bridge.js    path-utils.js      │   │
 │  │ - Hub IPC   │  │  config-utils.js  event-bus.js       │   │
 │  │ - Module    │  │  user-prefs.js    errors.js          │   │
@@ -52,20 +52,20 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 │         │                                                    │
 │         │          ┌─────────────────────────────────────┐   │
 │         ├──────────│   Loaded Modules (main-handlers.js) │   │
-│         │          │   Registered via ipcBridge           │   │
+│         │          │   Registered via ipcBridge          │   │
 │         │          └─────────────────────────────────────┘   │
 │         │                                                    │
 └─────────┼────────────────────────────────────────────────────┘
           │ IPC (contextBridge, dynamic channel allowlist)
 ┌─────────┼────────────────────────────────────────────────────┐
 │ Preload │   preload.js                                       │
-│ Bridge  │   - Dynamic channel allowlist from module manifests │
+│ Bridge  │   - Dynamic channel allowlist from module manifests│
 │         │   - Generic invoke() / on() / off()                │
 │         │   - window.api surface                             │
 └─────────┼────────────────────────────────────────────────────┘
           │
 ┌─────────┼────────────────────────────────────────────────────┐
-│              Renderer Process (Chromium)                      │
+│              Renderer Process (Chromium)                     │
 │         │                                                    │
 │  ┌──────┴────────────────────────────┐                       │
 │  │      module-bootstrap.js          │                       │
