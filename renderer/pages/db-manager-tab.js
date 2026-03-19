@@ -1,7 +1,7 @@
 /**
  * Database Manager Tab — hub-level UI for managing SQLite database passwords.
  * Scans the project for .db/.sqlite/.sqlite3 files, shows credentials status,
- * and provides set/change/remove password + connection test per database.
+ * and provide set/change/remove password + connection test per database.
  */
 
 const DbManagerTab = (() => {
