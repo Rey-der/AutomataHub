@@ -1,245 +1,0 @@
-Script started on Sun Mar 15 22:17:00 2026
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  node _test_phase2.js[?2004l
-=== Phase 2 Integration Test ===
-
-OK Connected to /Users/hyperion.mw/Desktop/Coding/Developer/smart_desktop_sql/data/smart_desktop.db
-
---- Script Health (8 scripts) ---
-  backup-runner: healthy | 100% success | streak=2 SUCCESS | last=SUCCESS
-  download-sorter: healthy | 100% success | streak=1 SUCCESS | last=SUCCESS
-  invoice-scanner: healthy | 100% success | streak=1 SUCCESS | last=SUCCESS
-  test_cs: healthy | 100% success | streak=1 SUCCESS | last=SUCCESS
-  test_fail_script: critical | 0% success | streak=1 FAIL | last=FAIL
-  test_py: healthy | 100% success | streak=2 SUCCESS | last=SUCCESS
-  test_script: healthy | 100% success | streak=1 SUCCESS | last=SUCCESS
-  test_util_script: healthy | 100% success | streak=1 SUCCESS | last=SUCCESS
-OK getScriptHealthStats
-
---- Performance Stats (all, 10 runs) ---
-  avg=0ms median=0ms min=0ms max=0ms p95=0ms
-OK getPerformanceStats
-
---- Error Patterns (3 groups) ---
-  1x | scripts: test_cs | "NullRef"
-  1x | scripts: test_py | "Boom"
-  1x | scripts: test_script | "Something broke"
-OK getErrorPatterns
-
---- Activity Heatmap ---
-  168 cells, 1 with data, max=18
-OK getActivityHeatmap
-
---- Integrity Report ---
-  Zombies: 0
-  Stale tables: 0/6
-  Execution gaps: 0
-OK getIntegrityReport
-
---- DB Health ---
-  Size: 86016 bytes | WAL: 0 bytes
-  Integrity: true | Tables: 6 | Indexes: 12
-OK getDbHealth
-
---- Execution Timeline (all) ---
-  10 executions
-  First: id=1 script=test_script dur=0ms status=SUCCESS
-OK getExecutionTimeline
-
---- Correlated Records for exec #1 ---
-  Logs: 1 | Errors: 1
-OK getCorrelatedRecords
-
-=== All Phase 2 tests complete ===
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  rm /Users/hyperion.mw/Desktop/Co [Kdding/Developer/Automata_modules/sql_visualizer/_test_phase2.js[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  wc -l /Users/hyperion.mw/Desktop [K//Coding/Developer/Automata_modules/sql_visualizer/renderer/styles.css[?2004l
-    1305 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/renderer/styles.css
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  node -c renderer/sql-table-view. [Kjjs && echo "table-view OK" && node -c renderer/sql-query.js && echo "query OK" & [K&& node -c renderer/sql-home.js && echo "home OK"[?2004l
-table-view OK
-query OK
-home OK
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  cd /Users/hyperion.mw/Desktop/Co [Kdding/Developer/Automata_modules/sql_visualizer && SMART_DESKTOP_DB=/Users/hyperi [Koon.mw/Desktop/Coding/Developer/smart_desktop_sql/data/smart_desktop.db node -e " [K[K[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst db = require('./db-bridge');[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst qa = require('./query-analyzer');[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hddb.init();[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h/// Phase 1 core[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst tables = db.getTables();[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconsole.log('Tables:', tables.length);[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst info = db.getTableInfo('execution_tracking');[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconsole.log('Columns:', info.map(c => c.name).join(', '));[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst rows = db.queryRows('execution_tracking', { offset: 0, limi [Ktt: 5, sortCol: 'id', sortDir: 'DESC', filters: [] });[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconsole.log('Rows:', rows.rows.length, '/ total:', rows.total);[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h/// Phase 2 analytics[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst health = qa.getScriptHealthStats();[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconsole.log('Scripts:', health.length);[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst corr = qa.getCorrelatedRecords({ executionId: 1 });[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconsole.log('Correlated logs:', corr.logs.length, 'errors:', corr [K..errors.length);[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst integrity = qa.getIntegrityReport();[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconsole.log('Integrity zombies:', integrity.zombies.length, 'gaps [K::', inconst db = require('./db-bridge');[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst qa = require('./query-analyzer');[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hddb.init();[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h/// Phase 1 core[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst tables = db.getTables();[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconsole.log('Tables:', tables.length);[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst info = db.gd const qa = require('./query-analy ([?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hddb.init();[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h/// Phase 1 core[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst tabIPC[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004h/// Phaseonsconst tables =[7m<ffffffff>[27m console.log('Tables:', tables [Kaal[?2004l
-[0m[27m[24m[Jcmdand dquote> [K[?2004hcconst info = db.getTableInfo('executse(conso[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  SMART_DESKTOP_DB=/Users/hyperion [K..mw/Desktop/Coding/Developer/smart_desktop_sql/data/smart_desktop.db node _test_ [Kpphase3.js[?2004l
-/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/_test_phase3.js:4
-db.init();
-   ^
-
-TypeError: db.init is not a function
-    at Object.<anonymous> [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39m_test_phase3.js:4:4[90m)[39m
-[90m    at Module._compile (node:internal/modules/cjs/loader:1159:14)[39m
-[90m    at Module._extensions..js (node:internal/modules/cjs/loader:1213:10)[39m
-[90m    at Module.load (node:internal/modules/cjs/loader:1037:32)[39m
-[90m    at Module._load (node:internal/modules/cjs/loader:878:12)[39m
-[90m    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)[39m
-[90m    at node:internal/main/run_main_module:23:47[39m
-
-Node.js v18.12.1
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  SMART_DESKTOP_DB=/Users/hyperion [K..mw/Desktop/Coding/Developer/smart_desktop_sql/data/smart_desktop.db node _test_ [Kpphase3.js[?2004l
-/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/db-bridge.js:21
-    throw new Error(`Database file not found: ${dbPath || '(no path)'}`);
-    ^
-
-Error: Database file not found: (no path)
-    at Object.open [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39mdb-bridge.js:21:11[90m)[39m
-    at Object.<anonymous> [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39m_test_phase3.js:4:4[90m)[39m
-[90m    at Module._compile (node:internal/modules/cjs/loader:1159:14)[39m
-[90m    at Module._extensions..js (node:internal/modules/cjs/loader:1213:10)[39m
-[90m    at Module.load (node:internal/modules/cjs/loader:1037:32)[39m
-[90m    at Module._load (node:internal/modules/cjs/loader:878:12)[39m
-[90m    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)[39m
-[90m    at node:internal/main/run_main_module:23:47[39m
-
-Node.js v18.12.1
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  SMART_DESKTOP_DB=/Users/hyperion [K..mw/Desktop/Coding/Developer/smart_desktop_sql/data/smart_desktop.db node _test_ [Kpphase3.js[?2004l
-Tables: [33m6[39m
-Columns: id, script, start_time, end_time, status, error_message
-Rows: [33m5[39m / total: [33m10[39m
-Scripts: [33m8[39m
-
-/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/node_modules/better-sqlite3/lib/methods/wrappers.js:5
-	return this[cppdb].prepare(sql, this, false);
-	                   ^
-SqliteError: no such column: NaN
-    at Database.prepare [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39mnode_modules/[4mbetter-sqlite3[24m/lib/methods/wrappers.js:5:21[90m)[39m
-    at Object.runReadOnlyQuery [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39mdb-bridge.js:242:22[90m)[39m
-    at _query [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39mquery-analyzer.js:19:27[90m)[39m
-    at Object.getCorrelatedRecords [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39mquery-analyzer.js:343:17[90m)[39m
-    at Object.<anonymous> [90m(/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/[39m_test_phase3.js:20:17[90m)[39m
-[90m    at Module._compile (node:internal/modules/cjs/loader:1159:14)[39m
-[90m    at Module._extensions..js (node:internal/modules/cjs/loader:1213:10)[39m
-[90m    at Module.load (node:internal/modules/cjs/loader:1037:32)[39m
-[90m    at Module._load (node:internal/modules/cjs/loader:878:12)[39m
-[90m    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)[39m {
-  code: [32m'SQLITE_ERROR'[39m
-}
-
-Node.js v18.12.1
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  SMART_DESKTOP_DB=/Users/hyperion [K..mw/Desktop/Coding/Developer/smart_desktop_sql/data/smart_desktop.db node _test_ [Kpphase3.js[?2004l
-Tables: [33m6[39m
-Columns: id, script, start_time, end_time, status, error_message
-Rows: [33m5[39m / total: [33m10[39m
-Scripts: [33m8[39m
-Correlated logs: [33m1[39m errors: [33m1[39m
-Integrity zombies: [33m0[39m gaps: [33m0[39m
-DB tables: [33m6[39m indexes: [33m12[39m integrity: [33mtrue[39m
-
-Phase 3 integration test - all backend APIs operational
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  rm /Users/hyperion.mw/Desktop/Co [Kdding/Developer/Automata_modules/sql_visualizer/_test_phase3.js[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  wc -l /Users/hyperion.mw/Desktop [K//Coding/Developer/Automata_modules/sql_visualizer/renderer/sql-timeline.js /User [Kss/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/renderer/ [Kssql-analytics.js /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sq [Kll_visualizer/renderer/sql-table-view.js /Users/hyperion.mw/Desktop/Coding/Develo [Kpper/Automata_modules/sql_visualizer/renderer/styles.css /Users/hyperion.mw/Deskt [Koop/Coding/Developer/Automata_modules/sql_visualizer/query-analyzer.js /Users/hyp [Keerion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/main-handlers. [Kjjs /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/r [Keenderer/sql-home.js[?2004l
-     361 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/renderer/sql-timeline.js
-     452 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/renderer/sql-analytics.js
-     798 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/renderer/sql-table-view.js
-    1593 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/renderer/styles.css
-     452 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/query-analyzer.js
-     210 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/main-handlers.js
-     523 /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/renderer/sql-home.js
-    4389 total
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  ls -la /Users/hyperion.mw/Deskto [Kpp/Coding/Developer/AutomataHub/modules/ 2>/dev/null || echo "no modules dir"[?2004l
-total 64
-drwxr-xr-x   5 hyperion.mw  staff    160 Mar 15 19:45 .
-drwxr-xr-x  25 hyperion.mw  staff    800 Mar 15 20:41 ..
--rw-r--r--@  1 hyperion.mw  staff   6148 Mar 15 19:57 .DS_Store
--rw-r--r--   1 hyperion.mw  staff  20645 Mar 15 20:09 MODULE_GUIDE.md
-drwxr-xr-x  12 hyperion.mw  staff    384 Mar 15 19:57 script-runner
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  ls -la /Users/hyperion.mw/Deskto [Kpp/Coding/Developer/AutomataHub/modules/script-runner/[?2004l
-total 128
-drwxr-xr-x  12 hyperion.mw  staff    384 Mar 15 19:57 .
-drwxr-xr-x   5 hyperion.mw  staff    160 Mar 15 19:45 ..
--rw-r--r--@  1 hyperion.mw  staff   6148 Mar 15 19:45 .DS_Store
--rw-r--r--   1 hyperion.mw  staff     30 Mar 15 19:45 .gitignore
--rw-r--r--   1 hyperion.mw  staff   1064 Mar 15 19:45 LICENSE
--rw-r--r--   1 hyperion.mw  staff   8606 Mar 15 19:45 main-handlers.js
--rw-r--r--   1 hyperion.mw  staff    964 Mar 15 19:45 manifest.json
--rw-r--r--   1 hyperion.mw  staff    467 Mar 15 19:45 package.json
--rw-r--r--   1 hyperion.mw  staff   4962 Mar 15 19:45 README.md
-drwxr-xr-x   5 hyperion.mw  staff    160 Mar 15 19:45 renderer
--rw-r--r--   1 hyperion.mw  staff   5929 Mar 15 19:45 script-executor.js
--rw-r--r--   1 hyperion.mw  staff  10153 Mar 15 19:45 TODO.md
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  ls /Users/hyperion.mw/Desktop/Co [Kdding/Developer/Automata_modules/sql_visualizer/node_modules/better-sqlite3/packa [Kgge.json 2>/dev/null && echo "exists" || echo "missing"[?2004l
-/Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer/node_modules/better-sqlite3/package.json
-exists
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  ln -s /Users/hyperion.mw/Desktop [K//Coding/Developer/Automata_modules/sql_visualizer /Users/hyperion.mw/Desktop/Cod [Kiing/Developer/AutomataHub/modules/sql-visualizer && ls -la /Users/hyperion.mw/De [Kssktop/Coding/Developer/AutomataHub/modules/sql-visualizer[?2004l
-lrwxr-xr-x  1 hyperion.mw  staff  75 Mar 15 22:50 /Users/hyperion.mw/Desktop/Coding/Developer/AutomataHub/modules/sql-visualizer -> /Users/hyperion.mw/Desktop/Coding/Developer/Automata_modules/sql_visualizer
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  cat /Users/hyperion.mw/Desktop/C [Kooding/Developer/AutomataHub/modules/sql-visualizer/manifest.json | head -5[?2004l
-{
-  "id": "sql-visualizer",
-  "name": "SQL Visualizer",
-  "version": "1.2.0",
-  "description": "Browse, query, and analyze the Smart Desktop SQL database with paginated tables, an ad-hoc query editor, RPA-focused analytics, saved queries, bookmarks, and live monitoring",
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  node -c renderer/sql-timeline.js [K  && echo "timeline OK" && node -c renderer/sql-table-view.js && echo "table-view [K  OK" && node -c renderer/sql-home.js && echo "home OK" && node -c query-analyzer [K..js && echo "analyzer OK"[?2004l
-timeline OK
-table-view OK
-home OK
-analyzer OK
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  SMART_DESKTOP_DB=/Users/hyperion [K..mw/Desktop/Coding/Developer/smart_desktop_sql/data/smart_desktop.db node _test_ [Kffinal.js[?2004l
-DB Health: {
-  "fileSizeBytes": 86016,
-  "walSizeBytes": 0,
-  "integrityOk": true,
-  "indexCount": 12,
-  "tableCount": 6,
-  "pageSize": 4096,
-  "pageCount": 21,
-  "lastModified": "2026-03-14T22:43:27.863Z"
-}
-lastModified: 2026-03-14T22:43:27.863Z
-Timeline entries: [33m10[39m
-All checks passed
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h  rm /Users/hyperion.mw/Desktop/Co [Kdding/Developer/Automata_modules/sql_visualizer/_test_final.js[?2004l
-[1m[7m%[27m[1m[0m                                                                                [0m[27m[24m[J(base) hyperion.mw@MacBookPro sql_visualizer % [K[?2004h

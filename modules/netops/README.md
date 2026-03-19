@@ -44,10 +44,15 @@ Real-time network monitoring, host status tracking, and network scanning for inf
 - **Concurrent checks**: Up to 5 simultaneous host checks per poll
 
 ### Renderer Process
-- **net-dashboard.js**: Live status grid with real-time updates
-- **net-scanner.js**: CIDR-based host discovery and bulk adding
+- **net-app.js**: Root layout with sidebar navigation and content routing
+- **net-overview.js**: Dashboard with KPI cards and status summary
+- **net-host-list.js**: Sortable host table with inline actions
+- **net-host-detail.js**: Single-host view with Chart.js metrics
+- **net-discovery.js**: CIDR-based network scanning and host import
 - **net-history.js**: Status timeline and uptime analytics
-- **styles.css**: Dashboard, card, timeline, and responsive layouts
+- **net-alerts.js**: Alert rule management and active alert display
+- **chart-config.js**: Shared Chart.js defaults
+- **styles.css**: App shell, host views, discovery, and responsive layouts
 
 ## Database Schema
 
@@ -224,9 +229,14 @@ See [TODO.md](./TODO.md) for 7-week implementation phases:
 - `manifest.json` — Module registration
 - `main-handlers.js` — IPC handlers and polling engine
 - `package.json` — Module dependencies
-- `renderer/net-dashboard.js` — Live status UI
-- `renderer/net-scanner.js` — Network discovery UI
+- `renderer/net-app.js` — Root layout and navigation
+- `renderer/net-overview.js` — Dashboard KPI view
+- `renderer/net-host-list.js` — Host table view
+- `renderer/net-host-detail.js` — Single-host metrics
+- `renderer/net-discovery.js` — Network scanning UI
 - `renderer/net-history.js` — Timeline and analytics UI
+- `renderer/net-alerts.js` — Alert management UI
+- `renderer/chart-config.js` — Shared chart defaults
 - `renderer/styles.css` — Module styling
 
 ## Notes
