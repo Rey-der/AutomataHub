@@ -1,8 +1,8 @@
-# Automation Scripts — Integration Guide
+# Automation Scripts
 
-This folder contains all automation scripts designed to run inside
-[script_runner](https://github.com/Rey-der/script_runner).
-They read from and write to the **Smart Desktop SQL** database.
+This folder contains all automation scripts for the
+**Script Runner** module in AutomataHub.
+They read from and write to the shared SQLite database via `sql.js` (WASM).
 
 ---
 
@@ -10,159 +10,87 @@ They read from and write to the **Smart Desktop SQL** database.
 
 | Requirement | Details |
 |---|---|
-| **script_runner** | Cloned and working — see its own README |
-| **Node.js** | v18+ (v20+ recommended for `better-sqlite3`) — required for JavaScript variants |
-| **.NET SDK** | v8.0+ — required for C# variants |
-| **smart_desktop_sql** | Project set up with `npm install` completed and database initialised via the `db-setup` script |
-| **SMART_DESKTOP_DB** | Environment variable pointing to the database file (absolute path) |
+| **AutomataHub** | Installed with `npm install` completed |
+| **Node.js** | v18+ |
+| **.NET SDK** | v8.0+ (for C# variants only) |
+| **SMART_DESKTOP_DB** | Set automatically by the Script Runner module, or set manually for CLI use |
 
-### Setting the environment variable
+### Database resolution
 
-Add to `~/.zshrc` (or equivalent):
+When scripts run inside AutomataHub, the `SMART_DESKTOP_DB` environment variable
+is set automatically by the Script Runner module, pointing to `data/smart_desktop.db`
+in the project root. For manual CLI use:
 
 ```bash
-export SMART_DESKTOP_DB="/Users/<you>/path/to/smart_desktop_sql/data/smart_desktop.db"
+export SMART_DESKTOP_DB="/path/to/AutomataHub/data/smart_desktop.db"
 ```
-
-Reload with `source ~/.zshrc`. Every script in this folder reads this variable to locate the database — no hardcoded paths.
 
 ---
 
-## Folder Structure
+## Architecture
 
-Each script is a self-contained folder with both JavaScript and C# variants:
+Scripts use a shared helper library in `_lib/`:
 
 ```
 automation_scripts/
-├── README.md              ← This file
-├── log-query/             ← Query: latest automation log entries
-│   ├── main.js            ← JavaScript variant
-│   ├── config.json
-│   ├── README.md
-│   ├── DOKUMENTATION.md   ← DORA-compliant formal docs
-│   └── csharp/            ← C# variant
-│       ├── Program.cs
-│       └── config.json
-├── invoice-query/         ← Query: stored invoices (filterable)
-├── backup-query/          ← Query: backup history
-├── error-report/          ← Query: recent errors
-├── dashboard-summary/     ← Query: aggregated statistics
-├── execution-report/      ← Query: script executions with duration
-├── download-sorter/       ← Write: sorts Downloads folder → DB
-├── invoice-scanner/       ← Write: scans PDF invoices → DB
-└── backup-runner/         ← Write: copies folders → DB
+├── _lib/                  -- Shared helpers (db, output, tracker)
+│   ├── db.js              -- Database connection via sql.js (WASM)
+│   ├── output.js          -- JSON output formatting
+│   └── tracker.js         -- Execution tracking and logging
+├── README.md              -- This file
+├── backup-query/          -- Query: backup history
+├── backup-runner/         -- Write: copies folders, logs to DB
+├── dashboard-summary/     -- Query: aggregated statistics
+├── download-sorter/       -- Write: sorts Downloads folder, logs to DB
+├── error-report/          -- Query: recent errors
+├── execution-report/      -- Query: script executions with duration
+├── invoice-query/         -- Query: stored invoices (filterable)
+└── invoice-scanner/       -- Write: scans PDF invoices, logs to DB
 ```
 
-### Required files per script
+### Why sql.js instead of better-sqlite3?
 
-| File | Purpose |
-|---|---|
-| `main.js` | JavaScript entry point |
-| `csharp/Program.cs` | C# entry point |
-| `config.json` | Metadata (top-level, references `main.js`) |
-| `csharp/config.json` | C# metadata (references `Program.cs`) |
-| `README.md` | Human-readable description of both variants |
-| `DOKUMENTATION.md` | Formal DORA-compliant audit documentation |
+Scripts are spawned as Node.js child processes by the Script Runner module.
+The `better-sqlite3` native binary in `node_modules` is compiled for Electron's
+architecture target, which is incompatible with regular Node.js. `sql.js` is a
+pure WASM implementation that works in any environment.
 
-### config.json format
+### Shared library (`_lib/`)
 
-**JavaScript variant** (root level):
-```json
-{
-  "Language Variants
+| File | Exports | Purpose |
+|---|---|---|
+| `db.js` | `openDatabase()` | Opens the DB, creates tables if missing, returns query helpers |
+| `output.js` | `printJSON(data)` | Formats and prints JSON to stdout |
+| `tracker.js` | `runTracked(db, name, fn)` | Wraps script execution with logging and tracking |
 
-All scripts are implemented in two languages: **JavaScript** and **C#**.
-
-### Running JavaScript variant
-
-```bash
-# Query scripts
-node log-query/main.js
-
-# Write scripts
-BACKUP_FOLDERS="/path/to/folder" node backup-runner/main.js
-```
-
-### Running C# variant
-
-```bash
-# Query scripts
-dotnet run --project log-query/csharp/
-
-# Write scripts
-BACKUP_FOLDERS="/path/to/folder" dotnet run --project backup-runner/csharp/
-```
-
-Both variants:
-- Communicate with the same SQLite database
-- Use identical environment variables
-- Produce identical JSON output
-- Support the same command-line arguments
-
----
-
-## How Scripts Resolve the Database
-
-### JavaScript variant
-
-Derives the **smart_desktop_sql project root** from the env var:
+All scripts follow this async pattern:
 
 ```js
-const dbPath = process.env.SMART_DESKTOP_DB;
-// dbPath = /…/smart_desktop_sql/data/smart_desktop.db
-const projectRoot = path.dirname(path.dirname(dbPath));
-// projectRoot = /…/smart_desktop_sql
+const { openDatabase } = require('../_lib/db');
+const { printJSON } = require('../_lib/output');
+
+(async () => {
+  const db = await openDatabase();
+  try {
+    const rows = db.all('SELECT * FROM errors ORDER BY timestamp DESC LIMIT 10');
+    printJSON(rows);
+  } finally {
+    db.close();
+  }
+})();
 ```
 
-Then requires models and utilities from the project:
+Write scripts add execution tracking:
 
 ```js
-const automationLog = require(path.join(projectRoot, 'src', 'models', 'automationLog'));
-const { printJSON }  = require(path.join(projectRoot, 'src', 'utils', 'output'));
-const { closeDb }    = require(path.join(projectRoot, 'src', 'utils', 'db'));
-```
+const { runTracked } = require('../_lib/tracker');
 
-**No npm dependencies** inside `automation_scripts/` — everything resolves back to `smart_desktop_sql/node_modules/`.
-
-### C# variant
-
-Uses NuGet packages (`Microsoft.Data.Sqlite`) for database access. Both variants write identical data to the database and read the same tables
-
-```js
-const dbPath = process.env.SMART_DESKTOP_DB;
-// dbPath = /…/smart_desktop_sql/data/smart_desktop.db
-const projectRoot = path.dirname(path.dirname(dbPath));
-// projectRoot = /…/smart_desktop_sql
-```
-
-Then requires models and utilities from the project:
-
-```js
-const automationLog = require(path.join(projectRoot, 'src', 'models', 'automationLog'));
-const { printJSON }  = require(path.join(projectRoot, 'src', 'utils', 'output'));
-const { closeDb }    = require(path.join(projectRoot, 'src', 'utils', 'db'));
-```
-
-This means **no npm dependencies are needed inside `automation_scripts/`** — everything resolves back to `smart_desktop_sql/node_modules/`.
-
----
-
-## Integrating with script_runner
-
-1. Copy (or symlink) the desired script folders into script_runner's `scripts/` directory.
-2. Restart script_runner — it auto-discovers any folder containing a `config.json` + supported `main.*` file.
-3. The scripts appear in the UI and can be run with one click.
-
-### Examples
-
-**Symlink JavaScript variant:**
-```bash
-ln -s /path/to/automation_scripts/log-query /path/to/script_runner/scripts/log-query
-```
-
-**Copy C# variant separately:**
-```bash
-cp -r /path/to/automation_scripts/log-query/csharp /path/to/script_runner/scripts/log-query-csharp
+const result = runTracked(db, 'my-script', (log) => {
+  log('INFO', 'Starting...');
+  // ... do work, db.run('INSERT ...') ...
+  log('SUCCESS', 'Done');
+  return { key: 'value' };
+});
 ```
 
 ---
@@ -171,11 +99,8 @@ cp -r /path/to/automation_scripts/log-query/csharp /path/to/script_runner/script
 
 ### Query scripts (read-only)
 
-Read from the database and output JSON to stdout. Safe to run at any time.
-
 | Script | Output |
 |---|---|
-| `log-query` | Latest N automation log entries |
 | `invoice-query` | Invoices (all, by vendor, or by date range) |
 | `backup-query` | Backup history, newest first |
 | `error-report` | Recent errors with stack traces |
@@ -184,41 +109,36 @@ Read from the database and output JSON to stdout. Safe to run at any time.
 
 ### Write scripts (automation)
 
-Perform real work (file operations, scanning, backups) and persist results to the database.
-Each write script:
-
-- Wraps its work in **execution tracking** (start → run → finish)
-- Logs every action to **automation_logs**
-- Records errors to both **automation_logs** and the **errors** table
-- Validates data with **zod** before writing to the DB
-- Uses **parameterized queries** exclusively — no SQL string interpolation
-
 | Script | What it does |
 |---|---|
 | `download-sorter` | Sorts files from ~/Downloads into categorised folders |
-| `invoice-scanner` | Scans PDF invoices in a folder and extracts vendor/amount/date |
+| `invoice-scanner` | Scans PDF invoices and extracts vendor/amount/date |
 | `backup-runner` | Copies configured folders to a backup location |
+
+Write scripts wrap their work in execution tracking, log every action to
+`automation_logs`, record errors to the `errors` table, and use parameterized
+queries exclusively.
 
 ---
 
-## Audit & Compliance Documentation
+## Database Tables
 
-Each script includes **DOKUMENTATION.md** — formal DORA-compliant documentation with:
+All tables are created automatically on first use by `_lib/db.js`:
 
-- **Dokumenten-ID** and version tracking
-- **Regulatory references** (DORA Art. 9–28)
-- **Ein-/Ausgabedaten** und **Datenbankzugriffe**
-- **Fehlerbehandlung** und **Sicherheitsaspekte**
-- **Abhängigkeiten** und **Änderungshistorie**
-
-Located in each script's root directory. See [backup-query/DOKUMENTATION.md](backup-query/DOKUMENTATION.md) as an example.
+| Table | Used by |
+|---|---|
+| `automation_logs` | All write scripts (via tracker) |
+| `execution_tracking` | All write scripts (via tracker), execution-report |
+| `errors` | All write scripts, error-report |
+| `backup_history` | backup-runner, backup-query, dashboard-summary |
+| `file_processing_records` | download-sorter, dashboard-summary |
+| `invoices` | invoice-scanner, invoice-query, dashboard-summary |
 
 ---
 
 ## Security Notes
 
-- All DB access uses parameterized queries (both JS and C# variants)
-- No secrets are stored in these scripts — the only config is the env var
+- All DB access uses parameterized queries
+- No secrets are stored in these scripts
 - The database file is in `.gitignore` and never committed
 - Write scripts validate inputs before any INSERT
-- Both variants use identical security practices

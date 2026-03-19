@@ -13,7 +13,7 @@
  * Writes:
  *   - file_processing_records (one per file)
  *   - automation_logs (start, per-category summary, end)
- *   - execution_tracking (start → finish)
+ *   - execution_tracking (start -> finish)
  *   - errors (on failure)
  *
  * Configurable via environment variables:
@@ -25,19 +25,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 
-const dbPath = process.env.SMART_DESKTOP_DB;
-if (!dbPath) {
-  console.error('ERROR: SMART_DESKTOP_DB environment variable is not set.');
-  process.exit(1);
-}
-
-const projectRoot = path.dirname(path.dirname(dbPath));
-const { runTracked } = require(path.join(projectRoot, 'src', 'utils', 'logger'));
-const { fileProcessingSchema } = require(path.join(projectRoot, 'src', 'utils', 'validate'));
-const fileProcessing = require(path.join(projectRoot, 'src', 'models', 'fileProcessing'));
-const errorModel = require(path.join(projectRoot, 'src', 'models', 'error'));
-const { printJSON } = require(path.join(projectRoot, 'src', 'utils', 'output'));
-const { closeDb } = require(path.join(projectRoot, 'src', 'utils', 'db'));
+const { openDatabase } = require('../_lib/db');
+const { printJSON } = require('../_lib/output');
+const { runTracked } = require('../_lib/tracker');
 
 const SCRIPT_NAME = 'download-sorter';
 
@@ -58,77 +48,80 @@ function categorise(ext) {
   return 'Other';
 }
 
-try {
-  const downloadsDir = process.env.DOWNLOADS_DIR || path.join(os.homedir(), 'Downloads');
-  const dryRun = process.env.DRY_RUN === '1';
+(async () => {
+  const db = await openDatabase();
+  try {
+    const downloadsDir = process.env.DOWNLOADS_DIR || path.join(os.homedir(), 'Downloads');
+    const dryRun = process.env.DRY_RUN === '1';
 
-  if (!fs.existsSync(downloadsDir)) {
-    console.error(`Downloads directory not found: ${downloadsDir}`);
-    process.exit(1);
-  }
-
-  const result = runTracked(SCRIPT_NAME, (log) => {
-    log('INFO', `Scanning ${downloadsDir}` + (dryRun ? ' (DRY RUN)' : ''));
-
-    const entries = fs.readdirSync(downloadsDir, { withFileTypes: true });
-    const files = entries.filter(e => e.isFile() && !e.name.startsWith('.'));
-
-    if (files.length === 0) {
-      log('INFO', 'No files to sort.');
-      return { sorted: 0, skipped: 0 };
+    if (!fs.existsSync(downloadsDir)) {
+      console.error(`Downloads directory not found: ${downloadsDir}`);
+      process.exit(1);
     }
 
-    let sorted = 0;
-    let skipped = 0;
-    const categoryCounts = {};
+    const result = runTracked(db, SCRIPT_NAME, (log) => {
+      log('INFO', `Scanning ${downloadsDir}` + (dryRun ? ' (DRY RUN)' : ''));
 
-    for (const file of files) {
-      const ext = path.extname(file.name);
-      const category = categorise(ext);
-      const sourcePath = path.join(downloadsDir, file.name);
-      const destDir = path.join(downloadsDir, category);
-      const destPath = path.join(destDir, file.name);
+      const entries = fs.readdirSync(downloadsDir, { withFileTypes: true });
+      const files = entries.filter(e => e.isFile() && !e.name.startsWith('.'));
 
-      // Skip if destination already exists
-      if (fs.existsSync(destPath)) {
-        const payload = { source_path: sourcePath, file_type: ext || 'none', script: SCRIPT_NAME, operation: 'skip' };
-        fileProcessingSchema.parse(payload);
-        fileProcessing.insert(payload);
-        skipped++;
-        continue;
+      if (files.length === 0) {
+        log('INFO', 'No files to sort.');
+        return { sorted: 0, skipped: 0 };
       }
 
-      if (!dryRun) {
-        if (!fs.existsSync(destDir)) {
-          fs.mkdirSync(destDir, { recursive: true });
+      let sorted = 0;
+      let skipped = 0;
+      const categoryCounts = {};
+
+      for (const file of files) {
+        const ext = path.extname(file.name);
+        const category = categorise(ext);
+        const sourcePath = path.join(downloadsDir, file.name);
+        const destDir = path.join(downloadsDir, category);
+        const destPath = path.join(destDir, file.name);
+
+        // Skip if destination already exists
+        if (fs.existsSync(destPath)) {
+          db.run(
+            'INSERT INTO file_processing_records (source_path, file_type, script, operation) VALUES (?, ?, ?, ?)',
+            [sourcePath, ext || 'none', SCRIPT_NAME, 'skip']
+          );
+          skipped++;
+          continue;
         }
-        fs.renameSync(sourcePath, destPath);
+
+        if (!dryRun) {
+          if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+          }
+          fs.renameSync(sourcePath, destPath);
+        }
+
+        db.run(
+          'INSERT INTO file_processing_records (source_path, dest_path, file_type, script, operation) VALUES (?, ?, ?, ?, ?)',
+          [sourcePath, destPath, ext || 'none', SCRIPT_NAME, 'sort']
+        );
+
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        sorted++;
       }
 
-      const payload = {
-        source_path: sourcePath,
-        dest_path: destPath,
-        file_type: ext || 'none',
-        script: SCRIPT_NAME,
-        operation: 'sort',
-      };
-      fileProcessingSchema.parse(payload);
-      fileProcessing.insert(payload);
+      log('SUCCESS', `Sorted ${sorted} files, skipped ${skipped}`, JSON.stringify({ categoryCounts, skipped }));
+      return { sorted, skipped, categoryCounts };
+    });
 
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-      sorted++;
-    }
-
-    log('SUCCESS', `Sorted ${sorted} files, skipped ${skipped}`, JSON.stringify({ categoryCounts, skipped }));
-    return { sorted, skipped, categoryCounts };
-  });
-
-  console.log(dryRun ? 'DRY RUN — no files moved.\n' : 'Sort complete.\n');
-  printJSON(result);
-} catch (err) {
-  errorModel.insert({ script: SCRIPT_NAME, message: err.message, stack_trace: err.stack });
-  console.error('FATAL:', err.message);
-  process.exit(1);
-} finally {
-  closeDb();
-}
+    console.log(dryRun ? 'DRY RUN — no files moved.\n' : 'Sort complete.\n');
+    printJSON(result);
+  } catch (err) {
+    db.run(
+      'INSERT INTO errors (script, message, stack_trace) VALUES (?, ?, ?)',
+      [SCRIPT_NAME, err.message, err.stack]
+    );
+    db.save();
+    console.error('FATAL:', err.message);
+    process.exit(1);
+  } finally {
+    db.close();
+  }
+})();
