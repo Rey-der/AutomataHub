@@ -52,7 +52,7 @@ AutomataHub follows a **hub + plugin** architecture on top of Electron's multi-p
 │         │                                                    │
 │         │          ┌─────────────────────────────────────┐   │
 │         ├──────────│   Loaded Modules (main-handlers.js) │   │
-│         │          │   Registered via ipcBridge          │   │
+│         │          │   Scoped ipcBridge + eventBus each  │   │
 │         │          └─────────────────────────────────────┘   │
 │         │                                                    │
 └─────────┼────────────────────────────────────────────────────┘
@@ -177,13 +177,18 @@ Each module's `setup()` receives:
 
 ```javascript
 {
-  ipcBridge,                              // Handler registration
+  ipcBridge,                              // Scoped IPC handler registration (manifest channels only)
+  eventBus,                               // Scoped EventBus handle (frozen { on, off, emit })
   mainWindow: () => BrowserWindow,        // Window reference (lazy)
   paths: { root, modules, resources },    // Hub directories
   send: (channel, data) => void,          // Push to renderer
   getDbCredential: (dbPath) => string|null // Retrieve decrypted password
 }
 ```
+
+The `ipcBridge` is scoped: it only allows registering handlers for channels declared in the module's `manifest.json`. Attempts to register undeclared channels are blocked with a warning.
+
+The `eventBus` is a frozen handle created by `createModuleBus(moduleId)`. It automatically tags emitted payloads with `{ source: moduleId }` and validates that payloads are plain objects.
 
 ### App Lifecycle
 
@@ -227,7 +232,9 @@ Hub channels (`app-error`, `hub:db-auth-failed`, etc.) are always allowed.
 
 - No raw `ipcRenderer` exposure — only the `window.api` wrapper
 - No `send()` exposed — renderer can only invoke (request-response) or listen
-- Channel allowlist prevents subscribing to undeclared events
+- **`invoke()` channel allowlist** — rejects channels not in the allowlist (hub channels + module-declared channels)
+- **`on()` / `off()` channel allowlist** — silently rejects undeclared push events
+- Two-gate validation — preload and main process both validate independently
 
 ---
 
@@ -373,13 +380,16 @@ In-memory store for loaded module descriptors.
 
 ### IPC Bridge (`app/core/ipc-bridge.js`)
 
-Safe handler registration wrapper for modules. Tracks all registrations for cleanup on `before-quit`.
+Safe handler registration wrapper for modules. Tracks all registrations for cleanup on `before-quit`. When constructed with an `allowedChannels` set, only channels in that set can be registered — this prevents modules from hijacking undeclared channels.
 
 | Method | Purpose |
 |---|---|
-| `handle(channel, handler)` | Register an IPC handler |
+| `constructor(allowedChannels?)` | Optional `Set<string>` — restricts which channels can be registered |
+| `handle(channel, handler)` | Register an IPC handler; blocked if channel is not in the allowlist |
 | `removeAll()` | Remove all handlers registered through this bridge |
 | `getRegisteredChannels()` | List registered channels (debugging) |
+
+Each module receives its own scoped `IpcBridge` instance constructed with the channels from its `manifest.json`.
 
 ### Shared Utilities
 
@@ -399,11 +409,29 @@ Safe handler registration wrapper for modules. Tracks all registrations for clea
 
 **Event Bus** (`app/core/event-bus.js`):
 
-Exports `hubBus` — a Node.js `EventEmitter` (max 50 listeners) for inter-module communication without direct coupling.
+Secured inter-module communication bus. Modules receive scoped handles via `createModuleBus(moduleId)` during setup.
+
+| Export | Purpose |
+|---|---|
+| `hubBus` | Raw `EventEmitter` (max 50 listeners) — for hub-level code only |
+| `createModuleBus(moduleId)` | Returns a frozen `{ on, off, emit }` handle scoped to the module |
+| `registerEvent(eventName)` | Add a new event name to the allowlist at runtime |
+| `ALLOWED_EVENTS` | `Set<string>` of declared event names |
+
+**Default allowed events:** `module:activated`, `module:deactivated`, `module:data-available`, `module:error`
+
+**Security controls:**
+- **Event allowlist** — only events in `ALLOWED_EVENTS` can be emitted or listened to
+- **Payload validation** — payloads must be plain objects (`Object.getPrototypeOf(val) === Object.prototype`); functions, arrays, and primitives are blocked
+- **Source tagging** — every emission is tagged with `{ source: moduleId }` automatically
+- **Frozen handles** — module bus handles are `Object.freeze()`d to prevent mutation
 
 ```javascript
-hubBus.emit('module:data-available', { source: 'my-module', payload });
-hubBus.on('module:activated', (data) => { ... });
+// Module usage (via scoped handle)
+const bus = createModuleBus('netops');
+bus.on('module:data-available', (data) => { /* data.source === 'netops' */ });
+bus.emit('module:data-available', { key: 'value' });
+// Listeners receive: { source: 'netops', key: 'value' }
 ```
 
 **User Preferences** (`app/core/user-prefs.js`):
@@ -515,13 +543,15 @@ On first startup, `initDefaultCredentials()` scans for databases and sets a defa
 ```
 Renderer                     Preload                        Main Process
 ────────────────────────────────────────────────────────────────────────
-User action              →   Type checks                →   Type + content checks
-                             Channel allowlist guard         Business logic validation
-                             Reject with Error               Return error object
-                             if invalid                      if invalid
+User action              →   Type checks                →   Scoped IPC Bridge
+                             invoke() channel allowlist      channel enforcement
+                             on()/off() channel allowlist    Type + content checks
+                             Reject with Error               Business logic validation
+                             if invalid                      Return error object
+                                                             if invalid
 ```
 
-Every invoke passes through **two validation gates**: the preload bridge and the main process handler.
+Every invoke passes through **three validation gates**: the preload `invoke()` allowlist, the preload `on()`/`off()` allowlist (for push events), and the main-process scoped IPC Bridge channel enforcement.
 
 ### Push Events (main → renderer)
 
@@ -546,8 +576,21 @@ Hub push channels: `app-error`, `hub:db-auth-failed`.
 
 - **No raw `ipcRenderer`** — only the `window.api` wrapper is accessible
 - **No `send()`** — renderer can only invoke (request-response) or subscribe to allowed push events
-- **Dynamic allowlist** — `on()` / `off()` only accept channels declared in manifests
-- **Two-gate validation** — preload and main process both validate independently
+- **Three-gate validation:**
+  1. **Preload `invoke()`** — rejects channels not in the dynamic allowlist
+  2. **Preload `on()` / `off()`** — silently rejects undeclared push channels
+  3. **Main-process IPC Bridge** — each module's scoped bridge rejects handler registration for undeclared channels
+- **Scoped IPC bridges** — each module receives its own `IpcBridge` constructed with its manifest's `ipcChannels` set
+
+### EventBus Security
+
+| Control | Implementation |
+|---|---|
+| Event allowlist | Only events in `ALLOWED_EVENTS` can be emitted or listened to |
+| Payload validation | `isPlainObject()` check — blocks functions, arrays, class instances |
+| Source tagging | Payloads automatically tagged with `{ source: moduleId }` |
+| Frozen handles | `Object.freeze()` on module bus handles prevents property injection |
+| Scoped emission | Modules cannot impersonate other modules — source is set by the handle |
 
 ### File System Security
 
@@ -596,7 +639,10 @@ Hardcoded allowlist: only URLs starting with `https://github.com/Rey-der` pass. 
    a. discoverModules(modules/) → local modules
    b. discoverInstalledModules(node_modules/) → installed modules
    c. Deduplicate (local wins)
-   d. For each: registry.register(mod), mod.setup(context)
+   d. For each: registry.register(mod)
+   e. Create scoped IpcBridge(allowedChannels) from manifest ipcChannels
+   f. Create scoped eventBus via createModuleBus(mod.id)
+   g. mod.setup({ ipcBridge, eventBus, mainWindow, paths, send, getDbCredential })
 6. logCredentialStatus() — log DB credential state
 7. createWindow() — CSP headers, BrowserWindow, load index.html
 8. Renderer loads:
@@ -796,7 +842,9 @@ The hub core uses only Node.js built-in modules at runtime: `path`, `fs`, `event
 | **Hub** | The AutomataHub core — window, tabs, IPC bridge, module loading, credential store, theming |
 | **Module** | Self-contained feature package with `manifest.json`, main-process handlers, renderer scripts |
 | **Manifest** | `manifest.json` — declares module ID, name, IPC channels, tab types, renderer assets |
-| **IPC Bridge** | `app/core/ipc-bridge.js` — handler registration wrapper with cleanup tracking |
+| **IPC Bridge** | `app/core/ipc-bridge.js` — scoped handler registration wrapper with channel enforcement and cleanup tracking |
+| **Event Bus** | `app/core/event-bus.js` — secured inter-module EventBus with event allowlist, payload validation, source tagging, and frozen per-module handles |
+| **Module Bus Handle** | Frozen `{ on, off, emit }` object returned by `createModuleBus(moduleId)` — scoped to one module |
 | **Tab Type** | A registered tab kind (e.g. `db-manager`, `script-home`). Modules register via `TabManager.registerTabType()` |
 | **CSS Variable Contract** | Hub provides `--hub-*` variables as a stable theming API for modules |
 | **safeStorage** | Electron API delegating encryption to the OS keychain |
