@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('api', {
 
   invoke: (channel, args) => {
     if (typeof channel !== 'string' || !channel) return Promise.reject(new Error('Invalid channel'));
+    if (!allowedChannels.includes(channel)) return Promise.reject(new Error(`Channel not allowed: ${channel}`));
     return ipcRenderer.invoke(channel, args);
   },
 
