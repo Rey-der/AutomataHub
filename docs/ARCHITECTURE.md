@@ -174,7 +174,7 @@ Each module declares its channels in `manifest.json`. They are namespaced by con
 
 ```
 core.css (hub)                Module styles (per-module)
-├── Base variables             ├── Uses --hub-* variables
+├── Base variables            ├── Uses --hub-* variables
 │   --bg, --text, etc.        ├── Module-specific selectors
 ├── --hub-* alias layer       └── Loaded via <link> at startup
 │   --hub-bg → var(--bg)
