@@ -1,5 +1,5 @@
 /**
- * dashboard-summary — Aggregated stats for the Smart Desktop dashboard.
+ * dashboard-summary — Aggregated stats for the AutomataHub dashboard.
  *
  * Displays:
  *   - Files sorted today
@@ -11,58 +11,51 @@
  * Outputs JSON to stdout for script_runner display.
  */
 
-const path = require('node:path');
+const { openDatabase } = require('../_lib/db');
+const { printJSON } = require('../_lib/output');
 
-const dbPath = process.env.SMART_DESKTOP_DB;
-if (!dbPath) {
-  console.error('ERROR: SMART_DESKTOP_DB environment variable is not set.');
-  process.exit(1);
-}
+(async () => {
+  const db = await openDatabase();
+  try {
+    const today = new Date().toISOString().slice(0, 10);
 
-const projectRoot = path.dirname(path.dirname(dbPath));
-const { getDb, closeDb } = require(path.join(projectRoot, 'src', 'utils', 'db'));
-const { printJSON } = require(path.join(projectRoot, 'src', 'utils', 'output'));
+    const filesSortedToday = (db.get(
+      "SELECT COUNT(*) AS count FROM file_processing_records WHERE timestamp LIKE ? || '%'", [today]
+    ) || { count: 0 }).count;
 
-try {
-  const db = getDb();
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const totalInvoices = (db.get(
+      'SELECT COUNT(*) AS count FROM invoices'
+    ) || { count: 0 }).count;
 
-  const filesSortedToday = db.prepare(
-    "SELECT COUNT(*) AS count FROM file_processing_records WHERE timestamp LIKE ? || '%'"
-  ).get(today).count;
+    const automationsToday = (db.get(
+      "SELECT COUNT(*) AS count FROM automation_logs WHERE timestamp LIKE ? || '%'", [today]
+    ) || { count: 0 }).count;
 
-  const totalInvoices = db.prepare(
-    'SELECT COUNT(*) AS count FROM invoices'
-  ).get().count;
+    const errorsToday = (db.get(
+      "SELECT COUNT(*) AS count FROM errors WHERE timestamp LIKE ? || '%'", [today]
+    ) || { count: 0 }).count;
 
-  const automationsToday = db.prepare(
-    "SELECT COUNT(*) AS count FROM automation_logs WHERE timestamp LIKE ? || '%'"
-  ).get(today).count;
+    const lastBackup = db.get(
+      'SELECT backup_date, status, files_copied, files_skipped FROM backup_history ORDER BY backup_date DESC LIMIT 1'
+    ) || null;
 
-  const errorsToday = db.prepare(
-    "SELECT COUNT(*) AS count FROM errors WHERE timestamp LIKE ? || '%'"
-  ).get(today).count;
+    const executionsToday = (db.get(
+      "SELECT COUNT(*) AS count FROM execution_tracking WHERE start_time LIKE ? || '%'", [today]
+    ) || { count: 0 }).count;
 
-  const lastBackup = db.prepare(
-    'SELECT backup_date, status, files_copied, files_skipped FROM backup_history ORDER BY backup_date DESC LIMIT 1'
-  ).get() || null;
+    const summary = {
+      date: today,
+      files_sorted_today: filesSortedToday,
+      total_invoices: totalInvoices,
+      automations_today: automationsToday,
+      executions_today: executionsToday,
+      errors_today: errorsToday,
+      last_backup: lastBackup,
+    };
 
-  const executionsToday = db.prepare(
-    "SELECT COUNT(*) AS count FROM execution_tracking WHERE start_time LIKE ? || '%'"
-  ).get(today).count;
-
-  const summary = {
-    date: today,
-    files_sorted_today: filesSortedToday,
-    total_invoices: totalInvoices,
-    automations_today: automationsToday,
-    executions_today: executionsToday,
-    errors_today: errorsToday,
-    last_backup: lastBackup,
-  };
-
-  console.log('Dashboard Summary:\n');
-  printJSON(summary);
-} finally {
-  closeDb();
-}
+    console.log('Dashboard Summary:\n');
+    printJSON(summary);
+  } finally {
+    db.close();
+  }
+})();

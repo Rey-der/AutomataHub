@@ -19,7 +19,7 @@
  * Writes:
  *   - invoices (one per successfully extracted file)
  *   - automation_logs (start, per-file outcome, summary)
- *   - execution_tracking (start → finish)
+ *   - execution_tracking (start -> finish)
  *   - errors (on failure)
  */
 
@@ -27,19 +27,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 
-const dbPath = process.env.SMART_DESKTOP_DB;
-if (!dbPath) {
-  console.error('ERROR: SMART_DESKTOP_DB environment variable is not set.');
-  process.exit(1);
-}
-
-const projectRoot = path.dirname(path.dirname(dbPath));
-const { runTracked } = require(path.join(projectRoot, 'src', 'utils', 'logger'));
-const { invoiceSchema } = require(path.join(projectRoot, 'src', 'utils', 'validate'));
-const invoice = require(path.join(projectRoot, 'src', 'models', 'invoice'));
-const errorModel = require(path.join(projectRoot, 'src', 'models', 'error'));
-const { printJSON } = require(path.join(projectRoot, 'src', 'utils', 'output'));
-const { closeDb } = require(path.join(projectRoot, 'src', 'utils', 'db'));
+const { openDatabase } = require('../_lib/db');
+const { printJSON } = require('../_lib/output');
+const { runTracked } = require('../_lib/tracker');
 
 const SCRIPT_NAME = 'invoice-scanner';
 
@@ -172,73 +162,75 @@ function vendorFromFilename(filename) {
   return base;
 }
 
-try {
-  const invoiceDir = process.env.INVOICE_DIR || path.join(os.homedir(), 'Documents', 'Invoices');
+(async () => {
+  const db = await openDatabase();
+  try {
+    const invoiceDir = process.env.INVOICE_DIR || path.join(os.homedir(), 'Documents', 'Invoices');
 
-  if (!fs.existsSync(invoiceDir)) {
-    console.log(`Invoice directory not found: ${invoiceDir}`);
-    console.log('Set INVOICE_DIR or create ~/Documents/Invoices with PDF files.');
-    process.exit(0);
-  }
-
-  const result = runTracked(SCRIPT_NAME, (log) => {
-    log('INFO', `Scanning ${invoiceDir}`);
-
-    const files = fs.readdirSync(invoiceDir)
-      .filter(f => f.toLowerCase().endsWith('.pdf'));
-
-    if (files.length === 0) {
-      log('INFO', 'No PDF files found.');
-      return { scanned: 0, extracted: 0, failed: 0 };
+    if (!fs.existsSync(invoiceDir)) {
+      console.log(`Invoice directory not found: ${invoiceDir}`);
+      console.log('Set INVOICE_DIR or create ~/Documents/Invoices with PDF files.');
+      process.exit(0);
     }
 
-    let extracted = 0;
-    let failed = 0;
+    const result = runTracked(db, SCRIPT_NAME, (log) => {
+      log('INFO', `Scanning ${invoiceDir}`);
 
-    for (const file of files) {
-      const filePath = path.join(invoiceDir, file);
+      const files = fs.readdirSync(invoiceDir)
+        .filter(f => f.toLowerCase().endsWith('.pdf'));
 
-      try {
-        const buffer = fs.readFileSync(filePath);
-        const text = extractTextFromPdf(buffer);
-
-        const vendor = vendorFromFilename(file);
-        const amount = extractAmount(text);
-        const invoiceDate = extractDate(text);
-
-        if (!amount) {
-          log('INFO', `Skipped ${file}: no amount found`);
-          failed++;
-          continue;
-        }
-
-        const payload = {
-          vendor,
-          amount,
-          invoice_date: invoiceDate || new Date().toISOString().slice(0, 10),
-          file_path: filePath,
-        };
-
-        invoiceSchema.parse(payload);
-        invoice.insert(payload);
-        log('INFO', `Extracted: ${file} → ${vendor}, ${amount}`, JSON.stringify({ vendor, amount, invoiceDate }));
-        extracted++;
-      } catch (err) {
-        log('ERROR', `Failed to process ${file}: ${err.message}`);
-        failed++;
+      if (files.length === 0) {
+        log('INFO', 'No PDF files found.');
+        return { scanned: 0, extracted: 0, failed: 0 };
       }
-    }
 
-    log('SUCCESS', `Scanned ${files.length} PDFs: ${extracted} extracted, ${failed} failed`);
-    return { scanned: files.length, extracted, failed };
-  });
+      let extracted = 0;
+      let failed = 0;
 
-  console.log('Invoice scan complete.\n');
-  printJSON(result);
-} catch (err) {
-  errorModel.insert({ script: SCRIPT_NAME, message: err.message, stack_trace: err.stack });
-  console.error('FATAL:', err.message);
-  process.exit(1);
-} finally {
-  closeDb();
-}
+      for (const file of files) {
+        const filePath = path.join(invoiceDir, file);
+
+        try {
+          const buffer = fs.readFileSync(filePath);
+          const text = extractTextFromPdf(buffer);
+
+          const vendor = vendorFromFilename(file);
+          const amount = extractAmount(text);
+          const invoiceDate = extractDate(text);
+
+          if (!amount) {
+            log('INFO', `Skipped ${file}: no amount found`);
+            failed++;
+            continue;
+          }
+
+          db.run(
+            'INSERT INTO invoices (vendor, amount, invoice_date, file_path) VALUES (?, ?, ?, ?)',
+            [vendor, amount, invoiceDate || new Date().toISOString().slice(0, 10), filePath]
+          );
+          log('INFO', `Extracted: ${file} -> ${vendor}, ${amount}`, JSON.stringify({ vendor, amount, invoiceDate }));
+          extracted++;
+        } catch (err) {
+          log('ERROR', `Failed to process ${file}: ${err.message}`);
+          failed++;
+        }
+      }
+
+      log('SUCCESS', `Scanned ${files.length} PDFs: ${extracted} extracted, ${failed} failed`);
+      return { scanned: files.length, extracted, failed };
+    });
+
+    console.log('Invoice scan complete.\n');
+    printJSON(result);
+  } catch (err) {
+    db.run(
+      'INSERT INTO errors (script, message, stack_trace) VALUES (?, ?, ?)',
+      [SCRIPT_NAME, err.message, err.stack]
+    );
+    db.save();
+    console.error('FATAL:', err.message);
+    process.exit(1);
+  } finally {
+    db.close();
+  }
+})();
