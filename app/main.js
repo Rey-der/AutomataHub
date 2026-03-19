@@ -5,6 +5,7 @@ const { ModuleRegistry } = require('./core/module-registry');
 const { discoverModules, discoverInstalledModules } = require('./core/module-loader');
 const { IpcBridge } = require('./core/ipc-bridge');
 const { getPrefs, getModulePrefs, setModulePrefs } = require('./core/user-prefs');
+const { createModuleBus } = require('./core/event-bus');
 const dbCredentials = require('./core/db-credentials');
 const dbScanner = require('./core/db-scanner');
 
@@ -196,13 +197,22 @@ function loadModules() {
     ...installedModules.filter((m) => !localIds.has(m.id)),
   ];
 
+  // Track per-module scoped IPC bridges for cleanup
+  const moduleBridges = [];
+
   for (const mod of merged) {
     registry.register(mod);
 
     if (mod.setup) {
       try {
+        // Each module gets its own IPC bridge scoped to its declared channels
+        const allowedSet = new Set(Array.isArray(mod.ipcChannels) ? mod.ipcChannels : []);
+        const scopedBridge = new IpcBridge(allowedSet);
+        moduleBridges.push(scopedBridge);
+
         mod.setup({
-          ipcBridge,
+          ipcBridge: scopedBridge,
+          eventBus: createModuleBus(mod.id),
           mainWindow: () => mainWindow,
           paths: {
             root: path.join(__dirname, '..'),
