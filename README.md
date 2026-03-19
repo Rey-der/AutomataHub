@@ -67,7 +67,12 @@ Dynamic tabbed interface where each module registers its own tab types. Tabs can
 
 ### Inter-Module Communication
 
-An event bus allows modules to communicate without direct coupling. Modules emit and listen to hub-level events (e.g. `module:activated`, `module:data-available`) through a shared EventEmitter.
+A secured event bus allows modules to communicate without direct coupling. Each module receives a **scoped, frozen bus handle** during setup that:
+
+- Enforces an **event allowlist** — only declared event names (`module:activated`, `module:data-available`, etc.) can be emitted or listened to
+- **Tags payloads** with the emitting module's ID for source tracking
+- **Validates payloads** — only plain objects are accepted (blocks function/class injection)
+- Prevents modules from impersonating other modules
 
 ## Modules
 
@@ -119,13 +124,13 @@ AutomataHub/
 │   └── core/               # Shared infrastructure
 │       ├── module-loader.js    # Module discovery (modules/ + node_modules/)
 │       ├── module-registry.js  # In-memory module metadata store
-│       ├── ipc-bridge.js       # Safe IPC handler registration with cleanup
+│       ├── ipc-bridge.js       # Scoped IPC handler registration with channel enforcement
 │       ├── db-credentials.js   # Encrypted credential store (safeStorage)
 │       ├── db-scanner.js       # SQLite database discovery
 │       ├── user-prefs.js       # Persistent user preferences
 │       ├── path-utils.js       # Safe path resolution (blocks traversal)
 │       ├── config-utils.js     # JSON config reading with fallback
-│       ├── event-bus.js        # Inter-module EventEmitter
+│       ├── event-bus.js        # Secured inter-module EventBus (allowlist + scoping)
 │       └── errors.js           # Centralized error messages
 │
 ├── renderer/               # Renderer process — UI shell
@@ -195,7 +200,9 @@ my-module/
 
 - Context isolation and sandbox enabled (no `nodeIntegration`)
 - CSP headers: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'`
-- Dynamic IPC channel allowlisting — modules can only use channels declared in their manifest
+- **Scoped IPC bridges** — each module gets its own IpcBridge that only allows channels declared in its manifest
+- **Three-gate IPC validation** — preload `invoke()` allowlist, preload `on()`/`off()` allowlist, and main-process bridge channel enforcement
+- **Secured EventBus** — event allowlist, payload type validation, source tagging, and frozen per-module handles
 - Database passwords encrypted at rest via Electron safeStorage (OS keychain)
 - Path containment validation via `resolveInside()` — blocks path traversal
 - All child processes spawned with `shell: false`
