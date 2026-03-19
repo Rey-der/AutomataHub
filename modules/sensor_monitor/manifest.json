@@ -1,0 +1,41 @@
+{
+  "id": "sensor-monitor",
+  "name": "Sensor Monitor",
+  "version": "1.0.0",
+  "description": "Discover and monitor network sensors — view live readings, status history, and threshold alerts across your infrastructure",
+  "mainEntry": "main-handlers.js",
+  "ipcChannels": [
+    "sensor-monitor:get-sensors",
+    "sensor-monitor:add-sensor",
+    "sensor-monitor:remove-sensor",
+    "sensor-monitor:update-sensor",
+    "sensor-monitor:poll-sensor",
+    "sensor-monitor:discover-sensors",
+    "sensor-monitor:get-readings",
+    "sensor-monitor:get-sensor-history",
+    "sensor-monitor:get-dashboard-stats",
+    "sensor-monitor:set-threshold",
+    "sensor-monitor:get-thresholds",
+    "sensor-monitor:remove-threshold",
+    "sensor-monitor:get-alerts",
+    "sensor-monitor:acknowledge-alert",
+    "sensor-monitor:export-data",
+    "sensor-monitor:sensor-updated",
+    "sensor-monitor:sensor-alert",
+    "sensor-monitor:discovery-progress",
+    "sensor-monitor:discovery-complete"
+  ],
+  "tabTypes": [
+    { "id": "sensor-dashboard", "label": "Sensor Monitor" }
+  ],
+  "rendererScripts": [
+    "renderer/sensor-detail.js",
+    "renderer/sensor-list.js",
+    "renderer/sensor-overview.js",
+    "renderer/sensor-alerts.js",
+    "renderer/sensor-app.js"
+  ],
+  "rendererStyles": [
+    "renderer/styles.css"
+  ]
+}

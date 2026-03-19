@@ -1,0 +1,8 @@
+{
+  "name": "@automata-hub/sensor-monitor",
+  "version": "1.0.0",
+  "description": "Network sensor monitoring module for AutomataHub",
+  "main": "main-handlers.js",
+  "author": "",
+  "license": "ISC"
+}
