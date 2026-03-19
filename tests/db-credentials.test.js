@@ -2,7 +2,7 @@
  * Unit tests for app/core/db-credentials.js
  * Run with: node --test tests/db-credentials.test.js
  *
- * Mocks Electron's safeStorage API since tests run in plain Node.
+ * Mocks Electron safeStorage API since tests run in plain Node.
  */
 
 const { describe, it, beforeEach, after } = require('node:test');
