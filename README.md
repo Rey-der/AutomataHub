@@ -200,6 +200,7 @@ my-module/
 - Path containment validation via `resolveInside()` — blocks path traversal
 - All child processes spawned with `shell: false`
 - PRAGMA key uses hex-encoded blob literals to prevent injection
+- Secured EventBus architecture with strict channel control and validated event flow
 
 ## Development
 
