@@ -78,7 +78,7 @@ A secured event bus allows modules to communicate without direct coupling. Each 
 
 | Module | Description | Docs |
 |--------|-------------|------|
-| **Script Runner** | Execute and manage local automation scripts with live terminal output, queue management, topic organization, and log persistence | [README](modules/script_runner/README.md) |
+| **Script Runner** | Execute, chain, schedule, and audit local automation scripts with live output, favorites, topic organization, and execution history | [README](modules/script_runner/README.md) |
 | **NetOps Monitor** | Real-time network monitoring with host scanning, port checking, latency measurement, alert rules, and status tracking | [README](modules/netops/README.md) |
 | **SQL Monitor** | Browse, query, and analyze SQLite databases with multi-DB support, a query editor, execution timeline, and RPA analytics | [README](modules/sql_visualizer/README.md) |
 
@@ -224,6 +224,8 @@ npm run build # Build distributable (requires electron-builder)
 
 - [Architecture](docs/ARCHITECTURE.md) — Module system design and data flow
 - [DOCUMENTATION.md](DOCUMENTATION.md) — Comprehensive technical reference
+- [Script Runner](modules/script_runner/README.md) — Workspace overview, orchestration features, and screenshots
+- [Automation script catalog](modules/script_runner/automation_scripts/README.md) — Bundled scripts, variants, and database usage
 
 ## License
 

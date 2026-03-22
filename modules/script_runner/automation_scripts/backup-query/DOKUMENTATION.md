@@ -93,9 +93,8 @@ Dieses Skript dient der **Abfrage und Anzeige sämtlicher Backup-Verlaufsdaten**
 |---|---|---|
 | Node.js | ≥ 18.x | Runtime (JS-Variante) |
 | .NET SDK | ≥ 8.0 | Runtime (C#-Variante) |
-| `better-sqlite3` | via smart_desktop_sql | Datenbankzugriff (JS) |
+| `sql.js` | npm-Abhängigkeit | WASM-basierter Datenbankzugriff (JS) |
 | `Microsoft.Data.Sqlite` | NuGet | Datenbankzugriff (C#) |
-| smart_desktop_sql | aktuell | Datenbank und Modell-Schicht |
 
 ---
 

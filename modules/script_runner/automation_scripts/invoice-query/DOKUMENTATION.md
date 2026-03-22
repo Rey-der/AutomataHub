@@ -98,7 +98,7 @@ Dieses Skript ermöglicht die **Abfrage gespeicherter Rechnungsdaten**, filterba
 |---|---|---|
 | Node.js | ≥ 18.x | Runtime (JS-Variante) |
 | .NET SDK | ≥ 8.0 | Runtime (C#-Variante) |
-| `better-sqlite3` | via smart_desktop_sql | Datenbankzugriff (JS) |
+| `sql.js` | npm-Abhängigkeit | WASM-basierter Datenbankzugriff (JS) |
 | `Microsoft.Data.Sqlite` | NuGet | Datenbankzugriff (C#) |
 
 ---

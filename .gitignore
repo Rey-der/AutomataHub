@@ -18,3 +18,9 @@ logs/
 data/*.db
 data/*.db-wal
 data/*.db-shm
+modules/**/*.sqlite
+modules/**/*.sqlite-wal
+modules/**/*.sqlite-shm
+modules/**/*.db
+modules/**/*.db-wal
+modules/**/*.db-shm

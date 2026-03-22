@@ -1,6 +1,6 @@
 # Architecture Design
 
-> **Updated for Modular Architecture v2.0.0** — March 15, 2026
+> **Updated for Modular Architecture v2.0.0** — March 22, 2026
 
 ## System Architecture
 
@@ -15,14 +15,16 @@ AutomataHub follows a **hub + plugin** architecture on Electron's multi-process 
 │  │               │  │  module-loader.js  module-registry  │  │
 │  │ - Window      │  │  ipc-bridge.js    path-utils.js     │  │
 │  │ - Hub IPC     │  │  config-utils.js  event-bus.js      │  │
-│  │ - Module      │  │  errors.js                          │  │
+│  │ - Prefs / DB  │  │  user-prefs.js    db-scanner.js     │  │
+│  │ - Module      │  │  db-credentials.js errors.js        │  │
 │  │   bootstrap   │  └─────────────────────────────────────┘  │
 │  └───────┬───────┘                                           │
 │          │           ┌────────────────────────────────────┐  │
 │          ├──────────→│  Module main-handlers              │  │
 │          │           │  (e.g. script-runner)              │  │
 │          │           │  - IPC handlers via ipcBridge      │  │
-│          │           │  - script-executor.js              │  │
+│          │           │  - Scoped eventBus + send()        │  │
+│          │           │  - Executors / schedulers / stores │  │
 │          │           └────────────────────────────────────┘  │
 │          │                                                   │
 └──────────┼───────────────────────────────────────────────────┘
@@ -41,6 +43,7 @@ AutomataHub follows a **hub + plugin** architecture on Electron's multi-process 
 │  │  - Load module CSS (<link>)          │                     │
 │  │  - Load module scripts (<script>)    │                     │
 │  │  - Init dynamic IPC channels         │                     │
+│  │  - Auto-start preferred modules      │                     │
 │  └───────┬──────────────────────────────┘                     │
 │          │                                                    │
 │  ┌───────┴──────────┐  ┌──────────────────────────────────┐   │
@@ -91,6 +94,8 @@ Main: app.whenReady()
     ↓
 setupHubIPC() — register hub channels
     ↓
+initDefaultCredentials() — seed default credentials for discovered SQLite DBs
+    ↓
 loadModules():
     discoverModules(modules/)
     discoverInstalledModules(node_modules/automatahub-*)
@@ -102,9 +107,10 @@ createWindow() — set CSP, load index.html
 Renderer loads core scripts (ui.js, tab-manager.js, home-tab.js)
     ↓
 module-bootstrap.js:
+    api.initChannels() → dynamic IPC allowlist
     api.getModules() → get module descriptors
-    initChannels() → dynamic IPC allowlist
     for each module: load CSS, then scripts
+    apply auto-start preferences
     ↓
 Boot TabManager → show home dashboard
 ```
@@ -121,31 +127,42 @@ Resolve absolute paths for rendererScripts and rendererStyles
     ↓
 registry.register(descriptor)
     ↓
-mod.setup({ ipcBridge, mainWindow, paths, send })
+mod.setup({ ipcBridge, eventBus, mainWindow, paths, send, getDbCredential })
     ↓
 Module registers IPC handlers via ipcBridge.handle()
 ```
 
 ### 3. Script Execution Flow
 ```
-User clicks script card in script-home tab
+User clicks script card in Script Runner
     ↓
-TabManager.createTab('script-execution', name, data)
-    ↓
-User clicks "Run" in execution tab
+Module prepares run state and tabId
     ↓
 api.invoke('script-runner:run-script', {scriptPath, name, tabId})
     ↓
 Preload → Main: ipcBridge handler
     ↓
 executor.execute(job):
-    if idle: _spawn(job)
+    if idle: spawn child process
     if running: queue + emit 'queue-status'
     ↓
 stdout/stderr → 'script-runner:output' / 'script-runner:error'
     ↓
-close → 'script-runner:complete' → _processNext()
+close → 'script-runner:complete' → process next queued job
 ```
+
+## Shared Hub Services
+
+Every loaded module is backed by shared hub services rather than re-implementing shell concerns:
+
+| Service | Purpose |
+|---|---|
+| `ipcBridge` | Registers invoke handlers only for channels declared in the module manifest |
+| `eventBus` | Scoped inter-module publish/subscribe with source tagging and payload validation |
+| `send(channel, data)` | Pushes events back to the renderer over the preload allowlist |
+| `getDbCredential(dbPath)` | Gives a module controlled access to stored database credentials |
+| `user-prefs` | Persists favorites, auto-start, and other hub-level module preferences |
+| `db-scanner` / `db-credentials` | Discovers SQLite files and stores credentials via Electron safeStorage |
 
 ## Process Communication
 
@@ -156,9 +173,14 @@ close → 'script-runner:complete' → _processNext()
 | `open-external-url` | invoke | Open URL (allowlisted) |
 | `hub:get-modules` | invoke | Get all module descriptors |
 | `hub:get-allowed-channels` | invoke | Get dynamic push channel list |
+| `prefs:get` / `prefs:get-module` / `prefs:set-module` | invoke | Read and persist hub-level module preferences |
+| `hub:scan-databases` | invoke | Discover SQLite databases across hub and modules |
+| `hub:get-db-credentials` | invoke | List stored database credential status |
+| `hub:set-db-password` / `hub:change-db-password` / `hub:remove-db-password` | invoke | Manage encrypted DB credentials |
+| `hub:test-db-connection` | invoke | Validate a DB password before use |
 
 ### Module Channels (registered per-module)
-Each module declares its channels in `manifest.json`. They are namespaced by convention (e.g., `script-runner:*`). The hub aggregates all push channels for the preload's dynamic allowlist.
+Each module declares its channels in `manifest.json`. They are namespaced by convention (for example `script-runner:*`). The hub aggregates all push channels for the preload's dynamic allowlist and blocks undeclared registrations at the bridge layer.
 
 ## Security Considerations
 
@@ -169,6 +191,7 @@ Each module declares its channels in `manifest.json`. They are namespaced by con
 5. **Path Containment** — `resolveInside()` in shared utils blocks path traversal
 6. **No raw ipcRenderer** — Only `window.api` surface exposed via contextBridge
 7. **Module Isolation** — Modules share the hub's main process but use namespaced IPC channels
+8. **Credential Storage** — Database passwords are encrypted through Electron safeStorage
 
 ## CSS Architecture
 
@@ -187,7 +210,7 @@ Modules use `--hub-*` prefixed variables for theming stability. The alias layer 
 ## Design Principles
 
 1. **Hub + Plugin** — Hub provides shell, modules provide features
-2. **Separate Repos** — Each module is independently versioned and distributed
+2. **Shared Contracts** — IPC, eventing, theming, and persistence are standardized across modules
 3. **Convention over Configuration** — Module manifests follow a standard schema
 4. **Local Priority** — `modules/` overrides `node_modules/` for development
 5. **Namespace Isolation** — Module IPC channels and CSS selectors are namespaced
@@ -195,5 +218,5 @@ Modules use `--hub-*` prefixed variables for theming stability. The alias layer 
 
 ---
 
-**Architecture Review Date:** March 15, 2026
-**Last Updated:** March 15, 2026
+**Architecture Review Date:** March 22, 2026
+**Last Updated:** March 22, 2026
