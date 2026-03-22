@@ -643,7 +643,7 @@ const ScriptExecution = (() => {
       } else if (status === 'running') {
         msg = `[CHAIN] Step ${step}/${total} — Running "${scriptName}"`;
       } else if (status === 'completed') {
-        const rt = runtime != null ? ` (${formatElapsed(runtime)})` : '';
+        const rt = runtime == null ? '' : ` (${formatElapsed(runtime)})`;
         msg = `[CHAIN] Step ${step}/${total} — "${scriptName}" completed${rt}`;
       } else if (status === 'failed') {
         msg = `[CHAIN] Step ${step}/${total} — "${scriptName}" FAILED`;

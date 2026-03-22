@@ -152,8 +152,9 @@ class ScriptBrowser {
       : '';
 
     // Dependency line below description
+    const depSpans = deps.map((d) => `<span class="script-dep-name">${this._escapeHtml(d)}</span>`).join(', ');
     const depsLine = deps.length > 0
-      ? `<p class="script-deps-line">Depends on: ${deps.map((d) => `<span class="script-dep-name">${this._escapeHtml(d)}</span>`).join(', ')}</p>`
+      ? `<p class="script-deps-line">Depends on: ${depSpans}</p>`
       : '';
 
     const isFav = this.app.isFavorite(scriptId);

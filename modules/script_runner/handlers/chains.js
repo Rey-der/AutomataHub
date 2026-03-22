@@ -16,7 +16,7 @@ function register(ipcBridge, { store, persistence, emit }) {
   ipcBridge.handle('script-runner:create-chain', async (_e, args) => {
     try {
       const { name, script_ids } = args || {};
-      if (!name || !name.trim()) return { success: false, error: 'Chain name is required' };
+      if (!name?.trim()) return { success: false, error: 'Chain name is required' };
 
       const existing = store.getAllChains().find((c) => c.name === name.trim());
       if (existing) return { success: false, error: `Chain "${name}" already exists` };

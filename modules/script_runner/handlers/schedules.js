@@ -16,7 +16,7 @@ function register(ipcBridge, { store, persistence, emit, scheduler }) {
   ipcBridge.handle('script-runner:create-schedule', async (_e, args) => {
     try {
       const { name, target_type, target_id, cron, enabled } = args || {};
-      if (!name || !name.trim()) return { success: false, error: 'Schedule name is required' };
+      if (!name?.trim()) return { success: false, error: 'Schedule name is required' };
       if (!target_id) return { success: false, error: 'Target is required' };
       if (!cron) return { success: false, error: 'Schedule cron expression is required' };
 

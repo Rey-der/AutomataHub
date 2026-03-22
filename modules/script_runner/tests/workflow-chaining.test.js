@@ -52,7 +52,7 @@ describe('resolveExecutionOrder', () => {
     assert.equal(order.length, 3);
     assert.ok(order.indexOf('a') < order.indexOf('c'));
     assert.ok(order.indexOf('b') < order.indexOf('c'));
-    assert.equal(order[order.length - 1], 'c');
+    assert.equal(order.at(-1), 'c');
   });
 
   it('deduplicates shared dependencies', () => {
@@ -64,7 +64,7 @@ describe('resolveExecutionOrder', () => {
     const order = resolveExecutionOrder('d', (id) => store.getScript(id));
     // 'a' should appear exactly once
     assert.equal(order.filter((x) => x === 'a').length, 1);
-    assert.equal(order[order.length - 1], 'd');
+    assert.equal(order.at(-1), 'd');
     assert.ok(order.indexOf('a') < order.indexOf('b'));
     assert.ok(order.indexOf('a') < order.indexOf('c'));
   });
