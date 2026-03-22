@@ -462,6 +462,33 @@ function queryRows(table, opts = {}) {
   return { rows, total };
 }
 
+const READ_ONLY_SQL_PATTERN = /^(SELECT|WITH|PRAGMA)\b/i;
+const FORBIDDEN_SQL_PATTERN = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|REPLACE|TRUNCATE|ATTACH|DETACH|VACUUM|REINDEX|ANALYZE|LOAD_EXTENSION|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i;
+const SQL_COMMENT_PATTERN = /(^|\s)(--|\/\*)/m;
+
+function normalizeReadOnlySql(sql) {
+  const normalized = sql.trim().replace(/;+\s*$/, '');
+  if (!normalized) throw new Error('Query must be a non-empty string');
+  return normalized;
+}
+
+function validateReadOnlySql(sql) {
+  const normalized = normalizeReadOnlySql(sql);
+  if (!READ_ONLY_SQL_PATTERN.test(normalized)) {
+    throw new Error('Only SELECT, WITH, and PRAGMA queries are allowed');
+  }
+  if (SQL_COMMENT_PATTERN.test(normalized)) {
+    throw new Error('SQL comments are not allowed');
+  }
+  if (normalized.includes(';')) {
+    throw new Error('Only a single SQL statement is allowed');
+  }
+  if (FORBIDDEN_SQL_PATTERN.test(normalized)) {
+    throw new Error('Query contains forbidden statements');
+  }
+  return normalized;
+}
+
 /**
  * Execute an arbitrary read-only SQL query.
  * Only SELECT and PRAGMA statements are allowed.
@@ -473,19 +500,7 @@ function runReadOnlyQuery(sql) {
   if (!_db) throw new Error('Database not connected');
   if (!sql || typeof sql !== 'string') throw new Error('Query must be a non-empty string');
 
-  const trimmed = sql.trim();
-
-  // Only allow SELECT and read-only PRAGMA
-  const upper = trimmed.toUpperCase();
-  if (!upper.startsWith('SELECT') && !upper.startsWith('PRAGMA')) {
-    throw new Error('Only SELECT and PRAGMA queries are allowed');
-  }
-
-  // Reject dangerous patterns
-  const forbidden = /;\s*(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|ATTACH|DETACH)/i;
-  if (forbidden.test(trimmed)) {
-    throw new Error('Query contains forbidden statements');
-  }
+  const trimmed = validateReadOnlySql(sql);
 
   if (_usesSqlJs) {
     // For sql.js, just execute the query
@@ -514,6 +529,9 @@ function runReadOnlyQuery(sql) {
 
   try {
     const stmt = _db.prepare(trimmed);
+    if (!stmt.reader) {
+      throw new Error('Only read-only statements are allowed');
+    }
     const rows = stmt.all();
     const columns = stmt.columns().map((c) => c.name);
     return { columns, rows, rowCount: rows.length };
