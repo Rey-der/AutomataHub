@@ -22,7 +22,7 @@ const TABLE_SCHEMAS = `
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
     script    TEXT    NOT NULL,
-    status    TEXT    NOT NULL CHECK (status IN ('INFO', 'SUCCESS', 'ERROR')),
+    status    TEXT    NOT NULL CHECK (status IN ('INFO', 'SUCCESS', 'ERROR', 'RETRY')),
     message   TEXT    NOT NULL,
     metadata  TEXT
   );
@@ -51,7 +51,8 @@ const TABLE_SCHEMAS = `
     start_time    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     end_time      TEXT,
     status        TEXT CHECK (status IN ('SUCCESS', 'FAIL')),
-    error_message TEXT
+    error_message TEXT,
+    metadata      TEXT
   );
 
   CREATE TABLE IF NOT EXISTS file_processing_records (
@@ -71,6 +72,15 @@ const TABLE_SCHEMAS = `
     invoice_date         TEXT NOT NULL,
     file_path            TEXT NOT NULL,
     processing_timestamp TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS csv_processing (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename     TEXT    NOT NULL,
+    rows_total   INTEGER NOT NULL DEFAULT 0,
+    rows_valid   INTEGER NOT NULL DEFAULT 0,
+    rows_invalid INTEGER NOT NULL DEFAULT 0,
+    processed_at TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
   );
 `;
 
@@ -101,6 +111,41 @@ async function openDatabase() {
   }
 
   db.run(TABLE_SCHEMAS);
+
+  // --- Schema migrations for existing databases ---
+  // CREATE TABLE IF NOT EXISTS won't alter tables that already exist,
+  // so we patch missing columns and outdated constraints here.
+  try {
+    // Add metadata column to execution_tracking if missing
+    const etCols = db.exec("PRAGMA table_info(execution_tracking)");
+    const etColNames = etCols.length ? etCols[0].values.map(r => r[1]) : [];
+    if (etColNames.length > 0 && !etColNames.includes('metadata')) {
+      db.run('ALTER TABLE execution_tracking ADD COLUMN metadata TEXT');
+    }
+
+    // Recreate automation_logs if its CHECK constraint is missing 'RETRY'
+    const alSchema = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='automation_logs'");
+    if (alSchema.length && alSchema[0].values.length) {
+      const ddl = alSchema[0].values[0][0] || '';
+      if (ddl.includes("'ERROR')") && !ddl.includes("'RETRY'")) {
+        db.run('ALTER TABLE automation_logs RENAME TO _automation_logs_old');
+        db.run(
+          `CREATE TABLE automation_logs (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+            script    TEXT    NOT NULL,
+            status    TEXT    NOT NULL CHECK (status IN ('INFO', 'SUCCESS', 'ERROR', 'RETRY')),
+            message   TEXT    NOT NULL,
+            metadata  TEXT
+          )`
+        );
+        db.run('INSERT INTO automation_logs SELECT * FROM _automation_logs_old');
+        db.run('DROP TABLE _automation_logs_old');
+      }
+    }
+  } catch (migrationErr) {
+    console.error('Warning: schema migration error (non-fatal):', migrationErr.message);
+  }
 
   function save() {
     const data = db.export();

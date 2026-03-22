@@ -9,6 +9,10 @@ const { createModuleBus } = require('./core/event-bus');
 const dbCredentials = require('./core/db-credentials');
 const dbScanner = require('./core/db-scanner');
 
+// Ignore EPIPE errors on stdout/stderr (happens when piped to head, etc.)
+process.stdout?.on('error', () => {});
+process.stderr?.on('error', () => {});
+
 // Must be set before app is ready so macOS Dock shows the correct name
 app.name = 'AutomataHub';
 

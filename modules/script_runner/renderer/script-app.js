@@ -23,13 +23,16 @@ class ScriptApp {
     this.topics = [];
     this.selectedTopicId = null;
     this.sidebarCollapsed = false;
-    this.activeView = 'browser'; // 'browser' | 'execution'
+    this.activeView = 'browser'; // 'browser' | 'execution' | 'dashboard'
     this.activeSessionId = null; // currently shown execution session
     // sessions: Map<sessionId, { id, scriptId, scriptName, scriptPath, scriptEnv, status, autoRun }>
     this.sessions = new Map();
     this.unsubscribes = [];
     this.topicListInstance = null;
+    this.chainListInstance = null;
+    this.scheduleListInstance = null;
     this.scriptBrowserInstance = null;
+    this.dashboardInstance = null;
     // Execution history: { sessionId, scriptId, scriptName, exitCode, runtime, timestamp, status }
     this.executionHistory = [];
     // Favorites: Set of scriptIds stored in localStorage
@@ -52,6 +55,18 @@ class ScriptApp {
       console.error('[script-app] Failed to load initial data:', err.message);
     }
 
+    // Mount chain list into the sidebar chains section
+    const chainsSectionEl = this.container.querySelector('#sr-chains-section');
+    if (chainsSectionEl) {
+      try {
+        this.chainListInstance = new ChainList(this);
+        await this.chainListInstance.init(chainsSectionEl);
+        console.log('[script-app] ChainList mounted');
+      } catch (err) {
+        console.error('[script-app] Failed to mount ChainList:', err.message);
+      }
+    }
+
     // Mount topic list into the sidebar topics section
     const topicsSectionEl = this.container.querySelector('#sr-topics-section');
     if (topicsSectionEl) {
@@ -61,6 +76,18 @@ class ScriptApp {
         console.log('[script-app] TopicList mounted');
       } catch (err) {
         console.error('[script-app] Failed to mount TopicList:', err.message);
+      }
+    }
+
+    // Mount schedule list into the sidebar schedules section
+    const schedulesSectionEl = this.container.querySelector('#sr-schedules-section');
+    if (schedulesSectionEl) {
+      try {
+        this.scheduleListInstance = new ScheduleList(this);
+        await this.scheduleListInstance.init(schedulesSectionEl);
+        console.log('[script-app] ScheduleList mounted');
+      } catch (err) {
+        console.error('[script-app] Failed to mount ScheduleList:', err.message);
       }
     }
 
@@ -134,6 +161,23 @@ class ScriptApp {
     } catch (err) {
       console.error('[script-runner] Failed to load all scripts:', err.message);
       return [];
+    }
+  }
+
+  async loadScriptsGroupedByTopic() {
+    try {
+      const groups = await Promise.all(
+        this.topics.map(async (topic) => {
+          const result = await API.invoke('script-runner:get-scripts', { topic_id: topic.id });
+          return { topic, scripts: result.scripts || [] };
+        })
+      );
+      const groupedIds = new Set(groups.flatMap((g) => g.scripts.map((s) => s.id || s.folder)));
+      const ungrouped = this.allScripts.filter((s) => !groupedIds.has(s.id || s.folder));
+      return { groups: groups.filter((g) => g.scripts.length > 0), ungrouped };
+    } catch (err) {
+      console.error('[script-runner] Failed to load grouped scripts:', err.message);
+      return { groups: [], ungrouped: this.allScripts };
     }
   }
 
@@ -244,6 +288,60 @@ class ScriptApp {
     this._highlightActiveSession();
   }
 
+  navigateToDashboard() {
+    this.activeView = 'dashboard';
+    this.activeSessionId = null;
+    this._mountDashboardView();
+    this._highlightActiveSession();
+  }
+
+  navigateToChainBuilder(chainList, mode, chain) {
+    this.activeView = 'chain-builder';
+    this.activeSessionId = null;
+    const content = this.container.querySelector('#sr-content');
+    if (!content) return;
+    content.innerHTML = '<div id="chain-builder-container"></div>';
+    const el = content.querySelector('#chain-builder-container');
+    if (el) chainList.mountBuilder(el, mode, chain);
+    this._highlightActiveSession();
+  }
+
+  navigateToChainRunner(chainList, chain) {
+    this.activeView = 'chain-runner';
+    this.activeSessionId = null;
+    const content = this.container.querySelector('#sr-content');
+    if (!content) return;
+    content.innerHTML = '<div id="chain-runner-container" style="display:flex;flex:1;min-height:0;width:100%;"></div>';
+    const el = content.querySelector('#chain-runner-container');
+    if (el) chainList.mountRunner(el, chain);
+    this._highlightActiveSession();
+  }
+
+  navigateToScheduleBuilder(scheduleList, mode, schedule) {
+    this.activeView = 'schedule-builder';
+    this.activeSessionId = null;
+    const content = this.container.querySelector('#sr-content');
+    if (!content) return;
+    content.innerHTML = '<div id="schedule-builder-container"></div>';
+    const el = content.querySelector('#schedule-builder-container');
+    if (el) scheduleList.mountBuilder(el, mode, schedule);
+    this._highlightActiveSession();
+  }
+
+  _mountDashboardView() {
+    const content = this.container.querySelector('#sr-content');
+    if (!content) return;
+    content.innerHTML = '<div id="script-dashboard-container"></div>';
+    const el = content.querySelector('#script-dashboard-container');
+    if (!el) return;
+    if (typeof ScriptDashboard !== 'undefined') {
+      if (!this.dashboardInstance) {
+        this.dashboardInstance = new ScriptDashboard(this);
+      }
+      this.dashboardInstance.init(el);
+    }
+  }
+
   _mountBrowserView() {
     const content = this.container.querySelector('#sr-content');
     if (!content) return;
@@ -264,6 +362,11 @@ class ScriptApp {
     this.container.querySelectorAll('.sr-session-item').forEach((el) => {
       el.classList.toggle('active', el.dataset.sessionId === this.activeSessionId);
     });
+    // Update nav item active states
+    const dashNav = this.container.querySelector('#sr-nav-dashboard');
+    const allNav = this.container.querySelector('#sr-nav-all-scripts');
+    if (dashNav) dashNav.classList.toggle('active', this.activeView === 'dashboard');
+    if (allNav) allNav.classList.toggle('active', this.activeView === 'browser' && !this.selectedTopicId);
   }
 
   // --- Real-time Updates ---
@@ -321,8 +424,21 @@ class ScriptApp {
             <span class="sr-sidebar-title">Script Runner</span>
             <button class="sr-sidebar-toggle" id="sr-sidebar-toggle" title="Toggle sidebar">&#9776;</button>
           </div>
+
+          <div class="sr-sidebar-section sr-sidebar-nav-section">
+            <div class="sr-nav-item${this.activeView === 'browser' && !this.selectedTopicId ? ' active' : ''}" id="sr-nav-all-scripts" title="All Scripts">
+              <span class="sr-nav-icon">&#x229E;</span>
+              <span class="sr-nav-label">All Scripts</span>
+              <span class="sr-nav-count" id="sr-nav-all-count">${this.allScripts.length}</span>
+            </div>
+            <div class="sr-nav-item${this.activeView === 'dashboard' ? ' active' : ''}" id="sr-nav-dashboard" title="Execution History">
+              <span class="sr-nav-icon">&#x29D6;</span>
+              <span class="sr-nav-label">History</span>
+            </div>
+          </div>
+
           <div class="sr-sidebar-section" id="sr-active-section">
-            <div class="sr-section-header" id="sr-active-header">
+            <div class="sr-section-header">
               <span class="sr-section-title">Active</span>
               <span class="sr-section-badge" id="sr-active-badge" style="display:none"></span>
             </div>
@@ -337,6 +453,12 @@ class ScriptApp {
           </div>
 
           <div class="sr-sidebar-section sr-topics-section" id="sr-topics-section">
+          </div>
+
+          <div class="sr-sidebar-section sr-chains-section" id="sr-chains-section">
+          </div>
+
+          <div class="sr-sidebar-section sr-schedules-section" id="sr-schedules-section">
           </div>
         </aside>
         <div class="sr-main" id="sr-main">
@@ -360,11 +482,27 @@ class ScriptApp {
       });
     }
 
+    // Dashboard nav
+    const dashNav = this.container.querySelector('#sr-nav-dashboard');
+    if (dashNav) {
+      dashNav.addEventListener('click', () => this.navigateToDashboard());
+    }
+
+    // All Scripts nav
+    const allNav = this.container.querySelector('#sr-nav-all-scripts');
+    if (allNav) {
+      allNav.addEventListener('click', () => this.selectTopic(null));
+    }
+
   }
 
   _updateSidebarSections() {
     this._renderActiveList();
     this._renderFavoritesList();
+    // Update All Scripts count badge
+    const countEl = this.container?.querySelector('#sr-nav-all-count');
+    if (countEl) countEl.textContent = this.allScripts.length;
+    this._highlightActiveSession();
   }
 
   _renderActiveList() {
@@ -437,6 +575,14 @@ class ScriptApp {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const script = this.allScripts.find((s) => (s.id || s.folder) === btn.dataset.scriptId);
+        if (script) this.openExecution(script, (script.variants?.[0] ?? script), { autoRun: true });
+      });
+    });
+
+    list.querySelectorAll('.sr-quick-item').forEach((item) => {
+      item.style.cursor = 'pointer';
+      item.addEventListener('click', () => {
+        const script = this.allScripts.find((s) => (s.id || s.folder) === item.dataset.scriptId);
         if (script) this._quickRun(script);
       });
     });
@@ -450,7 +596,7 @@ class ScriptApp {
   _quickRun(script) {
     const variants = script.variants || [];
     const chosen = variants.length > 0 ? variants[0] : script;
-    this.openExecution(script, chosen, { autoRun: true });
+    this.openExecution(script, chosen, { autoRun: false });
   }
 
   _escapeHtml(text) {
@@ -485,8 +631,11 @@ class ScriptApp {
     for (const unsub of this.unsubscribes) {
       if (unsub) unsub();
     }
+    if (this.chainListInstance) this.chainListInstance.destroy?.();
+    if (this.scheduleListInstance) this.scheduleListInstance.destroy?.();
     if (this.topicListInstance) this.topicListInstance.destroy?.();
     if (this.scriptBrowserInstance) this.scriptBrowserInstance.destroy?.();
+    if (this.dashboardInstance) this.dashboardInstance.destroy?.();
     // Stop running sessions
     for (const [sessionId] of this.sessions) {
       if (typeof ScriptExecution !== 'undefined') ScriptExecution.removeState(sessionId);
@@ -512,11 +661,17 @@ class ScriptApp {
           const app = tab._appInstance;
           app.container = container;
           app.render();
+          const chainsSectionEl = container.querySelector('#sr-chains-section');
+          if (chainsSectionEl && app.chainListInstance) app.chainListInstance.init(chainsSectionEl);
+          const schedulesSectionEl = container.querySelector('#sr-schedules-section');
+          if (schedulesSectionEl && app.scheduleListInstance) app.scheduleListInstance.init(schedulesSectionEl);
           const topicsSectionEl = container.querySelector('#sr-topics-section');
           if (topicsSectionEl && app.topicListInstance) app.topicListInstance.init(topicsSectionEl);
-          // Restore view (browser or active execution)
+          // Restore view (browser, dashboard, or active execution)
           if (app.activeView === 'execution' && app.activeSessionId && app.sessions.has(app.activeSessionId)) {
             app.navigateToExecution(app.activeSessionId);
+          } else if (app.activeView === 'dashboard') {
+            app._mountDashboardView();
           } else {
             app._mountBrowserView();
           }

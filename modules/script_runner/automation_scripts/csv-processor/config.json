@@ -1,0 +1,8 @@
+{
+  "name": "CSV Processor",
+  "description": "Reads CSV files, validates data, and outputs structured reports",
+  "mainScript": "main.js",
+  "env": {
+    "CSV_INPUT_DIR": "~/Documents/csv-input"
+  }
+}

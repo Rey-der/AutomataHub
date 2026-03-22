@@ -24,6 +24,11 @@ class Program
     static int _copied = 0;
     static int _skipped = 0;
 
+    /// <summary>
+    /// Entry point — copies configured folders to a backup destination and logs results.
+    /// </summary>
+    /// <param name="args">Command-line arguments (unused).</param>
+    /// <returns>0 on success, 1 on error.</returns>
     static int Main(string[] args)
     {
         string? dbPath = Environment.GetEnvironmentVariable("SMART_DESKTOP_DB");
@@ -98,6 +103,11 @@ class Program
                     totalSkipped += _skipped;
                     InsertLog(connection, scriptName, "INFO", $"{folderName}: {_copied} copied, {_skipped} skipped");
                 }
+                catch (IOException ex)
+                {
+                    InsertLog(connection, scriptName, "ERROR", $"I/O failure backing up {folderName}: {ex.Message}");
+                    status = "PARTIAL";
+                }
                 catch (Exception ex)
                 {
                     InsertLog(connection, scriptName, "ERROR", $"Failed to back up {folderName}: {ex.Message}");
@@ -122,43 +132,23 @@ class Program
 
             InsertLog(connection, scriptName, "SUCCESS", $"Backup complete: {totalCopied} copied, {totalSkipped} skipped");
 
-            // Update execution_tracking
-            string endTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "UPDATE execution_tracking SET end_time = @end, status = @status WHERE id = @id";
-                cmd.Parameters.AddWithValue("@end", endTime);
-                cmd.Parameters.AddWithValue("@status", status);
-                cmd.Parameters.AddWithValue("@id", executionId);
-                cmd.ExecuteNonQuery();
-            }
+            FinishExecution(connection, executionId, status);
 
             var result = new { folders = folderNames, files_copied = totalCopied, files_skipped = totalSkipped, backup_location = backupDest, status };
             Console.WriteLine("Backup complete.\n");
             Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
         }
+        catch (IOException ex)
+        {
+            InsertError(connection, scriptName, ex);
+            FinishExecution(connection, executionId, "FAIL", ex.Message);
+            Console.Error.WriteLine($"I/O error: {ex.Message}");
+            return 1;
+        }
         catch (Exception ex)
         {
-            // Log error
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "INSERT INTO errors (script, message, stack_trace) VALUES (@script, @msg, @stack)";
-                cmd.Parameters.AddWithValue("@script", scriptName);
-                cmd.Parameters.AddWithValue("@msg", ex.Message);
-                cmd.Parameters.AddWithValue("@stack", ex.StackTrace ?? "");
-                cmd.ExecuteNonQuery();
-            }
-
-            string endTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "UPDATE execution_tracking SET end_time = @end, status = 'FAIL', error_message = @msg WHERE id = @id";
-                cmd.Parameters.AddWithValue("@end", endTime);
-                cmd.Parameters.AddWithValue("@msg", ex.Message);
-                cmd.Parameters.AddWithValue("@id", executionId);
-                cmd.ExecuteNonQuery();
-            }
-
+            InsertError(connection, scriptName, ex);
+            FinishExecution(connection, executionId, "FAIL", ex.Message);
             Console.Error.WriteLine($"FATAL: {ex.Message}");
             return 1;
         }
@@ -166,6 +156,12 @@ class Program
         return 0;
     }
 
+    /// <summary>
+    /// Recursively copies files from <paramref name="src"/> to <paramref name="dest"/>,
+    /// skipping hidden files and files that are already up-to-date.
+    /// </summary>
+    /// <param name="src">Source directory path.</param>
+    /// <param name="dest">Destination directory path.</param>
     static void CopyDirectory(string src, string dest)
     {
         if (!Directory.Exists(dest))
@@ -203,6 +199,13 @@ class Program
         }
     }
 
+    /// <summary>
+    /// Inserts a row into the automation_logs table.
+    /// </summary>
+    /// <param name="conn">Open SQLite connection.</param>
+    /// <param name="script">Script identifier.</param>
+    /// <param name="status">Log level (INFO, ERROR, SUCCESS).</param>
+    /// <param name="message">Human-readable log message.</param>
     static void InsertLog(SqliteConnection conn, string script, string status, string message)
     {
         using var cmd = conn.CreateCommand();
@@ -210,6 +213,40 @@ class Program
         cmd.Parameters.AddWithValue("@script", script);
         cmd.Parameters.AddWithValue("@status", status);
         cmd.Parameters.AddWithValue("@msg", message);
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Inserts a row into the errors table.
+    /// </summary>
+    /// <param name="conn">Open SQLite connection.</param>
+    /// <param name="script">Script identifier.</param>
+    /// <param name="ex">Exception to record.</param>
+    static void InsertError(SqliteConnection conn, string script, Exception ex)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "INSERT INTO errors (script, message, stack_trace) VALUES (@script, @msg, @stack)";
+        cmd.Parameters.AddWithValue("@script", script);
+        cmd.Parameters.AddWithValue("@msg", ex.Message);
+        cmd.Parameters.AddWithValue("@stack", ex.StackTrace ?? "");
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Updates execution_tracking with end time and final status.
+    /// </summary>
+    /// <param name="conn">Open SQLite connection.</param>
+    /// <param name="id">Execution tracking row ID.</param>
+    /// <param name="status">Final status (SUCCESS, PARTIAL, FAIL).</param>
+    /// <param name="errorMsg">Optional error message for FAIL status.</param>
+    static void FinishExecution(SqliteConnection conn, long id, string status, string? errorMsg = null)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE execution_tracking SET end_time = @end, status = @status, error_message = @msg WHERE id = @id";
+        cmd.Parameters.AddWithValue("@end", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+        cmd.Parameters.AddWithValue("@status", status);
+        cmd.Parameters.AddWithValue("@msg", (object?)errorMsg ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
     }
 }

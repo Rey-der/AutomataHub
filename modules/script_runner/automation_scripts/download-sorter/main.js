@@ -55,8 +55,9 @@ function categorise(ext) {
     const dryRun = process.env.DRY_RUN === '1';
 
     if (!fs.existsSync(downloadsDir)) {
-      console.error(`Downloads directory not found: ${downloadsDir}`);
-      process.exit(1);
+      console.log(`Downloads directory not found: ${downloadsDir}`);
+      db.save();
+      process.exit(0);
     }
 
     const result = runTracked(db, SCRIPT_NAME, (log) => {

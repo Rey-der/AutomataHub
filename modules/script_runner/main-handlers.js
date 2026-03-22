@@ -15,14 +15,18 @@ const fs = require('node:fs');
 const { ScriptStore } = require('./core/script-store');
 const { ScriptPersistence } = require('./core/script-persistence');
 const { ScriptExecutor } = require('./monitoring/script-executor');
+const { ScriptScheduler } = require('./monitoring/scheduler');
 
 const scriptsHandler = require('./handlers/scripts');
 const topicsHandler = require('./handlers/topics');
 const organizationHandler = require('./handlers/organization');
 const executionHandler = require('./handlers/execution');
+const chainsHandler = require('./handlers/chains');
+const schedulesHandler = require('./handlers/schedules');
 
 let persistence = null;
 let executor = null;
+let scheduler = null;
 
 
 function setup(config) {
@@ -104,15 +108,34 @@ function setup(config) {
     friendlyError,
   };
 
-  scriptsHandler.register(ipcBridge, deps);
+  const { getAvailableScripts } = scriptsHandler.register(ipcBridge, deps);
   topicsHandler.register(ipcBridge, deps);
   organizationHandler.register(ipcBridge, deps);
   executionHandler.register(ipcBridge, deps);
+  chainsHandler.register(ipcBridge, deps);
+
+  // Run initial script discovery so the store is populated for the scheduler
+  try {
+    getAvailableScripts(scriptsDir);
+  } catch (err) {
+    console.warn('[script-runner] Initial discovery for scheduler failed:', err.message);
+  }
+
+  // Start cron scheduler for scripts with a `schedule` field
+  scheduler = new ScriptScheduler(executor, store, emit);
+  scheduler.start();
+
+  // Register schedules handler after scheduler is available
+  schedulesHandler.register(ipcBridge, { ...deps, scheduler });
 
   console.log('[script-runner] Module setup complete');
 }
 
 function teardown() {
+  if (scheduler) {
+    scheduler.stop();
+    scheduler = null;
+  }
   if (executor) {
     executor.killAll();
     executor = null;

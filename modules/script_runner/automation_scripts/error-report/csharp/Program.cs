@@ -12,6 +12,11 @@ using Microsoft.Data.Sqlite;
 
 class Program
 {
+    /// <summary>
+    /// Entry point — queries the errors table and outputs JSON to stdout.
+    /// </summary>
+    /// <param name="args">Optional: first arg is the row limit (default 20).</param>
+    /// <returns>0 on success, 1 on error.</returns>
     static int Main(string[] args)
     {
         string? dbPath = Environment.GetEnvironmentVariable("SMART_DESKTOP_DB");
@@ -25,11 +30,11 @@ class Program
         if (args.Length > 0 && int.TryParse(args[0], out int parsed))
             limit = parsed;
 
-        using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
-        connection.Open();
-
         try
         {
+            using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
+            connection.Open();
+
             using var cmd = connection.CreateCommand();
             cmd.CommandText = "SELECT * FROM errors ORDER BY timestamp DESC LIMIT @limit";
             cmd.Parameters.AddWithValue("@limit", limit);
@@ -54,12 +59,18 @@ class Program
                 Console.WriteLine($"Last {rows.Count} errors:\n");
                 Console.WriteLine(JsonSerializer.Serialize(rows, new JsonSerializerOptions { WriteIndented = true }));
             }
-        }
-        finally
-        {
-            connection.Close();
-        }
 
-        return 0;
+            return 0;
+        }
+        catch (SqliteException ex)
+        {
+            Console.Error.WriteLine($"Database error: {ex.Message}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Unexpected error [{ex.GetType().Name}]: {ex.Message}");
+            return 1;
+        }
     }
 }

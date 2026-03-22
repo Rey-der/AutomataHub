@@ -84,10 +84,11 @@ function copyDir(src, dest) {
     const backupDest = process.env.BACKUP_DEST || path.join(os.homedir(), 'Backups');
 
     if (!foldersEnv) {
-      console.error('ERROR: BACKUP_FOLDERS environment variable is not set.');
-      console.error('Set it to a comma-separated list of folders to back up.');
-      console.error('  e.g. BACKUP_FOLDERS="/Users/me/Documents,/Users/me/Projects"');
-      process.exit(1);
+      console.log('BACKUP_FOLDERS environment variable is not set.');
+      console.log('Set it to a comma-separated list of folders to back up.');
+      console.log('  e.g. BACKUP_FOLDERS="/Users/me/Documents,/Users/me/Projects"');
+      db.save();
+      process.exit(0);
     }
 
     const folders = foldersEnv.split(',').map(f => f.trim()).filter(Boolean);
@@ -95,8 +96,9 @@ function copyDir(src, dest) {
     // Validate all source folders exist before starting
     for (const folder of folders) {
       if (!fs.existsSync(folder)) {
-        console.error(`Source folder not found: ${folder}`);
-        process.exit(1);
+        console.log(`Source folder not found: ${folder}`);
+        db.save();
+        process.exit(0);
       }
     }
 

@@ -554,7 +554,7 @@ const ScriptExecution = (() => {
     if (info) info.textContent = buildInfoText(state);
   }
 
-  function onComplete(tabId, exitCode, runtime, signal) {
+  function onComplete(tabId, exitCode, runtime, signal, attempt, maxAttempts, chainInfo) {
     const state = getState(tabId);
     state.isRunning = false;
     state.exitCode = exitCode;
@@ -575,9 +575,18 @@ const ScriptExecution = (() => {
     const status = exitCode === 0 ? 'success' : 'error';
     _notifyStatus(tabId, status);
 
-    const msg = signal
-      ? `Process terminated (signal: ${signal})`
-      : `Process exited with code ${exitCode} (${formatElapsed(runtime)})`;
+    let msg;
+    if (chainInfo?.chainComplete) {
+      msg = `[CHAIN] Workflow complete — ${chainInfo.chainTotal}/${chainInfo.chainTotal} steps succeeded (${formatElapsed(runtime)})`;
+    } else if (chainInfo?.chainFailed) {
+      msg = `[CHAIN] Workflow failed at step ${chainInfo.chainStep}/${chainInfo.chainTotal} (${formatElapsed(runtime)})`;
+    } else if (signal) {
+      msg = `Process terminated (signal: ${signal})`;
+    } else if (attempt && maxAttempts) {
+      msg = `Process exited with code ${exitCode} on attempt ${attempt}/${maxAttempts} (${formatElapsed(runtime)})`;
+    } else {
+      msg = `Process exited with code ${exitCode} (${formatElapsed(runtime)})`;
+    }
     appendOutput(tabId, msg, new Date().toISOString(), 'system');
 
     // Re-render toolbar to show / hide Retry button
@@ -604,11 +613,47 @@ const ScriptExecution = (() => {
     });
 
     globalThis.api.on('script-runner:complete', (data) => {
-      onComplete(data.tabId, data.exitCode, data.runtime, data.signal);
+      const chainInfo = (data.chainComplete || data.chainFailed)
+        ? { chainComplete: data.chainComplete, chainFailed: data.chainFailed, chainStep: data.chainStep, chainTotal: data.chainTotal }
+        : undefined;
+      onComplete(data.tabId, data.exitCode, data.runtime, data.signal, data.attempt, data.maxAttempts, chainInfo);
     });
 
     globalThis.api.on('script-runner:queue-status', (data) => {
       onQueueStatus(data.tabId, data.position);
+    });
+
+    globalThis.api.on('script-runner:retry', (data) => {
+      const delaySec = ((data.delayMs || 0) / 1000).toFixed(1);
+      const msg = `[RETRY] Attempt ${data.attempt}/${data.maxAttempts} failed — retrying in ${delaySec}s`;
+      appendOutput(data.tabId, msg, data.timestamp, 'system');
+    });
+
+    globalThis.api.on('script-runner:scheduled-run', (data) => {
+      appendOutput(data.tabId, `[SCHEDULED] Auto-executing "${data.name}" (cron: ${data.schedule})`, data.timestamp, 'system');
+      globalThis.ui?.showNotification?.(`Scheduled: ${data.name}`, 'info');
+    });
+
+    globalThis.api.on('script-runner:chain-progress', (data) => {
+      const { tabId, step, total, scriptName, status, runtime, timestamp } = data;
+      let msg;
+      if (status === 'started') {
+        const names = (data.scriptNames || []).join(' -> ');
+        msg = `[CHAIN] Workflow started — ${total} steps: ${names}`;
+      } else if (status === 'running') {
+        msg = `[CHAIN] Step ${step}/${total} — Running "${scriptName}"`;
+      } else if (status === 'completed') {
+        const rt = runtime != null ? ` (${formatElapsed(runtime)})` : '';
+        msg = `[CHAIN] Step ${step}/${total} — "${scriptName}" completed${rt}`;
+      } else if (status === 'failed') {
+        msg = `[CHAIN] Step ${step}/${total} — "${scriptName}" FAILED`;
+      }
+      if (msg) appendOutput(tabId, msg, timestamp, 'system');
+    });
+
+    globalThis.api.on('script-runner:chain-skip', (data) => {
+      const msg = `[CHAIN] SKIPPED "${data.scriptName}" — ${data.reason}`;
+      appendOutput(data.tabId, msg, data.timestamp, 'system');
     });
 
     globalThis.api.on('script-runner:log-saved', () => {
@@ -616,7 +661,7 @@ const ScriptExecution = (() => {
     });
   }
 
-  return { render, getState, removeState, appendOutput, onComplete, setupListeners };
+  return { render, getState, removeState, appendOutput, onComplete, setupListeners, handleRun, handleStop };
 })();
 
 // --- Setup IPC listeners as soon as the module loads ---

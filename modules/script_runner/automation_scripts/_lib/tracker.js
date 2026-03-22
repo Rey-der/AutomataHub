@@ -13,18 +13,24 @@
  *     // ... do work ...
  *     log('SUCCESS', 'Done');
  *     return { key: 'value' };
- *   });
+ *   }, { attempt: 1, maxAttempts: 3 });
  */
 
 /**
  * @param {object} db    - Database handle from _lib/db.js
  * @param {string} name  - Script name for tracking
  * @param {function} fn  - Callback receiving a log(level, message, metadata?) function
+ * @param {object} [opts]          - Optional settings
+ * @param {number} [opts.attempt]     - Current attempt number (1-indexed)
+ * @param {number} [opts.maxAttempts] - Total attempts allowed
  * @returns {*} Whatever fn returns
  */
-function runTracked(db, name, fn) {
+function runTracked(db, name, fn, opts = {}) {
+  const { attempt, maxAttempts } = opts;
+  const attemptMeta = attempt ? JSON.stringify({ attempt, maxAttempts }) : null;
+
   // Insert execution start
-  db.run('INSERT INTO execution_tracking (script) VALUES (?)', [name]);
+  db.run('INSERT INTO execution_tracking (script, metadata) VALUES (?, ?)', [name, attemptMeta]);
   const row = db.get('SELECT last_insert_rowid() AS id');
   const trackId = row ? row.id : null;
 

@@ -5,6 +5,9 @@
   "keywords": ["automatahub", "module", "script-runner", "automation", "electron"],
   "license": "MIT",
   "main": "main-handlers.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
   "files": [
     "manifest.json",
     "main-handlers.js",
@@ -12,5 +15,8 @@
   ],
   "peerDependencies": {
     "automata-hub": ">=1.0.0"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3"
   }
 }

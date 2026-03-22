@@ -5,6 +5,7 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const { dialog } = require('electron');
 
 const EXECUTABLE_EXTENSIONS = new Set(['.sh', '.bash', '.py', '.py3', '.js', '.mjs', '.rb', '.pl', '.csx', '.cs']);
@@ -52,7 +53,7 @@ function importScriptFolder(sourcePath, scriptsDir) {
   }
 }
 
-function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInside, ensureDir, readJsonConfig, ERROR_MESSAGES }) {
+function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInside, ensureDir, readJsonConfig, ERROR_MESSAGES, persistence }) {
   // --- Script Discovery ---
 
   function discoverVariants(folderPath, folderName) {
@@ -141,12 +142,31 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
           scriptPath: primary.scriptPath,
           executables: variants.map((v) => v.mainScript),
           variants,
+          retries: Number(meta.retries) || 0,
+          retryDelayMs: Number(meta.retryDelayMs) || 3000,
+          schedule: meta.schedule || null,
+          dependsOn: Array.isArray(meta.dependsOn) ? meta.dependsOn : [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
       }
 
       scripts.push(existing);
+    }
+
+    // Enrich with versioning hashes (current file hash vs last execution hash)
+    const lastHashes = persistence ? persistence.getAllLastHashes() : new Map();
+    for (const script of scripts) {
+      try {
+        const content = fs.readFileSync(script.scriptPath, 'utf-8');
+        script.currentHash = crypto.createHash('sha256').update(content).digest('hex');
+      } catch {
+        script.currentHash = null;
+      }
+      script.lastExecutionHash = lastHashes.get(script.id) || null;
+      script.modified = script.currentHash !== null
+        && script.lastExecutionHash !== null
+        && script.currentHash !== script.lastExecutionHash;
     }
 
     return scripts;
@@ -274,6 +294,8 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
       return { success: false, message: err.message };
     }
   });
+
+  return { getAvailableScripts };
 }
 
 module.exports = { register };

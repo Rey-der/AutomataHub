@@ -1,5 +1,6 @@
 {
   "name": "Execution Report",
   "description": "Displays recent script executions with duration and status",
-  "mainScript": "main.js"
+  "mainScript": "main.js",
+  "dependsOn": ["backup-runner"]
 }

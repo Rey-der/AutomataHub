@@ -786,7 +786,7 @@ button:disabled {
   flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: var(--space-lg);
   transition: all 150ms ease;
 }
@@ -825,10 +825,71 @@ button:disabled {
   font-size: var(--size-xs);
   font-weight: 500;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 10px;
   background: var(--surface-3);
   color: var(--info);
   text-transform: uppercase;
+}
+
+.script-card .script-retry-badge {
+  font-size: var(--size-xs);
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning);
+  text-transform: uppercase;
+}
+
+.script-card .script-schedule-badge {
+  font-size: var(--size-xs);
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  color: var(--success);
+  text-transform: uppercase;
+}
+
+.script-card .script-deps-badge {
+  font-size: var(--size-xs);
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.script-card .script-chain-badge {
+  font-size: var(--size-xs);
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--info) 18%, transparent);
+  color: var(--info);
+  text-transform: uppercase;
+}
+
+.script-card .script-modified-badge {
+  font-size: var(--size-xs);
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--error) 18%, transparent);
+  color: var(--error);
+  text-transform: uppercase;
+}
+
+.script-card .script-deps-line {
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.script-card .script-dep-name {
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .script-card .script-description {

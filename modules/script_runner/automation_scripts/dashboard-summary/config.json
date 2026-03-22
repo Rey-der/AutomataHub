@@ -1,5 +1,7 @@
 {
   "name": "Dashboard Summary",
   "description": "Aggregated stats: files sorted, invoices, automations, errors, last backup",
-  "mainScript": "main.js"
+  "mainScript": "main.js",
+  "schedule": "0 8 * * *",
+  "dependsOn": ["backup-runner", "download-sorter"]
 }

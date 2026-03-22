@@ -90,6 +90,7 @@
   "dependencies": {
     "better-sqlite3": "^11.10.0",
     "chart.js": "^4.5.1",
+    "node-cron": "^4.2.1",
     "sql.js": "^1.14.1",
     "uplot": "^1.6.32"
   }

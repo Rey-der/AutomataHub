@@ -17,6 +17,11 @@ using Microsoft.Data.Sqlite;
 
 class Program
 {
+    /// <summary>
+    /// Entry point — queries invoices by vendor/date-range filters and outputs JSON.
+    /// </summary>
+    /// <param name="args">Command-line arguments (unused; filters come from env vars).</param>
+    /// <returns>0 on success, 1 on error.</returns>
     static int Main(string[] args)
     {
         string? dbPath = Environment.GetEnvironmentVariable("SMART_DESKTOP_DB");
@@ -30,11 +35,11 @@ class Program
         string? from = Environment.GetEnvironmentVariable("FROM");
         string? to = Environment.GetEnvironmentVariable("TO");
 
-        using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
-        connection.Open();
-
         try
         {
+            using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
+            connection.Open();
+
             using var cmd = connection.CreateCommand();
             string label;
 
@@ -77,12 +82,18 @@ class Program
                 Console.WriteLine($"{label} ({rows.Count}):\n");
                 Console.WriteLine(JsonSerializer.Serialize(rows, new JsonSerializerOptions { WriteIndented = true }));
             }
-        }
-        finally
-        {
-            connection.Close();
-        }
 
-        return 0;
+            return 0;
+        }
+        catch (SqliteException ex)
+        {
+            Console.Error.WriteLine($"Database error: {ex.Message}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Unexpected error [{ex.GetType().Name}]: {ex.Message}");
+            return 1;
+        }
     }
 }

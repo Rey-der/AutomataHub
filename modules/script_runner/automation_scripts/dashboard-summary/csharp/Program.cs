@@ -20,6 +20,11 @@ using Microsoft.Data.Sqlite;
 
 class Program
 {
+    /// <summary>
+    /// Entry point — aggregates dashboard stats from multiple tables and outputs JSON.
+    /// </summary>
+    /// <param name="args">Command-line arguments (unused).</param>
+    /// <returns>0 on success, 1 on error.</returns>
     static int Main(string[] args)
     {
         string? dbPath = Environment.GetEnvironmentVariable("SMART_DESKTOP_DB");
@@ -29,11 +34,11 @@ class Program
             return 1;
         }
 
-        using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
-        connection.Open();
-
         try
         {
+            using var connection = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
+            connection.Open();
+
             string today = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
             long filesSortedToday = QueryScalar(connection,
@@ -78,15 +83,28 @@ class Program
 
             Console.WriteLine("Dashboard Summary:\n");
             Console.WriteLine(JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }));
-        }
-        finally
-        {
-            connection.Close();
-        }
 
-        return 0;
+            return 0;
+        }
+        catch (SqliteException ex)
+        {
+            Console.Error.WriteLine($"Database error: {ex.Message}");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Unexpected error [{ex.GetType().Name}]: {ex.Message}");
+            return 1;
+        }
     }
 
+    /// <summary>
+    /// Executes a scalar COUNT query with an optional date parameter.
+    /// </summary>
+    /// <param name="conn">Open SQLite connection.</param>
+    /// <param name="sql">SQL statement containing an optional @d parameter.</param>
+    /// <param name="dateParam">Date string bound to @d (null if unused).</param>
+    /// <returns>Scalar result as long.</returns>
     static long QueryScalar(SqliteConnection conn, string sql, string? dateParam = null)
     {
         using var cmd = conn.CreateCommand();

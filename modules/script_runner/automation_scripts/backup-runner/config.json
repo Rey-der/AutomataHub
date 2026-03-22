@@ -2,6 +2,8 @@
   "name": "Backup Runner",
   "description": "Copies configured folders to a backup location and logs results to DB",
   "mainScript": "main.js",
+  "retries": 2,
+  "retryDelayMs": 3000,
   "env": {
     "BACKUP_FOLDERS": "~/Documents,~/Projects",
     "BACKUP_DEST": "~/Backups"

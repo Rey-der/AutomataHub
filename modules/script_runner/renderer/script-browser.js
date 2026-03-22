@@ -120,7 +120,42 @@ class ScriptBrowser {
       .map((v) => `<span class="script-language">${this._escapeHtml(v.language || 'Unknown')}</span>`)
       .join('');
 
+    // Retry badge
+    const retryBadge = script.retries > 0
+      ? `<span class="script-retry-badge" title="Auto-retry: ${script.retries} retries, ${((script.retryDelayMs || 3000) / 1000).toFixed(0)}s delay">Retry x${script.retries}</span>`
+      : '';
+
+    // Schedule badge
+    const scheduleBadge = script.schedule
+      ? `<span class="script-schedule-badge" title="Cron: ${this._escapeHtml(script.schedule)}">Scheduled</span>`
+      : '';
+
+    // Dependency badge
+    const deps = script.dependsOn || [];
+    const depsBadge = deps.length > 0
+      ? `<span class="script-deps-badge" title="Depends on: ${deps.map((d) => this._escapeHtml(d)).join(', ')}">Depends</span>`
+      : '';
+
+    // Chain membership badge
     const scriptId = script.id || script.folder;
+    const chains = this.app.chainListInstance?.chains || [];
+    const chainNames = chains
+      .filter((c) => (c.script_ids || []).includes(scriptId))
+      .map((c) => c.name);
+    const chainBadge = chainNames.length > 0
+      ? `<span class="script-chain-badge" title="In chain: ${chainNames.map((n) => this._escapeHtml(n)).join(', ')}">&#9741; Chain</span>`
+      : '';
+
+    // Modified badge (script changed since last execution)
+    const modifiedBadge = script.modified
+      ? `<span class="script-modified-badge" title="Script modified since last run">Modified</span>`
+      : '';
+
+    // Dependency line below description
+    const depsLine = deps.length > 0
+      ? `<p class="script-deps-line">Depends on: ${deps.map((d) => `<span class="script-dep-name">${this._escapeHtml(d)}</span>`).join(', ')}</p>`
+      : '';
+
     const isFav = this.app.isFavorite(scriptId);
 
     return `
@@ -129,11 +164,15 @@ class ScriptBrowser {
           <h3 class="script-name">${this._escapeHtml(script.name)}</h3>
           <div class="card-header-actions">
             <button class="card-toggle toggle-favorite sc-fav-btn${isFav ? ' active' : ''}" data-script-id="${this._escapeHtml(scriptId)}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '&#9829;' : '&#9825;'}</button>
-            <div class="variant-badges">${languageTags}</div>
           </div>
         </div>
+
+        ${languageTags || retryBadge || scheduleBadge || depsBadge || chainBadge || modifiedBadge
+          ? `<div class="variant-badges">${languageTags}${retryBadge}${scheduleBadge}${depsBadge}${chainBadge}${modifiedBadge}</div>`
+          : ''}
         
         ${script.description ? `<p class="script-description">${this._escapeHtml(script.description)}</p>` : ''}
+        ${depsLine}
         
         ${topicTags ? `<div class="script-topics">${topicTags}</div>` : ''}
         

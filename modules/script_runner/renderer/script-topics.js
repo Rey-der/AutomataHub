@@ -40,14 +40,6 @@ class TopicList {
         </div>
         
         <div class="topic-list-items" id="topic-items">
-          <div class="topic-item-wrapper topic-all-scripts-wrapper">
-            <button class="topic-item ${this.app.selectedTopicId === null ? 'active' : ''}" 
-                    id="btn-all-scripts">
-              <span class="topic-color-dot" style="background: transparent;"></span>
-              <span class="topic-name">All Scripts</span>
-              <span class="topic-count">${this.app.allScripts.length}</span>
-            </button>
-          </div>
           ${this._renderTopicItems()}
         </div>
       </div>
@@ -203,12 +195,6 @@ class TopicList {
         this._showCreateDialog();
       }
     });
-
-    // All Scripts button
-    const btnAll = this.container.querySelector('#btn-all-scripts');
-    if (btnAll) {
-      btnAll.addEventListener('click', () => this.app.selectTopic(null));
-    }
 
     // Topic items - click to select
     this.container.querySelectorAll('.topic-item[data-topic-id]').forEach((el) => {

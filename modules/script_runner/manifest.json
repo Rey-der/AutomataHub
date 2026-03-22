@@ -17,7 +17,11 @@
     "script-runner:output",
     "script-runner:error",
     "script-runner:complete",
+    "script-runner:retry",
     "script-runner:queue-status",
+    "script-runner:chain-progress",
+    "script-runner:chain-skip",
+    "script-runner:scheduled-run",
     "script-runner:log-saved",
     "script-runner:get-topics",
     "script-runner:create-topic",
@@ -35,18 +39,38 @@
     "script-runner:script-removed-from-topic",
     "script-runner:topic-scripts-reordered",
     "script-runner:scripts-updated",
-    "script-runner:read-script"
+    "script-runner:read-script",
+    "script-runner:get-chains",
+    "script-runner:create-chain",
+    "script-runner:update-chain",
+    "script-runner:delete-chain",
+    "script-runner:run-chain",
+    "script-runner:chain-created",
+    "script-runner:chain-updated",
+    "script-runner:chain-deleted",
+    "script-runner:get-schedules",
+    "script-runner:create-schedule",
+    "script-runner:update-schedule",
+    "script-runner:delete-schedule",
+    "script-runner:toggle-schedule",
+    "script-runner:schedule-created",
+    "script-runner:schedule-updated",
+    "script-runner:schedule-deleted"
   ],
   "tabTypes": [
     { "id": "script-home", "label": "Scripts" },
-    { "id": "script-execution", "label": "Execution" }
+    { "id": "script-execution", "label": "Execution" },
+    { "id": "script-dashboard", "label": "Dashboard" }
   ],
   "rendererScripts": [
     "renderer/script-app.js",
     "renderer/script-topics.js",
+    "renderer/script-chains.js",
+    "renderer/script-schedules.js",
     "renderer/script-browser.js",
     "renderer/script-home.js",
-    "renderer/execution-tab.js"
+    "renderer/execution-tab.js",
+    "renderer/script-dashboard.js"
   ],
   "rendererStyles": [
     "renderer/styles.css"

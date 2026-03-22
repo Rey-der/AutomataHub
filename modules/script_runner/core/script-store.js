@@ -11,6 +11,8 @@ class ScriptStore {
     this.scripts = new Map(); // scriptId -> script object
     this.topics = new Map(); // topicId -> topic object
     this.associations = new Map(); // `${scriptId}:${topicId}` -> { position }
+    this.chains = new Map(); // chainId -> { id, name, script_ids: [] }
+    this.schedules = new Map(); // scheduleId -> { id, target_type, target_id, cron, name, enabled, ... }
     this.persistence = null;
   }
 
@@ -149,6 +151,62 @@ class ScriptStore {
 
   setPersistence(persistence) {
     this.persistence = persistence;
+  }
+
+  // --- User Chain Management ---
+
+  addChain(chain) {
+    if (!chain?.id) throw new Error('Chain must have an id');
+    this.chains.set(chain.id, { ...chain, script_ids: chain.script_ids || [] });
+    return this.chains.get(chain.id);
+  }
+
+  updateChain(chainId, updates) {
+    const chain = this.chains.get(chainId);
+    if (!chain) throw new Error(`Chain not found: ${chainId}`);
+    Object.assign(chain, updates, { updated_at: new Date().toISOString() });
+    return chain;
+  }
+
+  removeChain(chainId) {
+    if (!this.chains.has(chainId)) throw new Error(`Chain not found: ${chainId}`);
+    this.chains.delete(chainId);
+  }
+
+  getChain(chainId) {
+    return this.chains.get(chainId) || null;
+  }
+
+  getAllChains() {
+    return Array.from(this.chains.values());
+  }
+
+  // --- Schedule Management ---
+
+  addSchedule(schedule) {
+    if (!schedule?.id) throw new Error('Schedule must have an id');
+    this.schedules.set(schedule.id, { ...schedule });
+    return this.schedules.get(schedule.id);
+  }
+
+  updateSchedule(scheduleId, updates) {
+    const schedule = this.schedules.get(scheduleId);
+    if (!schedule) throw new Error(`Schedule not found: ${scheduleId}`);
+    Object.assign(schedule, updates, { updated_at: new Date().toISOString() });
+    return schedule;
+  }
+
+  removeSchedule(scheduleId) {
+    if (!this.schedules.has(scheduleId)) throw new Error(`Schedule not found: ${scheduleId}`);
+    this.schedules.delete(scheduleId);
+  }
+
+  getSchedule(scheduleId) {
+    return this.schedules.get(scheduleId) || null;
+  }
+
+  getAllSchedules() {
+    return Array.from(this.schedules.values());
   }
 }
 

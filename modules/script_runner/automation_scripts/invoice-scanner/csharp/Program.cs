@@ -28,6 +28,11 @@ using Microsoft.Data.Sqlite;
 
 class Program
 {
+    /// <summary>
+    /// Entry point — scans a folder for PDF invoices and extracts vendor, amount, and date.
+    /// </summary>
+    /// <param name="args">Command-line arguments (unused).</param>
+    /// <returns>0 on success, 1 on error.</returns>
     static int Main(string[] args)
     {
         string? dbPath = Environment.GetEnvironmentVariable("SMART_DESKTOP_DB");
@@ -126,6 +131,13 @@ class Program
             var result = new { scanned = files.Length, extracted, failed };
             Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
         }
+        catch (IOException ex)
+        {
+            InsertError(connection, scriptName, ex);
+            FinishExecution(connection, executionId, "FAIL", ex.Message);
+            Console.Error.WriteLine($"I/O error: {ex.Message}");
+            return 1;
+        }
         catch (Exception ex)
         {
             InsertError(connection, scriptName, ex);
@@ -137,6 +149,11 @@ class Program
         return 0;
     }
 
+    /// <summary>
+    /// Extracts readable text from a PDF byte buffer by parsing BT…ET text streams.
+    /// </summary>
+    /// <param name="buffer">Raw PDF file bytes.</param>
+    /// <returns>Concatenated text content.</returns>
     static string ExtractTextFromPdf(byte[] buffer)
     {
         // Lightweight text extraction from PDF text streams (BT...ET blocks)
@@ -155,6 +172,11 @@ class Program
         return string.Join(" ", chunks).Trim();
     }
 
+    /// <summary>
+    /// Searches text for a monetary amount using currency-symbol and decimal patterns.
+    /// </summary>
+    /// <param name="text">Extracted PDF text.</param>
+    /// <returns>Parsed amount, or null if none found.</returns>
     static double? ExtractAmount(string text)
     {
         var patterns = new[]
@@ -177,6 +199,11 @@ class Program
         return null;
     }
 
+    /// <summary>
+    /// Extracts an ISO-8601 or DD.MM.YYYY date from text.
+    /// </summary>
+    /// <param name="text">Extracted PDF text.</param>
+    /// <returns>Date string in YYYY-MM-DD format, or null.</returns>
     static string? ExtractDate(string text)
     {
         // YYYY-MM-DD
@@ -190,6 +217,11 @@ class Program
         return null;
     }
 
+    /// <summary>
+    /// Derives a vendor name from a PDF filename by extracting the first alphabetic segment.
+    /// </summary>
+    /// <param name="filename">PDF filename (with extension).</param>
+    /// <returns>Title-cased vendor name.</returns>
     static string VendorFromFilename(string filename)
     {
         string baseName = Path.GetFileNameWithoutExtension(filename);
@@ -199,6 +231,13 @@ class Program
         return baseName;
     }
 
+    /// <summary>
+    /// Inserts a row into the automation_logs table.
+    /// </summary>
+    /// <param name="conn">Open SQLite connection.</param>
+    /// <param name="script">Script identifier.</param>
+    /// <param name="status">Log level (INFO, ERROR, SUCCESS).</param>
+    /// <param name="message">Human-readable log message.</param>
     static void InsertLog(SqliteConnection conn, string script, string status, string message)
     {
         using var cmd = conn.CreateCommand();
@@ -209,6 +248,12 @@ class Program
         cmd.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Inserts a row into the errors table.
+    /// </summary>
+    /// <param name="conn">Open SQLite connection.</param>
+    /// <param name="script">Script identifier.</param>
+    /// <param name="ex">Exception to record.</param>
     static void InsertError(SqliteConnection conn, string script, Exception ex)
     {
         using var cmd = conn.CreateCommand();
@@ -219,6 +264,13 @@ class Program
         cmd.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Updates execution_tracking with end time and final status.
+    /// </summary>
+    /// <param name="conn">Open SQLite connection.</param>
+    /// <param name="id">Execution tracking row ID.</param>
+    /// <param name="status">Final status (SUCCESS, FAIL).</param>
+    /// <param name="errorMsg">Optional error message for FAIL status.</param>
     static void FinishExecution(SqliteConnection conn, long id, string status, string? errorMsg = null)
     {
         using var cmd = conn.CreateCommand();

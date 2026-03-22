@@ -1,0 +1,4 @@
+{
+  "name": "API Health Check",
+  "description": "Pings HTTP endpoints and records status, latency, and errors"
+}
