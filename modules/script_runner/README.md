@@ -40,7 +40,7 @@ Chains let you define ordered process sequences and run them as a guided workflo
 - Stop the currently running chain without losing visibility into what already finished
 
 <p align="center">
-  <img src="../../resources/screenshots/script_runner/ScriptRunner_Chain.png" alt="Script Runner chain builder and chain runner" width="960" />
+  <img src="../../resources/screenshots/script_runner/ScriptRunner_Chain2.png" alt="Script Runner chain builder and chain runner" width="960" />
 </p>
 
 ### Scheduled Automation
