@@ -118,10 +118,10 @@ AutomataHub is a **hub + plugin** system:
 
 ```
 AutomataHub/
-├── app/                    # Main process
-│   ├── main.js             # App entry, window, hub IPC handlers
-│   ├── preload.js          # Secure IPC bridge (dynamic channel allowlist)
-│   └── core/               # Shared infrastructure
+├── app/                        # Main process
+│   ├── main.js                 # App entry, window, hub IPC handlers
+│   ├── preload.js              # Secure IPC bridge (dynamic channel allowlist)
+│   └── core/                   # Shared infrastructure
 │       ├── module-loader.js    # Module discovery (modules/ + node_modules/)
 │       ├── module-registry.js  # In-memory module metadata store
 │       ├── ipc-bridge.js       # Scoped IPC handler registration with channel enforcement
@@ -133,25 +133,25 @@ AutomataHub/
 │       ├── event-bus.js        # Secured inter-module EventBus (allowlist + scoping)
 │       └── errors.js           # Centralized error messages
 │
-├── renderer/               # Renderer process — UI shell
-│   ├── index.html          # Single-page app shell
-│   ├── core.css            # Hub theme (CSS variables, layout, tabs)
-│   ├── ui.js               # Notifications & utilities
-│   ├── tab-manager.js      # Dynamic tab types, creation, switching
-│   ├── module-bootstrap.js # Loads module scripts & styles at startup
+├── renderer/                   # Renderer process — UI shell
+│   ├── index.html              # Single-page app shell
+│   ├── core.css                # Hub theme (CSS variables, layout, tabs)
+│   ├── ui.js                   # Notifications & utilities
+│   ├── tab-manager.js          # Dynamic tab types, creation, switching
+│   ├── module-bootstrap.js     # Loads module scripts & styles at startup
 │   └── pages/
 │       ├── home-tab.js         # Hub dashboard
 │       └── db-manager-tab.js   # Database credential management UI
 │
-├── modules/                # Installed modules
-│   ├── script_runner/      # → modules/script_runner/README.md
-│   ├── netops/             # → modules/netops/README.md
-│   └── sql_visualizer/     # → modules/sql_visualizer/README.md
+├── modules/                    # Installed modules
+│   ├── script_runner/          # → modules/script_runner/README.md
+│   ├── netops/                 # → modules/netops/README.md
+│   └── sql_visualizer/         # → modules/sql_visualizer/README.md
 │
-├── tests/                  # Unit tests
-├── logs/                   # Saved execution logs
-├── resources/              # App icons & images
-└── docs/                   # Design documentation
+├── tests/                      # Unit tests
+├── logs/                       # Saved execution logs
+├── resources/                  # App icons & images
+└── docs/                       # Design documentation
 ```
 
 ## Module System
