@@ -3,7 +3,7 @@
 > RPA-style automation workspace for [AutomataHub](https://github.com/Rey-der/AutomataHub) — run scripts, build workflow chains, schedule unattended execution, and track results from a single operator UI.
 
 <p align="center">
-  <img src="../../resources/screenshots/script_runner/script_runner.gif" alt="Script Runner overview" width="960" />
+  <img src="../../resources/screenshots/script_runner/script_runner2.gif" alt="Script Runner overview" width="960" />
 </p>
 
 ## Overview
