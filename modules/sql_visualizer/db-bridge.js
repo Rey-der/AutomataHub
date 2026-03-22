@@ -462,28 +462,64 @@ function queryRows(table, opts = {}) {
   return { rows, total };
 }
 
-const READ_ONLY_SQL_PATTERN = /^(SELECT|WITH|PRAGMA)\b/i;
-const FORBIDDEN_SQL_PATTERN = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|REPLACE|TRUNCATE|ATTACH|DETACH|VACUUM|REINDEX|ANALYZE|LOAD_EXTENSION|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i;
-const SQL_COMMENT_PATTERN = /(^|\s)(--|\/\*)/m;
+const FORBIDDEN_SQL_KEYWORDS = new Set([
+  'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE', 'REPLACE',
+  'TRUNCATE', 'ATTACH', 'DETACH', 'VACUUM', 'REINDEX', 'ANALYZE',
+  'LOAD_EXTENSION', 'BEGIN', 'COMMIT', 'ROLLBACK', 'SAVEPOINT', 'RELEASE',
+]);
 
 function normalizeReadOnlySql(sql) {
-  const normalized = sql.trim().replace(/;+\s*$/, '');
+  let normalized = sql.trim();
+  while (normalized.endsWith(';')) {
+    normalized = normalized.slice(0, -1).trimEnd();
+  }
   if (!normalized) throw new Error('Query must be a non-empty string');
   return normalized;
 }
 
+function getLeadingKeyword(sql) {
+  let keyword = '';
+  for (const char of sql) {
+    const isLetter = (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || char === '_';
+    if (!isLetter) break;
+    keyword += char;
+  }
+  return keyword.toUpperCase();
+}
+
+function getSqlKeywords(sql) {
+  const keywords = [];
+  let current = '';
+
+  for (const char of sql) {
+    const isLetter = (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || char === '_';
+    if (isLetter) {
+      current += char.toUpperCase();
+      continue;
+    }
+    if (current) {
+      keywords.push(current);
+      current = '';
+    }
+  }
+
+  if (current) keywords.push(current);
+  return keywords;
+}
+
 function validateReadOnlySql(sql) {
   const normalized = normalizeReadOnlySql(sql);
-  if (!READ_ONLY_SQL_PATTERN.test(normalized)) {
+  const leadingKeyword = getLeadingKeyword(normalized);
+  if (!['SELECT', 'WITH', 'PRAGMA'].includes(leadingKeyword)) {
     throw new Error('Only SELECT, WITH, and PRAGMA queries are allowed');
   }
-  if (SQL_COMMENT_PATTERN.test(normalized)) {
+  if (normalized.includes('--') || normalized.includes('/*') || normalized.includes('*/')) {
     throw new Error('SQL comments are not allowed');
   }
   if (normalized.includes(';')) {
     throw new Error('Only a single SQL statement is allowed');
   }
-  if (FORBIDDEN_SQL_PATTERN.test(normalized)) {
+  if (getSqlKeywords(normalized).some((keyword) => FORBIDDEN_SQL_KEYWORDS.has(keyword))) {
     throw new Error('Query contains forbidden statements');
   }
   return normalized;

@@ -6,7 +6,8 @@
 const { describe, it, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { createStore, createPersistence, cleanup } = require('./helpers');
+const path = require('node:path');
+const { createStore, createPersistence, createTempDir, cleanup } = require('./helpers');
 
 describe('ScriptPersistence', () => {
   afterEach(() => {
@@ -153,7 +154,8 @@ describe('ScriptPersistence', () => {
   });
 
   it('throws when operating on an uninitialised database', async () => {
-    const p = new (require('../core/script-persistence').ScriptPersistence)('/tmp/never-init.sqlite');
+    const dbPath = path.join(createTempDir('sr-never-init'), 'never-init.sqlite');
+    const p = new (require('../core/script-persistence').ScriptPersistence)(dbPath);
     assert.throws(() => p.saveTopic({ id: 't1', name: 'X' }), /not initialized/i);
   });
 });
