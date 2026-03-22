@@ -8,7 +8,7 @@
 const { openDatabase } = require('../_lib/db');
 const { printJSON } = require('../_lib/output');
 
-(async () => {
+async function main() {
   const db = await openDatabase();
   try {
     const limit = Number.parseInt(process.argv[2], 10) || 20;
@@ -25,4 +25,6 @@ const { printJSON } = require('../_lib/output');
   } finally {
     db.close();
   }
-})();
+}
+
+main();

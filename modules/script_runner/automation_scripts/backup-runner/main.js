@@ -77,7 +77,7 @@ function copyDir(src, dest) {
   return { copied, skipped };
 }
 
-(async () => {
+async function main() {
   const db = await openDatabase();
   try {
     const foldersEnv = process.env.BACKUP_FOLDERS;
@@ -153,4 +153,6 @@ function copyDir(src, dest) {
   } finally {
     db.close();
   }
-})();
+}
+
+main();

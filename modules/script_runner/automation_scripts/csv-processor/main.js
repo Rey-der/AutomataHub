@@ -46,20 +46,22 @@ function parseCsvLine(line) {
     const ch = line[i];
 
     if (inQuotes) {
-      if (ch === '"') {
-        // Escaped quote ("") or end of quoted field
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"';
-          i += 2;
-        } else {
-          inQuotes = false;
-          i++;
-        }
-      } else {
-        current += ch;
-        i++;
+      if (ch === '"' && i + 1 < line.length && line[i + 1] === '"') {
+        current += '"';
+        i += 2;
+        continue;
       }
-    } else if (ch === '"') {
+      if (ch === '"') {
+        inQuotes = false;
+        i++;
+        continue;
+      }
+      current += ch;
+      i++;
+      continue;
+    }
+
+    if (ch === '"') {
       inQuotes = true;
       i++;
     } else if (ch === ',') {
@@ -105,7 +107,7 @@ function validateRow(headers, fields) {
     }
 
     // Numeric columns must contain a valid number
-    if (isNumericColumn(headers[c]) && isNaN(Number(value))) {
+    if (isNumericColumn(headers[c]) && Number.isNaN(Number(value))) {
       return { valid: false, reason: `non-numeric value "${value}" in column "${headers[c]}"` };
     }
   }
@@ -154,7 +156,7 @@ function processFile(filePath, db, log) {
   return { filename, rows_total: rowsTotal, rows_valid: valid, rows_invalid: invalid };
 }
 
-(async () => {
+async function main() {
   const db = await openDatabase();
   try {
     const inputDir = process.env.CSV_INPUT_DIR
@@ -216,4 +218,6 @@ function processFile(filePath, db, log) {
   } finally {
     db.close();
   }
-})();
+}
+
+main();

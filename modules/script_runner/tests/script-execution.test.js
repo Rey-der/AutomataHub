@@ -13,6 +13,14 @@ const fs = require('node:fs');
 const { createTempDir, cleanup } = require('./helpers');
 const { ScriptExecutor } = require('../monitoring/script-executor');
 
+function waitForComplete(executor, tabId) {
+  return new Promise((resolve) => {
+    executor.on('complete', (data) => {
+      if (data.tabId === tabId) resolve(data);
+    });
+  });
+}
+
 describe('ScriptExecutor', () => {
   let scriptsDir;
   let successScript;
@@ -43,14 +51,6 @@ describe('ScriptExecutor', () => {
     return new ScriptExecutor(scriptsDir, {
       env: {},
       resolveInside: (target) => fs.realpathSync(target),
-    });
-  }
-
-  function waitForComplete(executor, tabId) {
-    return new Promise((resolve) => {
-      executor.on('complete', (data) => {
-        if (data.tabId === tabId) resolve(data);
-      });
     });
   }
 

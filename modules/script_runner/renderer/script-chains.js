@@ -438,7 +438,7 @@ class ChainList {
 
     list.querySelectorAll('.sr-chain-selected-item').forEach((item) => {
       item.addEventListener('dragstart', (e) => {
-        dragSrcIdx = parseInt(item.dataset.index, 10);
+        dragSrcIdx = Number.parseInt(item.dataset.index, 10);
         item.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
       });
@@ -461,7 +461,7 @@ class ChainList {
 
       item.addEventListener('drop', (e) => {
         e.preventDefault();
-        const dstIdx = parseInt(item.dataset.index, 10);
+        const dstIdx = Number.parseInt(item.dataset.index, 10);
         if (dragSrcIdx === null || dragSrcIdx === dstIdx) return;
         const [moved] = this._selectedScriptIds.splice(dragSrcIdx, 1);
         this._selectedScriptIds.splice(dstIdx, 0, moved);
@@ -502,14 +502,11 @@ class ChainList {
       }
 
       if (result.success) {
-        // The chain-created / chain-updated IPC event (fired by the backend
-        // before this invoke resolves) already updates this.chains via
-        // _subscribeToEvents, so we only need to notify + close here.
         const verb = this._builderMode === 'edit' ? 'updated' : 'created';
         globalThis.ui?.showNotification?.(`Chain "${name}" ${verb}`, 'success');
         this._closeBuilder();
-      } else {
-        if (errorEl) errorEl.textContent = result.error || 'Failed to save chain';
+      } else if (errorEl) {
+        errorEl.textContent = result.error || 'Failed to save chain';
       }
     } catch (err) {
       console.error('[script-chains] Save error:', err.message);
@@ -658,7 +655,7 @@ class ChainList {
         tab.addEventListener('click', () => {
           const slot = tab.dataset.slot;
           if (slot === 'chain') return; // chain name tab is non-navigable
-          activeSlot = parseInt(slot, 10);
+          activeSlot = Number.parseInt(slot, 10);
           updateTabs();
           renderSlotContent();
         });
@@ -720,7 +717,11 @@ class ChainList {
             if (data.tabId === slot.session.id) {
               unsub();
               const success = data.exitCode === 0 && !chainCancelled;
-              slot.status = success ? 'success' : (chainCancelled ? 'skipped' : 'error');
+              let status;
+              if (success) status = 'success';
+              else if (chainCancelled) status = 'skipped';
+              else status = 'error';
+              slot.status = status;
               updateTabs();
               updateInfo();
               resolve();

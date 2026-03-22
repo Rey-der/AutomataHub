@@ -25,7 +25,7 @@ describe('ScriptStore', () => {
       store.addScript({ id: 's2', name: 'B' });
       const all = store.getAllScripts();
       assert.equal(all.length, 2);
-      const ids = all.map(s => s.id).sort();
+      const ids = all.map(s => s.id).sort((a, b) => a.localeCompare(b));
       assert.deepStrictEqual(ids, ['s1', 's2']);
     });
 

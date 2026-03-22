@@ -34,7 +34,7 @@ function buildDeps(store, scriptsDir) {
     readJsonConfig: (filePath, onError, fallback = {}) => {
       if (!fs.existsSync(filePath)) return fallback;
       try { return JSON.parse(fs.readFileSync(filePath, 'utf-8')); }
-      catch (err) { if (typeof onError === 'function') onError(filePath, err); return fallback; }
+      catch (err) { onError?.(filePath, err); return fallback; }
     },
     ERROR_MESSAGES: {},
   };
@@ -101,9 +101,9 @@ describe('Script Discovery', () => {
 
   it('discovers valid script folders', () => {
     const scripts = getAvailableScripts(scriptsDir);
-    const ids = scripts.map(s => s.id);
-    assert.ok(ids.includes('my-script'), 'should find my-script');
-    assert.ok(ids.includes('multi-lang'), 'should find multi-lang');
+    const ids = new Set(scripts.map(s => s.id));
+    assert.ok(ids.has('my-script'), 'should find my-script');
+    assert.ok(ids.has('multi-lang'), 'should find multi-lang');
   });
 
   it('reads config.json metadata', () => {
@@ -117,9 +117,9 @@ describe('Script Discovery', () => {
     getAvailableScripts(scriptsDir);
     const script = store.getScript('multi-lang');
     assert.ok(script.variants.length >= 2, `should have at least 2 variants, got ${script.variants.length}`);
-    const languages = script.variants.map(v => v.language);
-    assert.ok(languages.includes('JS'), 'should have JS variant');
-    assert.ok(languages.includes('C#'), 'should have C# variant');
+    const languages = new Set(script.variants.map(v => v.language));
+    assert.ok(languages.has('JS'), 'should have JS variant');
+    assert.ok(languages.has('C#'), 'should have C# variant');
   });
 
   it('ignores _lib folder', () => {

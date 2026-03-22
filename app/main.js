@@ -201,9 +201,6 @@ function loadModules() {
     ...installedModules.filter((m) => !localIds.has(m.id)),
   ];
 
-  // Track per-module scoped IPC bridges for cleanup
-  const moduleBridges = [];
-
   for (const mod of merged) {
     registry.register(mod);
 
@@ -212,7 +209,6 @@ function loadModules() {
         // Each module gets its own IPC bridge scoped to its declared channels
         const allowedSet = new Set(Array.isArray(mod.ipcChannels) ? mod.ipcChannels : []);
         const scopedBridge = new IpcBridge(allowedSet);
-        moduleBridges.push(scopedBridge);
 
         mod.setup({
           ipcBridge: scopedBridge,

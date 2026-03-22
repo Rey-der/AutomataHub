@@ -162,68 +162,48 @@ class ScriptPersistence {
 
   // --- Load Data into Store ---
 
+  _parseRows(result) {
+    if (result.length === 0) return [];
+    const columns = result[0].columns;
+    return result[0].values.map((row) => {
+      const obj = {};
+      columns.forEach((col, idx) => { obj[col] = row[idx]; });
+      return obj;
+    });
+  }
+
   async loadIntoStore(store) {
     try {
-      const topicsResult = this.db.exec('SELECT * FROM topics');
-      const assocResult = this.db.exec('SELECT * FROM script_topics');
+      const topics = this._parseRows(this.db.exec('SELECT * FROM topics'));
+      const assocs = this._parseRows(this.db.exec('SELECT * FROM script_topics'));
 
-      // sql.js returns query results as arrays of arrays with metadata
-      if (topicsResult.length > 0) {
-        const columns = topicsResult[0].columns;
-        for (const row of topicsResult[0].values) {
-          const topic = {};
-          columns.forEach((col, idx) => {
-            topic[col] = row[idx];
-          });
-          store.addTopic(topic);
+      for (const topic of topics) {
+        store.addTopic(topic);
+      }
+
+      for (const assoc of assocs) {
+        if (store.getTopic(assoc.topic_id)) {
+          store.associations.set(`${assoc.script_id}:${assoc.topic_id}`, { position: assoc.position });
         }
       }
 
-      if (assocResult.length > 0) {
-        const columns = assocResult[0].columns;
-        for (const row of assocResult[0].values) {
-          const assoc = {};
-          columns.forEach((col, idx) => {
-            assoc[col] = row[idx];
-          });
-          // Add to store if topic exists
-          if (store.getTopic(assoc.topic_id)) {
-            store.associations.set(`${assoc.script_id}:${assoc.topic_id}`, { position: assoc.position });
-          }
-        }
-      }
-
-      const topicsCount = topicsResult.length > 0 ? topicsResult[0].values.length : 0;
-      const assocsCount = assocResult.length > 0 ? assocResult[0].values.length : 0;
-      console.log(`[script-runner] Loaded ${topicsCount} topics, ${assocsCount} associations`);
+      console.log(`[script-runner] Loaded ${topics.length} topics, ${assocs.length} associations`);
 
       // Load user chains into store
-      const chainsResult = this.db.exec('SELECT * FROM user_chains');
-      if (chainsResult.length > 0) {
-        const cols = chainsResult[0].columns;
-        for (const row of chainsResult[0].values) {
-          const chain = {};
-          cols.forEach((col, idx) => { chain[col] = row[idx]; });
-          chain.script_ids = JSON.parse(chain.script_ids || '[]');
-          store.addChain(chain);
-        }
+      const chains = this._parseRows(this.db.exec('SELECT * FROM user_chains'));
+      for (const chain of chains) {
+        chain.script_ids = JSON.parse(chain.script_ids || '[]');
+        store.addChain(chain);
       }
-      const chainsCount = chainsResult.length > 0 ? chainsResult[0].values.length : 0;
-      console.log(`[script-runner] Loaded ${chainsCount} user chains`);
+      console.log(`[script-runner] Loaded ${chains.length} user chains`);
 
       // Load schedules into store
-      const schedulesResult = this.db.exec('SELECT * FROM schedules');
-      if (schedulesResult.length > 0) {
-        const cols = schedulesResult[0].columns;
-        for (const row of schedulesResult[0].values) {
-          const schedule = {};
-          cols.forEach((col, idx) => { schedule[col] = row[idx]; });
-          schedule.enabled = !!schedule.enabled;
-          store.addSchedule(schedule);
-        }
+      const schedules = this._parseRows(this.db.exec('SELECT * FROM schedules'));
+      for (const schedule of schedules) {
+        schedule.enabled = !!schedule.enabled;
+        store.addSchedule(schedule);
       }
-      const schedulesCount = schedulesResult.length > 0 ? schedulesResult[0].values.length : 0;
-      console.log(`[script-runner] Loaded ${schedulesCount} schedules`);
+      console.log(`[script-runner] Loaded ${schedules.length} schedules`);
     } catch (err) {
       console.error('[script-runner] Failed to load from database:', err.message);
       throw err;

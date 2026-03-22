@@ -48,7 +48,7 @@ function categorise(ext) {
   return 'Other';
 }
 
-(async () => {
+async function main() {
   const db = await openDatabase();
   try {
     const downloadsDir = process.env.DOWNLOADS_DIR || path.join(os.homedir(), 'Downloads');
@@ -125,4 +125,6 @@ function categorise(ext) {
   } finally {
     db.close();
   }
-})();
+}
+
+main();

@@ -14,7 +14,7 @@
 const { openDatabase } = require('../_lib/db');
 const { printJSON } = require('../_lib/output');
 
-(async () => {
+async function main() {
   const db = await openDatabase();
   try {
     const today = new Date().toISOString().slice(0, 10);
@@ -58,4 +58,6 @@ const { printJSON } = require('../_lib/output');
   } finally {
     db.close();
   }
-})();
+}
+
+main();

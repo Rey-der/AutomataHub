@@ -162,7 +162,7 @@ function vendorFromFilename(filename) {
   return base;
 }
 
-(async () => {
+async function main() {
   const db = await openDatabase();
   try {
     const invoiceDir = process.env.INVOICE_DIR || path.join(os.homedir(), 'Documents', 'Invoices');
@@ -233,4 +233,6 @@ function vendorFromFilename(filename) {
   } finally {
     db.close();
   }
-})();
+}
+
+main();

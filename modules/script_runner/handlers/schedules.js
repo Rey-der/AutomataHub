@@ -32,10 +32,8 @@ function register(ipcBridge, { store, persistence, emit, scheduler }) {
       };
 
       store.addSchedule(schedule);
-      if (persistence) {
-        persistence.saveSchedule(schedule);
-        persistence.flush();
-      }
+      persistence?.saveSchedule(schedule);
+      persistence?.flush();
 
       if (scheduler && schedule.enabled) scheduler.registerUserSchedule(schedule);
 
@@ -55,10 +53,8 @@ function register(ipcBridge, { store, persistence, emit, scheduler }) {
 
       if (updates.name !== undefined) updates.name = updates.name.trim();
       const schedule = store.updateSchedule(schedule_id, updates);
-      if (persistence) {
-        persistence.saveSchedule(schedule);
-        persistence.flush();
-      }
+      persistence?.saveSchedule(schedule);
+      persistence?.flush();
 
       // Re-register or unregister the cron job
       if (scheduler) {
@@ -80,10 +76,8 @@ function register(ipcBridge, { store, persistence, emit, scheduler }) {
       if (!schedule_id) return { success: false, error: 'Schedule ID is required' };
 
       store.removeSchedule(schedule_id);
-      if (persistence) {
-        persistence.removeSchedule(schedule_id);
-        persistence.flush();
-      }
+      persistence?.removeSchedule(schedule_id);
+      persistence?.flush();
 
       if (scheduler) scheduler.unregisterUserSchedule(schedule_id);
 

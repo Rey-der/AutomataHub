@@ -52,11 +52,11 @@ class ScriptScheduler {
    * Cancel all registered cron jobs.
    */
   stop() {
-    for (const [id, task] of this.jobs) {
+    for (const [, task] of this.jobs) {
       task.stop();
     }
     this.jobs.clear();
-    for (const [id, task] of this.userJobs) {
+    for (const [, task] of this.userJobs) {
       task.stop();
     }
     this.userJobs.clear();
@@ -108,7 +108,7 @@ class ScriptScheduler {
   // --- User-defined schedules (DB-backed) ---
 
   registerUserSchedule(schedule) {
-    if (!schedule || !schedule.id || !cron.validate(schedule.cron)) return;
+    if (!schedule?.id || !cron.validate(schedule.cron)) return;
     // Remove existing job if re-registering
     this.unregisterUserSchedule(schedule.id);
 

@@ -7,7 +7,7 @@
 const { openDatabase } = require('../_lib/db');
 const { printJSON } = require('../_lib/output');
 
-(async () => {
+async function main() {
   const db = await openDatabase();
   try {
     const rows = db.all('SELECT * FROM backup_history ORDER BY backup_date DESC');
@@ -21,4 +21,6 @@ const { printJSON } = require('../_lib/output');
   } finally {
     db.close();
   }
-})();
+}
+
+main();

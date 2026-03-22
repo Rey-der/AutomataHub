@@ -30,10 +30,8 @@ function register(ipcBridge, { store, persistence, emit }) {
       };
 
       store.addChain(chain);
-      if (persistence) {
-        persistence.saveChain(chain);
-        persistence.flush();
-      }
+      persistence?.saveChain(chain);
+      persistence?.flush();
 
       emit('script-runner:chain-created', { chain });
       console.log('[script-runner] Created chain:', chain.name);
@@ -54,10 +52,8 @@ function register(ipcBridge, { store, persistence, emit }) {
       if (script_ids !== undefined) updates.script_ids = script_ids;
 
       const chain = store.updateChain(chain_id, updates);
-      if (persistence) {
-        persistence.saveChain(chain);
-        persistence.flush();
-      }
+      persistence?.saveChain(chain);
+      persistence?.flush();
 
       emit('script-runner:chain-updated', { chain });
       return { success: true, chain };
@@ -73,10 +69,8 @@ function register(ipcBridge, { store, persistence, emit }) {
       if (!chain_id) return { success: false, error: 'Chain ID is required' };
 
       store.removeChain(chain_id);
-      if (persistence) {
-        persistence.removeChain(chain_id);
-        persistence.flush();
-      }
+      persistence?.removeChain(chain_id);
+      persistence?.flush();
 
       emit('script-runner:chain-deleted', { chain_id });
       console.log('[script-runner] Deleted chain:', chain_id);

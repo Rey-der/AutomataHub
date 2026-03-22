@@ -113,6 +113,22 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
     return { meta, variants };
   }
 
+  function enrichWithVersioning(scripts) {
+    const lastHashes = persistence ? persistence.getAllLastHashes() : new Map();
+    for (const script of scripts) {
+      try {
+        const content = fs.readFileSync(script.scriptPath, 'utf-8');
+        script.currentHash = crypto.createHash('sha256').update(content).digest('hex');
+      } catch {
+        script.currentHash = null;
+      }
+      script.lastExecutionHash = lastHashes.get(script.id) || null;
+      script.modified = script.currentHash !== null
+        && script.lastExecutionHash !== null
+        && script.currentHash !== script.lastExecutionHash;
+    }
+  }
+
   function getAvailableScripts(scriptsDir) {
     ensureDir(scriptsDir);
     const entries = fs.readdirSync(scriptsDir, { withFileTypes: true });
@@ -154,21 +170,7 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
       scripts.push(existing);
     }
 
-    // Enrich with versioning hashes (current file hash vs last execution hash)
-    const lastHashes = persistence ? persistence.getAllLastHashes() : new Map();
-    for (const script of scripts) {
-      try {
-        const content = fs.readFileSync(script.scriptPath, 'utf-8');
-        script.currentHash = crypto.createHash('sha256').update(content).digest('hex');
-      } catch {
-        script.currentHash = null;
-      }
-      script.lastExecutionHash = lastHashes.get(script.id) || null;
-      script.modified = script.currentHash !== null
-        && script.lastExecutionHash !== null
-        && script.currentHash !== script.lastExecutionHash;
-    }
-
+    enrichWithVersioning(scripts);
     return scripts;
   }
 

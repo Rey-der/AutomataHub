@@ -13,8 +13,8 @@
 
 const { openDatabase } = require('../_lib/db');
 const { printJSON } = require('../_lib/output');
-const http = require('http');
-const https = require('https');
+const http = require('node:http');
+const https = require('node:https');
 
 function probeEndpoint(url, timeoutMs) {
   const mod = url.startsWith('https') ? https : http;
@@ -49,7 +49,7 @@ function log(db, script, level, message) {
   );
 }
 
-(async () => {
+async function main() {
   const urlsEnv = process.env.HEALTH_CHECK_URLS;
   if (!urlsEnv) {
     console.log('No endpoints configured.\n');
@@ -58,7 +58,7 @@ function log(db, script, level, message) {
     process.exit(0);
   }
 
-  const timeoutMs = parseInt(process.env.HEALTH_CHECK_TIMEOUT, 10) || 10000;
+  const timeoutMs = Number.parseInt(process.env.HEALTH_CHECK_TIMEOUT, 10) || 10000;
   const urls = urlsEnv.split(',').map(u => u.trim()).filter(Boolean);
   const scriptName = 'api-health-check';
 
@@ -114,4 +114,6 @@ function log(db, script, level, message) {
     db.save();
     db.close();
   }
-})();
+}
+
+main();

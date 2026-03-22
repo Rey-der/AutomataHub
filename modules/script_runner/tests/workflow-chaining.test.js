@@ -98,6 +98,18 @@ describe('resolveExecutionOrder', () => {
   });
 });
 
+function waitForComplete(executor, tabId) {
+  return new Promise((resolve) => {
+    const onComplete = (data) => {
+      if (data.tabId === tabId) {
+        executor.removeListener('complete', onComplete);
+        resolve(data);
+      }
+    };
+    executor.on('complete', onComplete);
+  });
+}
+
 // --- Integration tests: chain execution ---
 
 describe('Workflow chain execution', () => {
@@ -127,18 +139,6 @@ describe('Workflow chain execution', () => {
     return new ScriptExecutor(scriptsDir, {
       env: {},
       resolveInside: (target) => fs.realpathSync(target),
-    });
-  }
-
-  function waitForComplete(executor, tabId) {
-    return new Promise((resolve) => {
-      const onComplete = (data) => {
-        if (data.tabId === tabId) {
-          executor.removeListener('complete', onComplete);
-          resolve(data);
-        }
-      };
-      executor.on('complete', onComplete);
     });
   }
 
