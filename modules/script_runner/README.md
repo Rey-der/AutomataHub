@@ -1,6 +1,6 @@
 # automatahub-script-runner
 
-> Script automation workspace for [AutomataHub](https://github.com/Rey-der/AutomataHub) with live execution, workflow chains, schedules, favorites, topic-based organization, and execution history.
+> RPA-style automation workspace for [AutomataHub](https://github.com/Rey-der/AutomataHub) — run scripts, build workflow chains, schedule unattended execution, and track results from a single operator UI.
 
 <p align="center">
   <img src="../../resources/screenshots/script_runner/script_runner.gif" alt="Script Runner overview" width="960" />
@@ -8,36 +8,30 @@
 
 ## Overview
 
-Script Runner is the automation module inside AutomataHub. It discovers local script folders, runs them with the correct interpreter, keeps execution feedback inside the module UI, and layers orchestration features on top of simple script launching.
+Script Runner is the process-automation module inside AutomataHub. It discovers local script folders, routes them to the correct interpreter, streams execution output in real time, and layers orchestration on top — chains, schedules, retries, and audit history — so individual scripts become manageable automated processes.
 
-The current build turns the module into a proper operator workspace instead of a flat script list:
+- **Operator workspace** — browser, active runs, history, favorites, chains, schedules, and topics in one layout
+- **Workflow chains** — ordered multi-step automation sequences with step-level status tracking
+- **Scheduled execution** — one-off and recurring runs via cron, surviving app restarts
+- **Execution dashboard** — KPIs, timeline charts, and per-process breakdowns
+- **Variant-aware** — a single process can expose JS, C#, Python, or shell implementations
+- **Persistent organization** — topics, chains, schedules, and audit data saved across sessions
 
-- **Unified workspace** with browser, history, active runs, favorites, chains, schedules, and topics in one layout
-- **Workflow chains** for ordered multi-step automation runs
-- **Schedules** for one-off and recurring execution using cron-backed rules
-- **Execution history dashboard** with KPIs, timeline charts, and per-script breakdowns
-- **Variant-aware execution** so a script can expose multiple runnable implementations such as JS and C#
-- **Persistent organization** for topics, chains, schedules, and audit data
-
-## What Shipped
+## Features
 
 ### Script Browser
 
 The landing view is the day-to-day workspace for running and organizing automations.
 
-- Script cards surface description, language variants, dependency badges, schedule badges, chain membership, and modified-state indicators
+- Process cards surface description, language variants, dependency badges, schedule badges, chain membership, and modified-state indicators
 - Favorites are persisted locally and promoted into their own sidebar section
-- Scripts can be grouped by custom topics and refreshed from disk without leaving the module
+- Processes can be grouped by custom topics and refreshed from disk without leaving the module
 - Import works through the folder picker and drag-and-drop validation
 - Runs stay inside the module instead of spawning extra hub tabs
 
-<p align="center">
-  <img src="../../resources/screenshots/script_runner/script_runner.gif" alt="Script Runner landing and browser views" width="960" />
-</p>
-
 ### Workflow Chains
 
-Chains let you define ordered script sequences and run them as a guided workflow.
+Chains let you define ordered process sequences and run them as a guided workflow.
 
 - Build chains from the full script catalog, including topic-grouped pickers
 - Reorder steps with drag-and-drop before saving
@@ -51,9 +45,9 @@ Chains let you define ordered script sequences and run them as a guided workflow
 
 ### Scheduled Automation
 
-Schedules add a persistent orchestration layer on top of individual scripts and saved chains.
+Schedules add unattended execution on top of individual processes and saved chains.
 
-- Target either a single script or a saved chain
+- Target either a single process or a saved chain
 - Support one-time and recurring schedules
 - Offer preset cron templates plus manual timing controls
 - Allow enable/disable directly from the sidebar list
@@ -65,7 +59,7 @@ Schedules add a persistent orchestration layer on top of individual scripts and 
 
 ### Execution History
 
-History is no longer just raw terminal output. The module now keeps a dedicated execution dashboard for recent runs.
+The module keeps a dedicated execution dashboard for auditing recent runs.
 
 - Total runs, success rate, average duration, and failures at a glance
 - Filter by script name and date range
@@ -79,7 +73,7 @@ History is no longer just raw terminal output. The module now keeps a dedicated 
 
 ## Execution Model
 
-Script Runner supports both single-script launches and orchestrated flows.
+Script Runner supports both single-process launches and orchestrated flows.
 
 - **Interpreter routing** for `.js`, `.mjs`, `.cs`, `.csx`, `.py`, `.sh`, `.bash`, `.rb`, and `.pl`
 - **Variant discovery** from root executables and executable subfolders
