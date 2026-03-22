@@ -11,6 +11,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
+const { randomUUID } = require('node:crypto');
 
 const { ScriptStore } = require('../core/script-store');
 const { ScriptPersistence } = require('../core/script-persistence');
@@ -23,7 +24,7 @@ function createStore() {
 }
 
 async function createPersistence(dbPath) {
-  const target = dbPath || path.join(os.tmpdir(), `sr-test-${Date.now()}-${Math.random().toString(36).slice(2)}.sqlite`);
+  const target = dbPath || path.join(os.tmpdir(), `sr-test-${randomUUID()}.sqlite`);
   _tempFiles.push(target);
   const p = new ScriptPersistence(target);
   await p.init();

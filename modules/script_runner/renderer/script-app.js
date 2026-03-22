@@ -16,6 +16,10 @@ globalThis.API = API;
 const SCRIPT_RUNNER_LS_KEY = 'script-runner-ui-state';
 const SCRIPT_RUNNER_MAX_HISTORY = 50;
 
+function createSessionId() {
+  return `sr-exec-${globalThis.crypto.randomUUID()}`;
+}
+
 class ScriptApp {
   constructor() {
     this.scripts = [];
@@ -200,7 +204,7 @@ class ScriptApp {
    * Renders it in the module content area.
    */
   openExecution(script, chosen, opts = {}) {
-    const sessionId = `sr-exec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const sessionId = createSessionId();
     const session = {
       id: sessionId,
       scriptId: script.id || script.folder,
