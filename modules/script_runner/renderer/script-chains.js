@@ -238,7 +238,7 @@ class ChainList {
         </div>
         <div class="sr-chain-builder-name-row">
           <label for="chain-name-input">Chain Name</label>
-          <input type="text" id="chain-name-input" placeholder="e.g. Nightly Backups"
+          <input type="text" id="chain-name-input" placeholder="e.g. Backups Chain"
                  value="${this._escapeHtml(chain?.name || '')}" autocomplete="off">
           <span class="form-error" id="chain-name-error"></span>
         </div>
