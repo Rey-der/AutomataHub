@@ -47,7 +47,7 @@ async function check(host, opts = {}) {
       path: parsedUrl.pathname + parsedUrl.search,
       method: 'GET',
       timeout,
-      rejectUnauthorized: false, // Still check cert info, but don't fail on self-signed
+      rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0', // defaults to true; set env var only for local dev/self-signed
       headers: { 'User-Agent': 'NetOps-Monitor/1.0' },
     };
 

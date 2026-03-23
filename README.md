@@ -209,6 +209,12 @@ my-module/
 - PRAGMA key uses hex-encoded blob literals to prevent injection
 - Secured EventBus architecture with strict channel control and validated event flow
 
+## Security Audit
+
+See **[SECURITY_AUDIT.md](SECURITY_AUDIT.md)** for the full audit report (last run: 23 March 2026).
+
+Covers: Gitleaks · Trivy · npm audit · Semgrep (70 findings, 7 fixed) · Tests · .NET builds · JS syntax.
+
 ## Development
 
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Rey-der_AutomataHub&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Rey-der_AutomataHub)

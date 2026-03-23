@@ -108,7 +108,7 @@ class Program
     static long QueryScalar(SqliteConnection conn, string sql, string? dateParam = null)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = sql;
+        cmd.CommandText = sql; // nosemgrep: csharp-sqli — all callers pass static SQL literals; @d parameters handle runtime values
         if (dateParam != null)
             cmd.Parameters.AddWithValue("@d", dateParam);
         return (long)(cmd.ExecuteScalar() ?? 0);

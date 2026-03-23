@@ -627,7 +627,7 @@ class NetHostList {
     row.className = `hl-row hl-row-${status}`;
 
     const statusCell = row.querySelector('.hl-td-status');
-    if (statusCell) statusCell.innerHTML = `<span class="hl-status-dot hl-dot-${status}"></span>${status}`;
+    if (statusCell) statusCell.innerHTML = `<span class="hl-status-dot hl-dot-${_hlEsc(status)}"></span>${_hlEsc(status)}`;
 
     const latCell = row.querySelector('.hl-lat-val');
     if (latCell) latCell.textContent = latency == null ? '\u2014' : `${latency}ms`;

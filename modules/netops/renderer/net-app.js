@@ -221,9 +221,10 @@ class NetApp {
     if (this.activeView === 'history') return '';
     if (this.activeView === 'alerts') return '';
 
+    const safeView = this.activeView.replace(/[<>&"']/g, '');
     return `
       <div class="view-placeholder">
-        <h2>${this.activeView}</h2>
+        <h2>${safeView}</h2>
       </div>
     `;
   }

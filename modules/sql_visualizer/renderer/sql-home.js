@@ -8,6 +8,12 @@
 
 const SqlHome = (() => {
 
+  function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
+
   // --- Table Card ---
 
   function createTableCard(stat) {
@@ -145,8 +151,8 @@ const SqlHome = (() => {
       stats.innerHTML = `
         <span>Success rate: <strong>${s.successRate}%</strong></span>
         <span>${s.successes}✓ / ${s.failures}✗ (${s.total} total)</span>
-        <span>Streak: ${s.currentStreak} ${s.streakType || '—'}</span>
-        <span>Last: ${s.lastRun || 'never'}</span>
+        <span>Streak: ${s.currentStreak} ${escHtml(s.streakType || '—')}</span>
+        <span>Last: ${escHtml(s.lastRun || 'never')}</span>
       `;
       card.appendChild(stats);
 
@@ -189,7 +195,7 @@ const SqlHome = (() => {
     if (staleTables.length > 0) {
       const alert = document.createElement('div');
       alert.className = 'sql-integrity-alert sql-integrity-alert--info';
-      const names = staleTables.map((t) => `${t.table} (${t.daysSince}d)`).join(', ');
+      const names = staleTables.map((t) => `${escHtml(t.table)} (${t.daysSince}d)`).join(', ');
       alert.innerHTML = `<span class="sql-integrity-icon">INFO</span><span><strong>Stale tables:</strong> ${names}</span>`;
       alerts.appendChild(alert);
     }
@@ -198,7 +204,7 @@ const SqlHome = (() => {
     if (report.gaps && report.gaps.length > 0) {
       const alert = document.createElement('div');
       alert.className = 'sql-integrity-alert sql-integrity-alert--warning';
-      const names = report.gaps.map((g) => `${g.script} (${g.daysSinceLast}d)`).join(', ');
+      const names = report.gaps.map((g) => `${escHtml(g.script)} (${g.daysSinceLast}d)`).join(', ');
       alert.innerHTML = `<span class="sql-integrity-icon">WARN</span><span><strong>Missing runs:</strong> ${names}</span>`;
       alerts.appendChild(alert);
     }
@@ -233,7 +239,7 @@ const SqlHome = (() => {
       const el = document.createElement('span');
       el.className = 'sql-db-health-item';
       if (item.ok === false) el.classList.add('sql-db-health-item--bad');
-      el.innerHTML = `<span class="sql-db-health-label">${item.label}:</span> ${item.value}`;
+      el.innerHTML = `<span class="sql-db-health-label">${escHtml(item.label)}:</span> ${escHtml(String(item.value))}`;
       bar.appendChild(el);
     }
 

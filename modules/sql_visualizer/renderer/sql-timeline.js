@@ -182,7 +182,7 @@ const SqlTimeline = (() => {
     try {
       data = await globalThis.api.invoke('sql-visualizer:get-execution-timeline', { timeRange: state.timeRange });
     } catch (err) {
-      ganttArea.innerHTML = `<div class="sql-tl-error">Failed to load timeline: ${err.message}</div>`;
+      ganttArea.innerHTML = `<div class="sql-tl-error">Failed to load timeline: ${escHtml(err.message)}</div>`;
       return;
     }
 
@@ -357,7 +357,7 @@ const SqlTimeline = (() => {
     try {
       corr = await globalThis.api.invoke('sql-visualizer:get-correlated-records', { executionId: exec.id });
     } catch (err) {
-      panel.innerHTML = `<div class="sql-tl-error">Failed to load details: ${err.message}</div>`;
+      panel.innerHTML = `<div class="sql-tl-error">Failed to load details: ${escHtml(err.message)}</div>`;
       return;
     }
 
