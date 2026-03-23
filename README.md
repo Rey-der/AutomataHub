@@ -56,6 +56,7 @@ A hub-level tool for managing database credentials across all discovered SQLite 
 - **Password management** — set, change, or remove passwords per database using Electron's safeStorage (Keychain-backed encryption)
 - **Connection testing** — verify credentials before saving
 - **Source badges** — each database is tagged by origin (Hub, Module, or Project)
+- **Initial password** — `0000` for all databases on first setup; change passwords through the database manager before production use
 
 <p align="center">
   <img src="resources/screenshots/db_manager/DB_manager.png" alt="Database Manager" width="800" />
