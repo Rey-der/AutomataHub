@@ -145,7 +145,7 @@ class TopicList {
 
   _renderTopicItems() {
     if (this.app.topics.length === 0) {
-      return '<div class="topic-list-empty">No topics yet. Create one to get started.</div>';
+      return '<div class="topic-list-empty">No topics yet. Click + to create one.</div>';
     }
 
     return this.app.topics
@@ -534,8 +534,13 @@ class TopicList {
     const menu = this.container?.querySelector('#topic-context-menu');
     if (menu) {
       menu.style.display = 'block';
-      menu.style.left = e.pageX + 'px';
-      menu.style.top = e.pageY + 'px';
+      menu.style.left = '0px';
+      menu.style.top = '0px';
+      const rect = menu.getBoundingClientRect();
+      const x = Math.min(e.clientX, window.innerWidth - rect.width - 8);
+      const y = Math.min(e.clientY, window.innerHeight - rect.height - 8);
+      menu.style.left = Math.max(0, x) + 'px';
+      menu.style.top = Math.max(0, y) + 'px';
     }
   }
 
