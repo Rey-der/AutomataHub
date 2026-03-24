@@ -630,6 +630,22 @@ const ScriptExecution = (() => {
     });
 
     globalThis.api.on('script-runner:scheduled-run', (data) => {
+      // Register a background session so output is tracked and history entry is created on completion
+      const app = _getApp();
+      if (app && !app.sessions.has(data.tabId)) {
+        app.sessions.set(data.tabId, {
+          id: data.tabId,
+          scriptId: data.scriptId || data.chainId,
+          scriptName: data.name,
+          title: data.name,
+          status: 'running',
+          autoRun: false,
+        });
+        const state = getState(data.tabId);
+        state.isRunning = true;
+        state.startTime = Date.now();
+        app._updateSidebarSections();
+      }
       appendOutput(data.tabId, `[SCHEDULED] Auto-executing "${data.name}" (cron: ${data.schedule})`, data.timestamp, 'system');
       globalThis.ui?.showNotification?.(`Scheduled: ${data.name}`, 'info');
     });
