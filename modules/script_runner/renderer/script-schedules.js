@@ -590,15 +590,21 @@ class ScheduleList {
     bc.querySelectorAll('.sr-sched-mode-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
         this._scheduleState.mode = tab.dataset.mode;
+        if (tab.dataset.mode === 'once' && !this._scheduleState.date) {
+          this._scheduleState.date = new Date().toISOString().slice(0, 10);
+        }
         this._refreshTimingPanel();
       });
     });
 
-    // One-time date/time
+    // One-time date/time — sync displayed default into state on render
     const dateInput = bc.querySelector('#sched-date');
-    if (dateInput) dateInput.addEventListener('change', () => {
-      this._scheduleState.date = dateInput.value;
-    });
+    if (dateInput) {
+      if (!this._scheduleState.date && dateInput.value) this._scheduleState.date = dateInput.value;
+      dateInput.addEventListener('change', () => {
+        this._scheduleState.date = dateInput.value;
+      });
+    }
     const timeInput = bc.querySelector('#sched-time');
     if (timeInput) timeInput.addEventListener('change', () => {
       this._scheduleState.time = timeInput.value;
