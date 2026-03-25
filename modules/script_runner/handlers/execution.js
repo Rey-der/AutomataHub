@@ -9,7 +9,7 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { resolveExecutionOrder } = require('../core/dependency-resolver');
 
-function register(ipcBridge, { executor, store, send, paths, ensureDir, ERROR_MESSAGES, persistence }) {
+function register(ipcBridge, { executor, store, send, paths, resolveInside, ensureDir, ERROR_MESSAGES, persistence }) {
   // Temp files written for per-run script overrides; cleaned up after completion
   const pendingCleanup = new Map();
 
@@ -174,18 +174,21 @@ function register(ipcBridge, { executor, store, send, paths, ensureDir, ERROR_ME
       if (!scriptPath || typeof scriptPath !== 'string') throw new Error('Missing scriptPath');
       if (!tabId || typeof tabId !== 'string') throw new Error('Missing tabId');
 
-      let effectivePath = scriptPath;
+      // Validate path containment before any file operations
+      const safePath = resolveInside(scriptPath, paths.scriptsDir);
+
+      let effectivePath = safePath;
       if (scriptContent && typeof scriptContent === 'string') {
-        // Write edited content next to the original (inside scriptsDir so resolveInside passes)
-        const ext = path.extname(scriptPath);
-        const tmpFile = path.join(path.dirname(scriptPath), `_tmp_run_${Date.now()}${ext}`);
+        // Write edited content next to the original (inside scriptsDir — guaranteed by safePath above)
+        const ext = path.extname(safePath);
+        const tmpFile = path.join(path.dirname(safePath), `_tmp_run_${Date.now()}${ext}`);
         fs.writeFileSync(tmpFile, scriptContent, 'utf-8');
         effectivePath = tmpFile;
         pendingCleanup.set(tabId, tmpFile);
       }
 
       // Look up script config from store using folder name as script ID
-      const scriptId = path.basename(path.dirname(scriptPath));
+      const scriptId = path.basename(path.dirname(safePath));
       const stored = store.getScript(scriptId);
       const retries = stored?.retries || 0;
       const retryDelayMs = stored?.retryDelayMs || 3000;
@@ -194,7 +197,7 @@ function register(ipcBridge, { executor, store, send, paths, ensureDir, ERROR_ME
       // Script versioning: hash the original script file and record it
       if (persistence) {
         try {
-          const hashSource = scriptContent || fs.readFileSync(scriptPath, 'utf-8');
+          const hashSource = scriptContent || fs.readFileSync(safePath, 'utf-8');
           const hash = crypto.createHash('sha256').update(hashSource).digest('hex');
           persistence.saveScriptHash(scriptId, hash);
         } catch { /* non-critical — skip if file unreadable */ }
@@ -266,7 +269,8 @@ function register(ipcBridge, { executor, store, send, paths, ensureDir, ERROR_ME
     try {
       const { scriptPath } = args || {};
       if (!scriptPath || typeof scriptPath !== 'string') throw new Error('Missing scriptPath');
-      const content = fs.readFileSync(scriptPath, 'utf-8');
+      const safePath = resolveInside(scriptPath, paths.scriptsDir);
+      const content = fs.readFileSync(safePath, 'utf-8');
       return { success: true, content };
     } catch (err) {
       return { success: false, error: err.message };
