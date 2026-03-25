@@ -57,6 +57,7 @@
           <div class="sm-detail-header" id="sm-detail-header">
             <button class="btn btn-sm sm-btn-back" id="sm-detail-back">Back</button>
             <span class="sm-detail-title">Loading...</span>
+            <button class="sm-fav-btn" id="sm-detail-fav" title="Toggle favorite">☆</button>
           </div>
           <div class="sm-detail-info" id="sm-detail-info"></div>
           <div class="sm-detail-chart-wrap">
@@ -93,6 +94,11 @@
         this.app.navigateTo('overview');
       });
 
+      this.container.querySelector('#sm-detail-fav').addEventListener('click', () => {
+        this.app.toggleFavorite(this.sensorId);
+        this._updateFavBtn();
+      });
+
       this.container.querySelector('#sm-thresh-save').addEventListener('click', async () => {
         const op = this.container.querySelector('#sm-thresh-op').value;
         const val = parseFloat(this.container.querySelector('#sm-thresh-val').value);
@@ -115,6 +121,7 @@
       if (!this.sensor) return;
 
       title.textContent = this.sensor.name;
+      this._updateFavBtn();
       info.innerHTML = `
         <div class="sm-info-grid">
           <div class="sm-info-item">
@@ -241,6 +248,15 @@
           </tbody>
         </table>
       `;
+    }
+
+    _updateFavBtn() {
+      const btn = this.container?.querySelector('#sm-detail-fav');
+      if (!btn) return;
+      const isFav = this.app.isFavorite(this.sensorId);
+      btn.textContent = isFav ? '★' : '☆';
+      btn.classList.toggle('sm-fav-active', isFav);
+      btn.title = isFav ? 'Remove from favorites' : 'Add to favorites';
     }
 
     _esc(str) {

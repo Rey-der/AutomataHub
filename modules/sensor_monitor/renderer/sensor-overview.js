@@ -99,11 +99,14 @@
         return;
       }
 
-      grid.innerHTML = sensors.map((s) => `
+      grid.innerHTML = sensors.map((s) => {
+        const isFav = this.app.isFavorite(s.id);
+        return `
         <div class="sm-sensor-card" data-id="${s.id}">
           <div class="sm-sensor-card-header">
             <span class="sm-status-dot sm-status-${s.status}"></span>
             <span class="sm-sensor-name">${this._esc(s.name)}</span>
+            <button class="sm-fav-btn${isFav ? ' sm-fav-active' : ''}" data-id="${s.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '★' : '☆'}</button>
             <span class="sm-sensor-type">${this._esc(s.type)}</span>
           </div>
           <div class="sm-sensor-card-body">
@@ -115,7 +118,15 @@
             <span class="sm-sensor-protocol">${this._esc(s.protocol)}</span>
           </div>
         </div>
-      `).join('');
+      `; }).join('');
+
+      grid.querySelectorAll('.sm-fav-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.app.toggleFavorite(btn.dataset.id);
+          this.renderSensorGrid(sensors);
+        });
+      });
 
       grid.querySelectorAll('.sm-sensor-card').forEach((card) => {
         card.addEventListener('click', () => {

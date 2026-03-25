@@ -8,14 +8,16 @@
       this.container = null;
       this.sensors = [];
       this.filter = '';
+      this.typeFilter = '';
       this.sortKey = 'name';
       this.sortAsc = true;
       this.unsubscribes = [];
       this.refreshInterval = null;
     }
 
-    async init(container) {
+    async init(container, opts = {}) {
       this.container = container;
+      if (opts.filterType) this.typeFilter = opts.filterType;
       this.render();
       await this.loadData();
       this.setupLiveUpdates();
@@ -43,6 +45,9 @@
           <div class="sm-list-toolbar">
             <input type="text" class="sm-search-input" id="sm-list-search"
                    placeholder="Filter sensors..." />
+            <select class="sm-type-filter" id="sm-type-filter">
+              <option value="">All Types</option>
+            </select>
             <button class="btn btn-sm" id="sm-btn-add">Add Sensor</button>
           </div>
           <div class="sm-table-wrap" id="sm-table-wrap">
@@ -56,6 +61,11 @@
         this.renderTable();
       });
 
+      this.container.querySelector('#sm-type-filter').addEventListener('change', (e) => {
+        this.typeFilter = e.target.value;
+        this.renderTable();
+      });
+
       this.container.querySelector('#sm-btn-add').addEventListener('click', () => {
         this._showAddDialog();
       });
@@ -65,7 +75,23 @@
       const wrap = this.container.querySelector('#sm-table-wrap');
       if (!wrap) return;
 
+      // Populate type filter dropdown
+      const typeSelect = this.container.querySelector('#sm-type-filter');
+      if (typeSelect && typeSelect.options.length <= 1) {
+        const types = [...new Set(this.sensors.map((s) => s.type))].sort();
+        for (const t of types) {
+          const opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          typeSelect.appendChild(opt);
+        }
+        if (this.typeFilter) typeSelect.value = this.typeFilter;
+      }
+
       let filtered = this.sensors;
+      if (this.typeFilter) {
+        filtered = filtered.filter((s) => s.type === this.typeFilter);
+      }
       if (this.filter) {
         filtered = filtered.filter((s) =>
           s.name.toLowerCase().includes(this.filter) ||
@@ -90,6 +116,7 @@
         <table class="sm-table">
           <thead>
             <tr>
+              <th class="sm-th-fav"></th>
               <th class="sm-th-sortable" data-key="status">Status</th>
               <th class="sm-th-sortable" data-key="name">Name</th>
               <th class="sm-th-sortable" data-key="type">Type</th>
@@ -101,8 +128,11 @@
             </tr>
           </thead>
           <tbody>
-            ${filtered.map((s) => `
+            ${filtered.map((s) => {
+              const isFav = this.app.isFavorite(s.id);
+              return `
               <tr data-id="${s.id}">
+                <td><button class="sm-fav-btn${isFav ? ' sm-fav-active' : ''}" data-id="${s.id}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '★' : '☆'}</button></td>
                 <td><span class="sm-status-dot sm-status-${s.status}"></span> ${this._esc(s.status)}</td>
                 <td class="sm-cell-name">${this._esc(s.name)}</td>
                 <td>${this._esc(s.type)}</td>
@@ -115,7 +145,7 @@
                   <button class="btn btn-sm btn-danger sm-btn-remove" data-id="${s.id}" title="Remove">X</button>
                 </td>
               </tr>
-            `).join('')}
+            `; }).join('')}
           </tbody>
         </table>
       `;
@@ -125,6 +155,14 @@
           const key = th.dataset.key;
           if (this.sortKey === key) this.sortAsc = !this.sortAsc;
           else { this.sortKey = key; this.sortAsc = true; }
+          this.renderTable();
+        });
+      });
+
+      wrap.querySelectorAll('.sm-fav-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.app.toggleFavorite(btn.dataset.id);
           this.renderTable();
         });
       });
