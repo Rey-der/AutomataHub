@@ -86,7 +86,7 @@ A secured event bus allows modules to communicate without direct coupling. Each 
 <details>
 <summary><strong>Script Runner</strong></summary>
 <p align="center">
-  <img src="resources/screenshots/script_runner/script_runner.gif" alt="Script Runner" width="800" />
+  <img src="../../resources/screenshots/script_runner/script_runner2.gif" alt="Script Runner overview" width="960" />
 </p>
 </details>
 
