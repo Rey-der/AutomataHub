@@ -25,10 +25,12 @@ class ScriptPersistence {
   }
 
   async init() {
+    const dbDir = path.dirname(this.dbPath);
+
     try {
       // Ensure directory exists
-      if (!fs.existsSync(path.dirname(this.dbPath))) {
-        fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
       }
 
       // Initialize sql.js
@@ -36,12 +38,26 @@ class ScriptPersistence {
 
       // Load existing DB or create new
       if (fs.existsSync(this.dbPath)) {
-        const buffer = fs.readFileSync(this.dbPath);
-        this.db = new this.SQL.Database(buffer);
-        console.log('[script-runner] Loaded database from:', this.dbPath);
+        try {
+          fs.accessSync(this.dbPath, fs.constants.R_OK | fs.constants.W_OK);
+        } catch (accessErr) {
+          console.error('[script-runner] DB file exists but is not readable/writable:', this.dbPath);
+          console.error('[script-runner]   Permission error:', accessErr.message);
+          throw accessErr;
+        }
+
+        const stat = fs.statSync(this.dbPath);
+        if (stat.size === 0) {
+          console.warn('[script-runner] DB file is 0 bytes (corrupt/empty), creating fresh database');
+          this.db = new this.SQL.Database();
+        } else {
+          const buffer = fs.readFileSync(this.dbPath);
+          this.db = new this.SQL.Database(buffer);
+        }
+        console.log('[script-runner] Loaded database from:', this.dbPath, `(${stat.size} bytes)`);
       } else {
         this.db = new this.SQL.Database();
-        console.log('[script-runner] Created new in-memory database');
+        console.log('[script-runner] Created new in-memory database (will flush to', this.dbPath + ')');
       }
 
       // Create tables if needed
@@ -53,6 +69,17 @@ class ScriptPersistence {
       console.log('[script-runner] Persistence initialized');
     } catch (err) {
       console.error('[script-runner] Persistence init failed:', err.message);
+      console.error('[script-runner]   DB path:', this.dbPath);
+      console.error('[script-runner]   Directory exists:', fs.existsSync(dbDir));
+      if (fs.existsSync(this.dbPath)) {
+        try {
+          const stat = fs.statSync(this.dbPath);
+          console.error('[script-runner]   File size:', stat.size, 'bytes');
+          console.error('[script-runner]   File mode:', '0o' + (stat.mode & 0o777).toString(8));
+        } catch { /* stat failed — already logging the root error */ }
+      } else {
+        console.error('[script-runner]   DB file does not exist');
+      }
       throw err;
     }
   }

@@ -29,7 +29,7 @@ let executor = null;
 let scheduler = null;
 
 
-function setup(config) {
+async function setup(config) {
   const { ipcBridge, send, mainWindow, paths } = config;
 
   // Load hub utilities
@@ -68,17 +68,19 @@ function setup(config) {
   // --- Shared Dependencies ---
 
   const store = new ScriptStore();
-  
+
+  // Await persistence so the store is populated before handlers and scheduler run
   persistence = new ScriptPersistence();
-  persistence.init().then(() => {
-    persistence.loadIntoStore(store);
+  try {
+    await persistence.init();
+    await persistence.loadIntoStore(store);
     store.setPersistence(persistence);
     console.log('[script-runner] SQLite persistence ready');
-  }).catch(err => {
+  } catch (err) {
     console.error('[script-runner] Persistence init failed — running in-memory only:', err.message);
     persistence = null;
     store.setPersistence(null);
-  });
+  }
 
   executor = new ScriptExecutor(scriptsDir, {
     env: scriptEnv,
@@ -100,7 +102,7 @@ function setup(config) {
     emit,
     send,
     mainWindow,
-    paths,
+    paths: { ...paths, scriptsDir },
     resolveInside,
     ensureDir,
     readJsonConfig,
@@ -121,7 +123,7 @@ function setup(config) {
     console.warn('[script-runner] Initial discovery for scheduler failed:', err.message);
   }
 
-  // Start cron scheduler for scripts with a `schedule` field
+  // Start cron scheduler — store is already populated from DB, so all schedules are registered
   scheduler = new ScriptScheduler(executor, store, emit);
   scheduler.start();
 

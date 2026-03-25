@@ -190,7 +190,7 @@ function setupHubIPC() {
 
 // --- Module Initialization ---
 
-function loadModules() {
+async function loadModules() {
   // Local modules/ takes priority over node_modules/automatahub-*
   const localModules = discoverModules(MODULES_DIR);
   const installedModules = discoverInstalledModules(NODE_MODULES_DIR);
@@ -210,7 +210,7 @@ function loadModules() {
         const allowedSet = new Set(Array.isArray(mod.ipcChannels) ? mod.ipcChannels : []);
         const scopedBridge = new IpcBridge(allowedSet);
 
-        mod.setup({
+        const result = mod.setup({
           ipcBridge: scopedBridge,
           eventBus: createModuleBus(mod.id),
           mainWindow: () => mainWindow,
@@ -226,6 +226,11 @@ function loadModules() {
           },
           getDbCredential: (dbPath) => dbCredentials.getCredential(dbPath),
         });
+
+        // Await async setup so modules can finish DB init before window loads
+        if (result && typeof result.then === 'function') {
+          await result;
+        }
       } catch (err) {
         console.error(`[hub] Failed to setup module "${mod.id}":`, err.message);
       }
@@ -284,7 +289,7 @@ async function init() {
 
   setupHubIPC();
   initDefaultCredentials();
-  loadModules();
+  await loadModules();
   logCredentialStatus();
   createWindow();
 
