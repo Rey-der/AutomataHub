@@ -751,8 +751,13 @@ class ChainList {
     const menu = this.container?.querySelector('#chain-context-menu');
     if (!menu) return;
     menu.style.display = 'block';
-    menu.style.left = e.pageX + 'px';
-    menu.style.top = e.pageY + 'px';
+    menu.style.left = '0px';
+    menu.style.top = '0px';
+    const rect = menu.getBoundingClientRect();
+    const x = Math.min(e.clientX, window.innerWidth - rect.width - 8);
+    const y = Math.min(e.clientY, window.innerHeight - rect.height - 8);
+    menu.style.left = Math.max(0, x) + 'px';
+    menu.style.top = Math.max(0, y) + 'px';
   }
 
   _hideContextMenu() {

@@ -450,7 +450,8 @@
 .topic-list-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   gap: 0;
 }
 
@@ -1868,13 +1869,18 @@
   min-width: 0;
 }
 
-/* ---- Topics section fills remaining space ---- */
+/* ---- Topics section: grow into remaining space only when populated ---- */
 .sr-topics-section {
-  flex: 1;
+  flex: 0 1 auto;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* Let topics expand when there are actual items */
+.sr-topics-section:has(.topic-item-wrapper) {
+  flex: 1;
 }
 
 /* ---- Session items (Active list) ---- */

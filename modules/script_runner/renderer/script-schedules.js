@@ -247,8 +247,13 @@ class ScheduleList {
     const menu = this.container?.querySelector('#schedule-context-menu');
     if (!menu) return;
     menu.style.display = 'block';
-    menu.style.left = event.pageX + 'px';
-    menu.style.top = event.pageY + 'px';
+    menu.style.left = '0px';
+    menu.style.top = '0px';
+    const rect = menu.getBoundingClientRect();
+    const x = Math.min(event.clientX, window.innerWidth - rect.width - 8);
+    const y = Math.min(event.clientY, window.innerHeight - rect.height - 8);
+    menu.style.left = Math.max(0, x) + 'px';
+    menu.style.top = Math.max(0, y) + 'px';
   }
 
   _hideContextMenu() {
