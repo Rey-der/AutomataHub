@@ -19,7 +19,7 @@
 
 ### Prerequisites
 
-- **Node.js** 18.17+ (20 LTS or 22 LTS recommended)
+- **Node.js** 22 LTS or newer
 - **npm** (comes with Node.js)
 
 ### Install & Run

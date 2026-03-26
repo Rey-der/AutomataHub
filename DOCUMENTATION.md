@@ -1,7 +1,7 @@
 # AutomataHub — Technical Documentation
 
 > **Version:** 1.0.0  
-> **Runtime:** Electron 41.x · Node.js 18.17+  
+> **Runtime:** Electron 41.x · Node.js 22 LTS  
 > **Platform:** macOS (primary), Windows (build target configured)  
 > **License:** ISC
 
@@ -831,7 +831,7 @@ The hub core uses only Node.js built-in modules at runtime: `path`, `fs`, `event
 | Dev Dock Name | macOS may cache "Electron" in Dock during development |
 | Linting | No linter configured (`npm run lint` is a no-op) |
 | CI/CD | No continuous integration pipeline |
-| Node Version | Minimum Node 18.17.0 required; Node 20 LTS or 22 LTS recommended for full build toolchain compatibility |
+| Node Version | Node 22 LTS (v22.x) required; older versions are untested and unsupported |
 
 ---
 

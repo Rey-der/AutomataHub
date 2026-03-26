@@ -14,7 +14,7 @@ and reads or writes operational data through the shared SQLite database using
 | Requirement | Details |
 |---|---|
 | **AutomataHub** | Installed with `npm install` completed |
-| **Node.js** | v18+ |
+| **Node.js** | v22+ |
 | **.NET SDK** | v8.0+ (for C# variants only) |
 | **SMART_DESKTOP_DB** | Set automatically by the Script Runner module, or set manually for CLI use |
 
