@@ -9,7 +9,7 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { resolveExecutionOrder } = require('../core/dependency-resolver');
 
-function register(ipcBridge, { executor, store, send, paths, resolveInside, ensureDir, ERROR_MESSAGES, persistence }) {
+function register(ipcBridge, { executor, store, send, paths, resolveInside, ensureDir, ERROR_MESSAGES, persistence, executionDb }) {
   // Temp files written for per-run script overrides; cleaned up after completion
   const pendingCleanup = new Map();
 
@@ -19,15 +19,81 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
   // listener doesn't forward a raw completion while _runChain is still running.
   const cancellingChains = new Set();
 
+  // --- Execution tracking state (per tabId) ---
+  const execState = new Map(); // tabId → { rowId, scriptName, stdoutLines, stderrLines, firstError }
+
+  function _startTracking(tabId, scriptName, extra = {}) {
+    if (!executionDb) return;
+    const rowId = executionDb.insertExecution({
+      script: scriptName,
+      startTime: new Date().toISOString(),
+      ...extra,
+    });
+    execState.set(tabId, { rowId, scriptName, stdoutLines: 0, stderrLines: 0, firstError: null });
+  }
+
+  function _finishTracking(tabId, data) {
+    if (!executionDb) return;
+    const state = execState.get(tabId);
+    if (!state) return;
+    execState.delete(tabId);
+
+    const status = data.exitCode === 0 ? 'SUCCESS' : (data.signal ? 'KILLED' : 'FAIL');
+    executionDb.completeExecution(state.rowId, {
+      endTime: new Date().toISOString(),
+      status,
+      exitCode: data.exitCode ?? 1,
+      errorMessage: state.firstError,
+      runtimeMs: data.runtime || 0,
+      stdoutLines: state.stdoutLines,
+      stderrLines: state.stderrLines,
+    });
+
+    // Write a summary log entry
+    executionDb.insertLog({
+      timestamp: new Date().toISOString(),
+      script: state.scriptName,
+      level: status === 'SUCCESS' ? 'INFO' : 'ERROR',
+      status,
+      message: status === 'SUCCESS'
+        ? `Completed in ${data.runtime || 0}ms`
+        : `Failed with exit code ${data.exitCode}` + (state.firstError ? `: ${state.firstError}` : ''),
+      executionId: state.rowId,
+    });
+  }
+
   // Forward executor events to renderer
-  executor.on('output', (data) => send('script-runner:output', data));
-  executor.on('error', (data) => send('script-runner:error', data));
+  executor.on('output', (data) => {
+    const state = execState.get(data.tabId);
+    if (state) state.stdoutLines++;
+    send('script-runner:output', data);
+  });
+  executor.on('error', (data) => {
+    const state = execState.get(data.tabId);
+    if (state) {
+      state.stderrLines++;
+      if (!state.firstError) state.firstError = data.text;
+      // Write to errors table
+      if (executionDb) {
+        executionDb.insertError({
+          timestamp: data.timestamp || new Date().toISOString(),
+          script: state.scriptName,
+          message: data.text,
+          executionId: state.rowId,
+        });
+      }
+    }
+    send('script-runner:error', data);
+  });
   executor.on('retry', (data) => send('script-runner:retry', data));
   executor.on('complete', (data) => {
     if (pendingCleanup.has(data.tabId)) {
       try { fs.unlinkSync(pendingCleanup.get(data.tabId)); } catch { /* ignore */ }
       pendingCleanup.delete(data.tabId);
     }
+
+    // Finish tracking for this execution
+    _finishTracking(data.tabId, data);
 
     // If this tab has an active chain, don't forward completion to renderer —
     // the chain handler manages its own complete events.
@@ -39,7 +105,8 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
 
   // --- Workflow chain helpers ---
 
-  function _executeAndWait(scriptObj, tabId) {
+  function _executeAndWait(scriptObj, tabId, trackingExtra = {}) {
+    _startTracking(tabId, scriptObj.name, trackingExtra);
     return new Promise((resolve) => {
       const onComplete = (data) => {
         if (data.tabId === tabId) {
@@ -88,7 +155,11 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
         timestamp: new Date().toISOString(),
       });
 
-      const result = await _executeAndWait(script, tabId);
+      const result = await _executeAndWait(script, tabId, {
+        triggerSource: 'chain',
+        chainId,
+        chainStep: i + 1,
+      });
       totalRuntime += result.runtime || 0;
 
       // Re-check after await: chain may have been cancelled during execution
@@ -231,7 +302,15 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
         }
       }
 
-      executor.execute({ scriptPath: effectivePath, name: scriptName || path.basename(scriptPath), tabId, env: perScriptEnv, retries, retryDelayMs });
+      const resolvedName = scriptName || path.basename(scriptPath);
+      const triggerSource = tabId.startsWith('usched-') ? 'schedule' : 'manual';
+      _startTracking(tabId, resolvedName, {
+        triggerSource,
+        scriptHash: persistence ? (() => {
+          try { const src = scriptContent || fs.readFileSync(safePath, 'utf-8'); return crypto.createHash('sha256').update(src).digest('hex'); } catch { return null; }
+        })() : null,
+      });
+      executor.execute({ scriptPath: effectivePath, name: resolvedName, tabId, env: perScriptEnv, retries, retryDelayMs });
       return { success: true };
     } catch (err) {
       console.error('[script-runner] run-script error:', err.message);

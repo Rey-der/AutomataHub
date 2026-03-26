@@ -3,19 +3,50 @@
  * Computes script health, performance stats, error patterns, activity heatmaps,
  * execution timelines, integrity checks, and DB health metrics.
  *
- * Operates on the same better-sqlite3 connection managed by db-bridge.js.
+ * Analytics queries run against a dedicated read-only connection to
+ * smart_desktop.db (set via setAnalyticsDb), while DB health metrics
+ * use the browsing connection managed by db-bridge.
  */
 
 const dbBridge = require('./db-bridge');
+
+// Dedicated read-only better-sqlite3 handle for analytics queries
+let _analyticsDb = null;
+
+/**
+ * Set a read-only better-sqlite3 Database handle pointing at smart_desktop.db.
+ * All analytics queries will use this instead of the browsing dbBridge.
+ */
+function setAnalyticsDb(db) {
+  _analyticsDb = db;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Safely run a read-only query and return rows (empty array on error).
+ * Run a read-only query against the analytics DB (smart_desktop.db).
+ * Falls back to dbBridge if no analytics connection.
  */
 function _query(sql) {
+  if (_analyticsDb) {
+    try {
+      return _analyticsDb.prepare(sql).all();
+    } catch (err) {
+      console.error('[query-analyzer] analytics query failed:', err.message);
+      return [];
+    }
+  }
+  const result = dbBridge.runReadOnlyQuery(sql);
+  return result.rows;
+}
+
+/**
+ * Run a read-only query against the currently browsed DB (via dbBridge).
+ * Used by getDbHealth() so PRAGMAs run on the DB the user is viewing.
+ */
+function _browseQuery(sql) {
   const result = dbBridge.runReadOnlyQuery(sql);
   return result.rows;
 }
@@ -30,7 +61,7 @@ function _query(sql) {
  *   lastStatus, lastRun, currentStreak, streakType }.
  */
 function getScriptHealthStats() {
-  if (!dbBridge.isConnected()) {
+  if (!_analyticsDb && !dbBridge.isConnected()) {
     return [];
   }
   // Aggregate counts
@@ -319,16 +350,16 @@ function getDbHealth() {
 
   let integrityOk = false;
   try {
-    const rows = _query('PRAGMA integrity_check');
+    const rows = _browseQuery('PRAGMA integrity_check');
     integrityOk = rows.length === 1 && rows[0].integrity_check === 'ok';
   } catch { /* ignore */ }
 
   let pageSize = 0;
   let pageCount = 0;
   try {
-    const ps = _query('PRAGMA page_size');
+    const ps = _browseQuery('PRAGMA page_size');
     pageSize = ps[0]?.page_size || 0;
-    const pc = _query('PRAGMA page_count');
+    const pc = _browseQuery('PRAGMA page_count');
     pageCount = pc[0]?.page_count || 0;
   } catch { /* ignore */ }
 
@@ -336,7 +367,7 @@ function getDbHealth() {
 
   let indexCount = 0;
   try {
-    const idx = _query("SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type='index'");
+    const idx = _browseQuery("SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type='index'");
     indexCount = idx[0]?.cnt || 0;
   } catch { /* ignore */ }
 
@@ -453,6 +484,7 @@ function _buildTimeWhere(col, timeRange, script) {
 }
 
 module.exports = {
+  setAnalyticsDb,
   getScriptHealthStats,
   getPerformanceStats,
   getErrorPatterns,

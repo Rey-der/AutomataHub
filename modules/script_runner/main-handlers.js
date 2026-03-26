@@ -16,6 +16,7 @@ const { ScriptStore } = require('./core/script-store');
 const { ScriptPersistence } = require('./core/script-persistence');
 const { ScriptExecutor } = require('./monitoring/script-executor');
 const { ScriptScheduler } = require('./monitoring/scheduler');
+const { ExecutionDb } = require(require('node:path').join(__dirname, '..', '..', 'app', 'core', 'execution-db'));
 
 const scriptsHandler = require('./handlers/scripts');
 const topicsHandler = require('./handlers/topics');
@@ -27,6 +28,7 @@ const schedulesHandler = require('./handlers/schedules');
 let persistence = null;
 let executor = null;
 let scheduler = null;
+let executionDb = null;
 
 
 async function setup(config) {
@@ -65,6 +67,17 @@ async function setup(config) {
     console.warn('[script-runner]   Set SMART_DESKTOP_DB env var to override.');
   }
 
+  // --- Execution Database (smart_desktop.db — shared with SQL Monitor) ---
+
+  if (resolvedDb) {
+    executionDb = new ExecutionDb(resolvedDb);
+    if (executionDb.init()) {
+      console.log('[script-runner] Execution tracking active:', resolvedDb);
+    } else {
+      executionDb = null;
+    }
+  }
+
   // --- Shared Dependencies ---
 
   const store = new ScriptStore();
@@ -99,6 +112,7 @@ async function setup(config) {
     store,
     persistence,
     executor,
+    executionDb,
     emit,
     send,
     mainWindow,
@@ -145,6 +159,10 @@ function teardown() {
   if (persistence) {
     persistence.close();
     persistence = null;
+  }
+  if (executionDb) {
+    executionDb.close();
+    executionDb = null;
   }
   console.log('[script-runner] Module teardown complete');
 }

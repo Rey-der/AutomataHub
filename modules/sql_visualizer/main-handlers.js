@@ -21,6 +21,8 @@ let _getDbCredential = null;
 let _dbList = [];       // ordered list of known DB paths
 let _activeDbPath = null;  // currently connected DB path
 let _setModulePrefs = null;
+let _analyticsHandle = null; // dedicated read-only handle for smart_desktop.db
+let _analyticsDbPath = null;  // resolved path to smart_desktop.db
 
 function _saveDbList() {
   if (_setModulePrefs) {
@@ -70,6 +72,35 @@ function resolveDbPath(hubRoot) {
   if (fs.existsSync(local)) return local;
 
   return null;
+}
+
+/**
+ * Open a separate read-only better-sqlite3 connection to smart_desktop.db
+ * for analytics queries.  This keeps analytics independent of whichever DB
+ * the user is actively browsing.
+ */
+function _initAnalyticsConnection(hubRoot) {
+  const analyticsPath = resolveDbPath(hubRoot);
+  if (!analyticsPath) return;
+
+  let Database;
+  try { Database = require('better-sqlite3'); } catch { return; }
+
+  try {
+    _analyticsHandle = new Database(analyticsPath, { readonly: true, fileMustExist: true });
+    _analyticsHandle.pragma('journal_mode = WAL');
+    _analyticsDbPath = analyticsPath;
+    analyzer.setAnalyticsDb(_analyticsHandle);
+    console.log(`[sql-monitor] Analytics connection: ${analyticsPath}`);
+  } catch (err) {
+    console.warn('[sql-monitor] Analytics connection failed:', err.message);
+    _analyticsHandle = null;
+  }
+}
+
+/** True when the user is browsing the analytics DB (smart_desktop.db). */
+function _isAnalyticsActive() {
+  return _analyticsDbPath && _activeDbPath === _analyticsDbPath;
 }
 
 function _initDatabaseConnection(ctx, hubRoot, isFirstRun) {
@@ -135,6 +166,10 @@ function setup(ctx) {
 
   // Open database connection
   _initDatabaseConnection(ctx, paths.root, isFirstRun);
+
+  // Open a dedicated read-only analytics connection to smart_desktop.db
+  // so analytics work regardless of which DB the user is browsing.
+  _initAnalyticsConnection(paths.root);
 
   // --- IPC Handlers ---
 
@@ -247,9 +282,7 @@ function setup(ctx) {
   // --- Phase 2: Analytics IPC Handlers ---
 
   ipcBridge.handle('sql-visualizer:get-execution-timeline', (_event, args) => {
-    if (!dbBridge.isConnected()) {
-      return [];
-    }
+    if (!_isAnalyticsActive()) return [];
     const { timeRange } = args || {};
     try {
       return analyzer.getExecutionTimeline(timeRange || 'week');
@@ -260,6 +293,7 @@ function setup(ctx) {
   });
 
   ipcBridge.handle('sql-visualizer:get-script-health', () => {
+    if (!_isAnalyticsActive()) return [];
     try {
       return analyzer.getScriptHealthStats();
     } catch (err) {
@@ -269,6 +303,7 @@ function setup(ctx) {
   });
 
   ipcBridge.handle('sql-visualizer:get-performance-stats', (_event, args) => {
+    if (!_isAnalyticsActive()) return { script: 'all', count: 0, avgMs: 0, minMs: 0, maxMs: 0, medianMs: 0, p95Ms: 0, runs: [] };
     const { script } = args || {};
     try {
       return analyzer.getPerformanceStats(script || null);
@@ -278,6 +313,7 @@ function setup(ctx) {
   });
 
   ipcBridge.handle('sql-visualizer:get-activity-heatmap', (_event, args) => {
+    if (!_isAnalyticsActive()) return { cells: [], maxCount: 0 };
     const { timeRange, script } = args || {};
     try {
       return analyzer.getActivityHeatmap(timeRange || 'week', script || null);
@@ -287,6 +323,7 @@ function setup(ctx) {
   });
 
   ipcBridge.handle('sql-visualizer:get-error-patterns', () => {
+    if (!_isAnalyticsActive()) return [];
     try {
       return analyzer.getErrorPatterns();
     } catch (err) {
@@ -296,14 +333,12 @@ function setup(ctx) {
   });
 
   ipcBridge.handle('sql-visualizer:get-integrity-report', () => {
-    if (!dbBridge.isConnected()) {
-      return { issues: [], passed: 0, warnings: 0, errors: 0 };
-    }
+    if (!_isAnalyticsActive()) return { zombies: [], tableActivity: [], gaps: [] };
     try {
       return analyzer.getIntegrityReport();
     } catch (err) {
       console.error('[sql-visualizer] get-integrity-report error:', err);
-      return { issues: [], passed: 0, warnings: 0, errors: 0 };
+      return { zombies: [], tableActivity: [], gaps: [] };
     }
   });
 
@@ -317,6 +352,7 @@ function setup(ctx) {
   });
 
   ipcBridge.handle('sql-visualizer:get-correlated-records', (_event, args) => {
+    if (!_isAnalyticsActive()) return { execution: null, logs: [], errors: [] };
     const { executionId } = args || {};
     if (!executionId) throw new Error('Missing executionId');
     try {
@@ -406,6 +442,10 @@ function setup(ctx) {
 }
 
 function teardown() {
+  if (_analyticsHandle) {
+    _analyticsHandle.close();
+    _analyticsHandle = null;
+  }
   dbBridge.close();
 }
 

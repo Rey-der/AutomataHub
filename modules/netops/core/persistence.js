@@ -17,7 +17,7 @@ const path = require('node:path');
 const DB_DIR = path.dirname(__dirname);  // modules/netops/
 const DB_FILE = path.join(DB_DIR, 'netops.sqlite');
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const FLUSH_INTERVAL_MS = 60_000;
 
@@ -217,6 +217,104 @@ class NetOpsPersistence {
       this.db.run('CREATE INDEX IF NOT EXISTS idx_ah_resolved ON alert_history(resolved_at)');
 
       this.db.run('PRAGMA user_version = 3');
+    }
+
+    if (version < 4) {
+      // Phase 11: enriched host metadata, discovery details, uptime + incidents
+
+      const addCol = (table, col, type, dflt) => {
+        try { this.db.run(`ALTER TABLE ${table} ADD COLUMN ${col} ${type} DEFAULT ${dflt}`); } catch { /* column may already exist */ }
+      };
+
+      // monitored_hosts — grouping, tagging, cert tracking, operational notes
+      addCol('monitored_hosts', 'group_name', 'TEXT', 'NULL');
+      addCol('monitored_hosts', 'tags', 'TEXT', 'NULL');
+      addCol('monitored_hosts', 'last_latency_ms', 'REAL', 'NULL');
+      addCol('monitored_hosts', 'uptime_streak', 'INTEGER', '0');
+      addCol('monitored_hosts', 'cert_issuer', 'TEXT', 'NULL');
+      addCol('monitored_hosts', 'cert_subject', 'TEXT', 'NULL');
+      addCol('monitored_hosts', 'cert_expiry', 'TEXT', 'NULL');
+      addCol('monitored_hosts', 'cert_days_left', 'INTEGER', 'NULL');
+      addCol('monitored_hosts', 'created_at', 'TEXT', 'NULL');
+      addCol('monitored_hosts', 'updated_at', 'TEXT', 'NULL');
+      addCol('monitored_hosts', 'notes', 'TEXT', 'NULL');
+
+      // status_history — protocol-specific response details
+      addCol('status_history', 'status_code', 'INTEGER', 'NULL');
+      addCol('status_history', 'response_size', 'INTEGER', 'NULL');
+      addCol('status_history', 'keyword_found', 'INTEGER', 'NULL');
+      addCol('status_history', 'resolved_ip', 'TEXT', 'NULL');
+      addCol('status_history', 'dns_latency_ms', 'REAL', 'NULL');
+      addCol('status_history', 'error_message', 'TEXT', 'NULL');
+
+      // metrics_network — packet loss and jitter
+      addCol('metrics_network', 'packet_loss_pct', 'REAL', 'NULL');
+      addCol('metrics_network', 'jitter_ms', 'REAL', 'NULL');
+
+      // metrics_system — disk, load average, process count
+      addCol('metrics_system', 'disk_percent', 'REAL', 'NULL');
+      addCol('metrics_system', 'disk_used_gb', 'REAL', 'NULL');
+      addCol('metrics_system', 'disk_total_gb', 'REAL', 'NULL');
+      addCol('metrics_system', 'load_avg_1m', 'REAL', 'NULL');
+      addCol('metrics_system', 'load_avg_5m', 'REAL', 'NULL');
+      addCol('metrics_system', 'process_count', 'INTEGER', 'NULL');
+
+      // metrics_hourly — min/max envelopes
+      addCol('metrics_hourly', 'min_json', 'TEXT', 'NULL');
+      addCol('metrics_hourly', 'max_json', 'TEXT', 'NULL');
+
+      // discovered_networks — enriched scan metadata
+      addCol('discovered_networks', 'gateway', 'TEXT', 'NULL');
+      addCol('discovered_networks', 'subnet_mask', 'TEXT', 'NULL');
+      addCol('discovered_networks', 'host_count', 'INTEGER', '0');
+      addCol('discovered_networks', 'last_scanned', 'TEXT', 'NULL');
+
+      // discovered_hosts — enriched discovery details
+      addCol('discovered_hosts', 'mac_address', 'TEXT', 'NULL');
+      addCol('discovered_hosts', 'os_fingerprint', 'TEXT', 'NULL');
+      addCol('discovered_hosts', 'open_ports', 'TEXT', 'NULL');
+      addCol('discovered_hosts', 'services', 'TEXT', 'NULL');
+      addCol('discovered_hosts', 'last_seen', 'TEXT', 'NULL');
+
+      // alert_rules — friendly name and notification config
+      addCol('alert_rules', 'name', 'TEXT', 'NULL');
+      addCol('alert_rules', 'notification', 'TEXT', 'NULL');
+
+      // alert_history — enriched alert lifecycle
+      addCol('alert_history', 'metric_value', 'TEXT', 'NULL');
+      addCol('alert_history', 'acknowledged_at', 'TEXT', 'NULL');
+      addCol('alert_history', 'acknowledged_by', 'TEXT', 'NULL');
+      addCol('alert_history', 'duration_min', 'REAL', 'NULL');
+
+      // New table: uptime_daily — pre-computed daily SLA percentages
+      this.db.run(`CREATE TABLE IF NOT EXISTS uptime_daily (
+        host_id    TEXT NOT NULL,
+        date       TEXT NOT NULL,
+        total_checks   INTEGER NOT NULL,
+        online_checks  INTEGER NOT NULL,
+        uptime_pct     REAL NOT NULL,
+        avg_latency_ms REAL,
+        max_latency_ms REAL,
+        min_latency_ms REAL,
+        downtime_events INTEGER DEFAULT 0,
+        PRIMARY KEY (host_id, date)
+      )`);
+
+      // New table: incidents — outage tracking
+      this.db.run(`CREATE TABLE IF NOT EXISTS incidents (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        host_id     TEXT NOT NULL,
+        started_at  TEXT NOT NULL,
+        resolved_at TEXT,
+        duration_min REAL,
+        root_cause  TEXT,
+        impact      TEXT DEFAULT 'unknown',
+        created_at  TEXT
+      )`);
+      this.db.run('CREATE INDEX IF NOT EXISTS idx_incident_host ON incidents(host_id)');
+      this.db.run('CREATE INDEX IF NOT EXISTS idx_incident_active ON incidents(resolved_at)');
+
+      this.db.run('PRAGMA user_version = 4');
     }
 
     this._dirty = true;
