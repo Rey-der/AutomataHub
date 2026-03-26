@@ -1,7 +1,7 @@
 # AutomataHub — Technical Documentation
 
 > **Version:** 1.0.0  
-> **Runtime:** Electron 28.3.3 · Node.js 18+  
+> **Runtime:** Electron 41.x · Node.js 18.17+  
 > **Platform:** macOS (primary), Windows (build target configured)  
 > **License:** ISC
 
@@ -768,7 +768,7 @@ Modules use `--hub-*` prefixed variables for stable theming:
 | `build` | `electron-builder` | Package all platforms |
 | `build:mac` | `electron-builder --mac` | macOS DMG (arm64 + x64) |
 | `build:win` | `electron-builder --win` | Windows NSIS installer |
-| `rebuild-natives` | `node-gyp rebuild ...` | Rebuild better-sqlite3 for Electron |
+| `rebuild-natives` | `node-gyp rebuild ...` | Rebuild better-sqlite3 for Electron (auto-detects arch) |
 
 ### electron-builder Config
 
@@ -795,7 +795,7 @@ Modules use `--hub-*` prefixed variables for stable theming:
 
 | Package | Version | Purpose |
 |---|---|---|
-| `better-sqlite3` | ^11.10.0 | Fast synchronous SQLite driver |
+| `better-sqlite3` | ^12.8.0 | Fast synchronous SQLite driver |
 | `sql.js` | ^1.14.1 | WASM SQLite fallback (no native compilation) |
 | `chart.js` | ^4.5.1 | Chart rendering for module UIs |
 | `uplot` | ^1.6.32 | High-performance time-series plotting |
@@ -804,7 +804,7 @@ Modules use `--hub-*` prefixed variables for stable theming:
 
 | Package | Version | Purpose |
 |---|---|---|
-| `electron` | ^28.3.3 | Application runtime |
+| `electron` | ^41.0.4 | Application runtime |
 | `electron-builder` | ^26.8.1 | App packaging and distribution |
 
 The hub core uses only Node.js built-in modules at runtime: `path`, `fs`, `events`, `child_process`.
@@ -815,7 +815,7 @@ The hub core uses only Node.js built-in modules at runtime: `path`, `fs`, `event
 
 | File | Purpose |
 |---|---|
-| `package.json` | npm manifest, scripts, dependencies, electron-builder config |
+| `package.json` | npm manifest, scripts, dependencies, electron-builder config, npm overrides |
 | `.editorconfig` | UTF-8, LF, 2-space indent, trim trailing whitespace |
 | `.gitignore` | Ignores `node_modules/`, `dist/`, `.DS_Store`, `logs/`, `*.log`, `.env` |
 | `.npmrc` | `audit-level=high` — suppresses moderate-severity advisories |
@@ -831,7 +831,7 @@ The hub core uses only Node.js built-in modules at runtime: `path`, `fs`, `event
 | Dev Dock Name | macOS may cache "Electron" in Dock during development |
 | Linting | No linter configured (`npm run lint` is a no-op) |
 | CI/CD | No continuous integration pipeline |
-| Node Version | Developed on Node 18; some build deps prefer Node 20+ |
+| Node Version | Minimum Node 18.17.0 required; Node 20 LTS or 22 LTS recommended for full build toolchain compatibility |
 
 ---
 

@@ -20,13 +20,16 @@
     "darwin"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.17.0"
+  },
+  "overrides": {
+    "brace-expansion": "^5.0.5"
   },
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
     "test": "node --test tests/db-scanner.test.js tests/db-credentials.test.js",
-    "rebuild-natives": "node-gyp rebuild --target=28.3.3 --arch=arm64 --dist-url=https://electronjs.org/headers --directory node_modules/better-sqlite3",
+    "rebuild-natives": "node-gyp rebuild --target=41.0.4 --dist-url=https://electronjs.org/headers --directory node_modules/better-sqlite3",
     "lint": "echo \"No lint configured yet\"",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
@@ -84,11 +87,11 @@
     }
   },
   "devDependencies": {
-    "electron": "^28.3.3",
+    "electron": "^41.0.4",
     "electron-builder": "^26.8.1"
   },
   "dependencies": {
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^12.8.0",
     "chart.js": "^4.5.1",
     "node-cron": "^4.2.1",
     "sql.js": "^1.14.1",
