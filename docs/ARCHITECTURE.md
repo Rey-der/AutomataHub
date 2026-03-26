@@ -104,7 +104,7 @@ loadModules():
     ↓
 createWindow() — set CSP, load index.html
     ↓
-Renderer loads core scripts (ui.js, tab-manager.js, home-tab.js)
+Renderer loads core scripts (ui.js, tab-manager.js, home-tab.js, db-manager-tab.js)
     ↓
 module-bootstrap.js:
     api.initChannels() → dynamic IPC allowlist
@@ -179,6 +179,12 @@ Every loaded module is backed by shared hub services rather than re-implementing
 | `hub:set-db-password` / `hub:change-db-password` / `hub:remove-db-password` | invoke | Manage encrypted DB credentials |
 | `hub:test-db-connection` | invoke | Validate a DB password before use |
 
+### Hub Push Channels (preload allowlist)
+| Channel | Purpose |
+|---|---|
+| `app-error` | Forward unhandled main-process errors to the renderer |
+| `hub:db-auth-failed` | Notify renderer when a DB credential check fails |
+
 ### Module Channels (registered per-module)
 Each module declares its channels in `manifest.json`. They are namespaced by convention (for example `script-runner:*`). The hub aggregates all push channels for the preload's dynamic allowlist and blocks undeclared registrations at the bridge layer.
 
@@ -192,6 +198,13 @@ Each module declares its channels in `manifest.json`. They are namespaced by con
 6. **No raw ipcRenderer** — Only `window.api` surface exposed via contextBridge
 7. **Module Isolation** — Modules share the hub's main process but use namespaced IPC channels
 8. **Credential Storage** — Database passwords are encrypted through Electron safeStorage
+
+## Third-Party Libraries
+
+| Library | Location | Purpose |
+|---|---|---|
+| Chart.js | Loaded in `index.html` | Bar / line / doughnut charts (Script Runner dashboard, NetOps metrics) |
+| µPlot | Loaded by NetOps renderer | Lightweight time-series charts for latency / bandwidth |
 
 ## CSS Architecture
 
@@ -219,4 +232,4 @@ Modules use `--hub-*` prefixed variables for theming stability. The alias layer 
 ---
 
 **Architecture Review Date:** March 22, 2026
-**Last Updated:** March 22, 2026
+**Last Updated:** March 26, 2026
