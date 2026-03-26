@@ -776,16 +776,16 @@ Modules use `--hub-*` prefixed variables for stable theming:
 {
   "appId": "com.automatahub.app",
   "productName": "AutomataHub",
-  "files": ["app/**", "renderer/**", "resources/**", "modules/**", "logs/.gitkeep"],
+  "files": ["app/**", "renderer/**", "resources/**", "scripts/**", "modules/**", "logs/.gitkeep"],
   "mac": { "category": "public.app-category.developer-tools", "target": "dmg" },
   "win": { "target": "nsis" },
-  "asarUnpack": ["node_modules/better-sqlite3/**"]
+  "asarUnpack": ["**/node_modules/better-sqlite3/**"]
 }
 ```
 
 ### Packaged Contents
 
-`app/` · `renderer/` · `resources/` · `modules/` · `logs/.gitkeep` · production `node_modules/`
+`app/` · `renderer/` · `resources/` · `scripts/` · `modules/` · `logs/.gitkeep` · production `node_modules/`
 
 ---
 
