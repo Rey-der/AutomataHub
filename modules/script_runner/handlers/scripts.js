@@ -197,12 +197,18 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
   ipcBridge.handle('script-runner:get-scripts', async (_e, args) => {
     try {
       const scriptsDir = path.join(paths.root, 'modules', 'script_runner', 'automation_scripts');
-      const scripts = getAvailableScripts(scriptsDir);
+      let scripts;
 
       // Filter by topic if requested
       if (args?.topic_id) {
-        const topicScripts = store.getTopicScripts(args.topic_id);
-        return { scripts: topicScripts };
+        scripts = store.getTopicScripts(args.topic_id);
+      } else {
+        scripts = getAvailableScripts(scriptsDir);
+      }
+
+      // Enrich each script with its topic associations
+      for (const script of scripts) {
+        script.topics = store.getScriptTopics(script.id || script.folder) || [];
       }
 
       return { scripts };

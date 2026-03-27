@@ -110,8 +110,8 @@ class ScriptBrowser {
 
   _renderScriptCard(script) {
     const topics = script.topics || [];
-    const topicTags = topics
-      .map((t) => `<span class="script-topic-tag" style="--topic-color: ${t.color || '#4A90E2'}">${this._escapeHtml(t.name)}</span>`)
+    const topicDots = topics
+      .map((t) => `<span class="script-topic-dot" style="background: ${t.color || '#4A90E2'}" title="${this._escapeHtml(t.name)}"></span>`)
       .join('');
 
     // Render variant language badges
@@ -125,9 +125,12 @@ class ScriptBrowser {
       ? `<span class="script-retry-badge" title="Auto-retry: ${script.retries} retries, ${((script.retryDelayMs || 3000) / 1000).toFixed(0)}s delay">Retry x${script.retries}</span>`
       : '';
 
-    // Schedule badge
-    const scheduleBadge = script.schedule
-      ? `<span class="script-schedule-badge" title="Cron: ${this._escapeHtml(script.schedule)}">Scheduled</span>`
+    // Schedule badge — only show when a user-defined schedule is active
+    const scriptId = script.id || script.folder;
+    const userSchedules = this.app.scheduleListInstance?.schedules || [];
+    const hasActiveSchedule = userSchedules.some(s => s.target_id === scriptId && s.enabled);
+    const scheduleBadge = hasActiveSchedule
+      ? `<span class="script-schedule-badge" title="Scheduled (user)">Scheduled</span>`
       : '';
 
     // Dependency badge
@@ -135,9 +138,6 @@ class ScriptBrowser {
     const depsBadge = deps.length > 0
       ? `<span class="script-deps-badge" title="Depends on: ${deps.map((d) => this._escapeHtml(d)).join(', ')}">Depends</span>`
       : '';
-
-    // Chain membership badge
-    const scriptId = script.id || script.folder;
     const chains = this.app.chainListInstance?.chains || [];
     const chainNames = chains
       .filter((c) => (c.script_ids || []).includes(scriptId))
@@ -164,6 +164,7 @@ class ScriptBrowser {
         <div class="card-header">
           <h3 class="script-name">${this._escapeHtml(script.name)}</h3>
           <div class="card-header-actions">
+            ${topicDots ? `<span class="script-topic-dots">${topicDots}</span>` : ''}
             <button class="card-toggle toggle-favorite sc-fav-btn${isFav ? ' active' : ''}" data-script-id="${this._escapeHtml(scriptId)}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '&#9829;' : '&#9825;'}</button>
           </div>
         </div>
@@ -175,7 +176,7 @@ class ScriptBrowser {
         ${script.description ? `<p class="script-description">${this._escapeHtml(script.description)}</p>` : ''}
         ${depsLine}
         
-        ${topicTags ? `<div class="script-topics">${topicTags}</div>` : ''}
+
         
         <div class="card-footer">
           <button class="btn btn-primary" data-script-id="${this._escapeHtml(scriptId)}">

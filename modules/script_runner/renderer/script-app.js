@@ -389,13 +389,16 @@ class ScriptApp {
       }
     });
 
-    const unsub3 = API.on('script-runner:topic-deleted', (data) => {
+    const unsub3 = API.on('script-runner:topic-deleted', async (data) => {
       this.topics = this.topics.filter((t) => t.id !== data.topic_id);
       if (this.selectedTopicId === data.topic_id) {
         this.selectedTopicId = null;
       }
+      await this.loadScripts();
+      await this.loadAllScripts();
       if (this.topicListInstance) this.topicListInstance.render();
       if (this.scriptBrowserInstance) this.scriptBrowserInstance.render();
+      this._updateSidebarSections();
     });
 
     const unsub4 = API.on('script-runner:scripts-updated', async (data) => {
@@ -406,10 +409,14 @@ class ScriptApp {
       this._updateSidebarSections();
     });
 
-    // Reload topic counts when scripts are added/removed from topics
+    // Reload topic counts + script cards when scripts are added/removed from topics
     const _reloadTopicCounts = async () => {
       await this.loadTopics();
+      await this.loadScripts();
+      await this.loadAllScripts();
       if (this.topicListInstance) this.topicListInstance.render();
+      if (this.scriptBrowserInstance) this.scriptBrowserInstance.render();
+      this._updateSidebarSections();
     };
     const unsub5 = API.on('script-runner:script-added-to-topic', _reloadTopicCounts);
     const unsub6 = API.on('script-runner:script-removed-from-topic', _reloadTopicCounts);

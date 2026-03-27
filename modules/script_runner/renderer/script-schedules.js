@@ -101,16 +101,19 @@ class ScheduleList {
     const u1 = API.on('script-runner:schedule-created', (data) => {
       this.schedules.push(data.schedule);
       this._refreshList();
+      this.app.scriptBrowserInstance?.render();
     });
     const u2 = API.on('script-runner:schedule-updated', (data) => {
       const idx = this.schedules.findIndex((s) => s.id === data.schedule.id);
       if (idx >= 0) this.schedules[idx] = data.schedule;
       else this.schedules.push(data.schedule);
       this._refreshList();
+      this.app.scriptBrowserInstance?.render();
     });
     const u3 = API.on('script-runner:schedule-deleted', (data) => {
       this.schedules = this.schedules.filter((s) => s.id !== data.schedule_id);
       this._refreshList();
+      this.app.scriptBrowserInstance?.render();
     });
     this.unsubscribes = [u1, u2, u3];
   }
