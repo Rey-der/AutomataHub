@@ -223,7 +223,8 @@ class NetHistory {
   _renderUptimeSummary() {
     const total = this.uptimeData.length;
     const avgUptime = total > 0 ? this.uptimeData.reduce((s, d) => s + d.uptime_percent, 0) / total : 0;
-    const onlineCount = this.uptimeData.filter(d => d.host.last_status === 'online').length;
+    const sm = this.app.statusMap;
+    const onlineCount = this.uptimeData.filter(d => (sm.get(d.host.id)?.status || d.host.last_status) === 'online').length;
     const offlineCount = total - onlineCount;
     const totalChecks = this.uptimeData.reduce((s, d) => s + d.total_checks, 0);
     let avgTone;
@@ -262,7 +263,7 @@ class NetHistory {
     if (pct >= 99) tone = 'good';
     else if (pct >= 90) tone = 'warn';
     else tone = 'bad';
-    const statusLabel = d.host.last_status || 'unknown';
+    const statusLabel = this.app.statusMap.get(d.host.id)?.status || d.host.last_status || 'unknown';
     return `
       <div class="hist-uptime-row" data-host-id="${d.host.id}">
         <span class="hist-uptime-name">${_histEsc(d.host.alias || d.host.hostname)}</span>

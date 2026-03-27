@@ -74,6 +74,13 @@ class NetOpsStore {
     const prev = this.statusCache.get(hostId);
     this.statusCache.set(hostId, data);
 
+    // Keep the host object's last_status / last_check in sync
+    const host = this.hosts.get(hostId);
+    if (host) {
+      host.last_status = data.status;
+      host.last_check = data.timestamp || new Date().toISOString();
+    }
+
     // Track heartbeat (last N checks per host)
     if (!this._heartbeats) this._heartbeats = new Map();
     const hb = this._heartbeats.get(hostId) || [];
