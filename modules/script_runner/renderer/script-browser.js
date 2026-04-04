@@ -561,13 +561,7 @@ class ScriptBrowser {
 
     titleEl.textContent = script.name;
 
-    const topics =
-      (script.topics || [])
-        .map(
-          (t) =>
-            `<span class="script-topic-tag" style="--topic-color: ${t.color || '#4A90E2'}">${this._escapeHtml(t.name)}</span>`
-        )
-        .join('') || '<span class="detail-none">None</span>';
+    // topics rendering removed — not displayed in detail overlay
 
     const variants =
       (script.variants || [])

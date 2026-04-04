@@ -245,16 +245,16 @@ class ScriptApp {
 // Register module opener for hub's module list
 (function registerModuleOpener() {
   function doRegister() {
-    if (!window._hub) {
+    if (!globalThis._hub) {
       setTimeout(doRegister, 0);
       return;
     }
     
-    window._hub.moduleOpeners = window._hub.moduleOpeners || {};
-    window._hub.moduleOpeners['script-runner'] = function openScriptRunner(mod) {
-      if (window.tabManager && window.tabManager.hasTabType('script-home')) {
+    globalThis._hub.moduleOpeners = globalThis._hub.moduleOpeners || {};
+    globalThis._hub.moduleOpeners['script-runner'] = function openScriptRunner(mod) {
+      if (globalThis.tabManager?.hasTabType('script-home')) {
         console.log('[script-app] Opening Scripts tab for module:', mod.id);
-        window.tabManager.createTab('script-home', 'Scripts', { moduleId: mod.id }, { target: 'module' });
+        globalThis.tabManager.createTab('script-home', 'Scripts', { moduleId: mod.id }, { target: 'module' });
       } else {
         console.warn('[script-app] Script-home tab type not registered or tabManager not available');
       }

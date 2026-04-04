@@ -116,6 +116,44 @@ const ScriptExecution = (() => {
     return progressRow;
   }
 
+  function loadScriptContent(tab, state, elementId, applyContent) {
+    if (state.scriptOverride !== null || !tab.scriptPath) return;
+    globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
+      .then((res) => {
+        const el = document.getElementById(elementId);
+        if (el) applyContent(el, res, state);
+      }).catch(() => {
+        const el = document.getElementById(elementId);
+        if (el) { el.textContent = '(Failed to read script)'; el.classList.add('script-preview-error'); }
+      });
+  }
+
+  function renderEditArea(tab, state, placeholder) {
+    const ta = document.createElement('textarea');
+    ta.className = 'script-edit-area';
+    ta.id = `script-edit-${tab.id}`;
+    ta.spellcheck = false;
+    ta.value = state.scriptOverride === null ? 'Loading\u2026' : state.scriptOverride;
+    placeholder.appendChild(ta);
+    loadScriptContent(tab, state, `script-edit-${tab.id}`, (el, res, s) => {
+      el.value = res.success ? res.content : `(Could not load: ${res.error})`;
+      if (res.success) s.scriptOverride = res.content;
+    });
+    setTimeout(() => { const el = document.getElementById(`script-edit-${tab.id}`); if (el) el.focus(); }, 0);
+  }
+
+  function renderPreviewBlock(tab, state, placeholder) {
+    const codeBlock = document.createElement('pre');
+    codeBlock.className = 'script-preview' + (state.scriptOverride === null ? '' : ' script-preview-edited');
+    codeBlock.id = `script-preview-${tab.id}`;
+    codeBlock.textContent = state.scriptOverride === null ? 'Loading\u2026' : state.scriptOverride;
+    placeholder.appendChild(codeBlock);
+    loadScriptContent(tab, state, `script-preview-${tab.id}`, (el, res) => {
+      if (res.success) el.textContent = res.content;
+      else { el.textContent = `(Could not load script: ${res.error})`; el.classList.add('script-preview-error'); }
+    });
+  }
+
   function renderPlaceholder(tab, state) {
     const placeholder = document.createElement('div');
     placeholder.className = 'terminal-placeholder';
@@ -147,40 +185,9 @@ const ScriptExecution = (() => {
     placeholder.appendChild(phHeader);
 
     if (state.editMode) {
-      const ta = document.createElement('textarea');
-      ta.className = 'script-edit-area';
-      ta.id = `script-edit-${tab.id}`;
-      ta.spellcheck = false;
-      ta.value = state.scriptOverride === null ? 'Loading\u2026' : state.scriptOverride;
-      placeholder.appendChild(ta);
-      if (state.scriptOverride === null && tab.scriptPath) {
-        globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
-          .then((res) => {
-            const el = document.getElementById(`script-edit-${tab.id}`);
-            if (!el) return;
-            el.value = res.success ? res.content : `(Could not load: ${res.error})`;
-            if (res.success) state.scriptOverride = res.content;
-          }).catch(() => {});
-      }
-      setTimeout(() => { const el = document.getElementById(`script-edit-${tab.id}`); if (el) el.focus(); }, 0);
+      renderEditArea(tab, state, placeholder);
     } else {
-      const codeBlock = document.createElement('pre');
-      codeBlock.className = 'script-preview' + (state.scriptOverride === null ? '' : ' script-preview-edited');
-      codeBlock.id = `script-preview-${tab.id}`;
-      codeBlock.textContent = state.scriptOverride === null ? 'Loading\u2026' : state.scriptOverride;
-      placeholder.appendChild(codeBlock);
-      if (state.scriptOverride === null && tab.scriptPath) {
-        globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
-          .then((res) => {
-            const el = document.getElementById(`script-preview-${tab.id}`);
-            if (!el) return;
-            if (res.success) el.textContent = res.content;
-            else { el.textContent = `(Could not load script: ${res.error})`; el.classList.add('script-preview-error'); }
-          }).catch(() => {
-            const el = document.getElementById(`script-preview-${tab.id}`);
-            if (el) { el.textContent = '(Failed to read script)'; el.classList.add('script-preview-error'); }
-          });
-      }
+      renderPreviewBlock(tab, state, placeholder);
     }
 
     penBtn.addEventListener('click', () => {

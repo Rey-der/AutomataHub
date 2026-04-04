@@ -68,147 +68,155 @@ class ExecutionDb {
   //  Schema migration
   // ------------------------------------------------------------------
 
+  _getColumnNames(table) {
+    return new Set(this.db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name));
+  }
+
+  _migrateExecutionTracking() {
+    const hasTable = this.db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='execution_tracking'"
+    ).get();
+
+    if (hasTable) {
+      this.db.exec(`
+        ALTER TABLE execution_tracking RENAME TO _execution_tracking_v0;
+
+        CREATE TABLE execution_tracking (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          script          TEXT    NOT NULL,
+          variant         TEXT    DEFAULT 'js',
+          start_time      TEXT    NOT NULL,
+          end_time        TEXT,
+          status          TEXT,
+          exit_code       INTEGER,
+          error_message   TEXT,
+          trigger_source  TEXT    DEFAULT 'manual',
+          chain_id        TEXT,
+          chain_step      INTEGER,
+          schedule_id     TEXT,
+          attempt         INTEGER DEFAULT 1,
+          max_attempts    INTEGER DEFAULT 1,
+          runtime_ms      INTEGER,
+          stdout_lines    INTEGER DEFAULT 0,
+          stderr_lines    INTEGER DEFAULT 0,
+          script_hash     TEXT,
+          created_at      TEXT    DEFAULT (datetime('now','localtime'))
+        );
+
+        INSERT INTO execution_tracking (id, script, start_time, end_time, status, error_message)
+          SELECT id, script, start_time, end_time, status, error_message
+          FROM _execution_tracking_v0;
+
+        DROP TABLE _execution_tracking_v0;
+      `);
+    } else {
+      this.db.exec(`
+        CREATE TABLE execution_tracking (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          script          TEXT    NOT NULL,
+          variant         TEXT    DEFAULT 'js',
+          start_time      TEXT    NOT NULL,
+          end_time        TEXT,
+          status          TEXT,
+          exit_code       INTEGER,
+          error_message   TEXT,
+          trigger_source  TEXT    DEFAULT 'manual',
+          chain_id        TEXT,
+          chain_step      INTEGER,
+          schedule_id     TEXT,
+          attempt         INTEGER DEFAULT 1,
+          max_attempts    INTEGER DEFAULT 1,
+          runtime_ms      INTEGER,
+          stdout_lines    INTEGER DEFAULT 0,
+          stderr_lines    INTEGER DEFAULT 0,
+          script_hash     TEXT,
+          created_at      TEXT    DEFAULT (datetime('now','localtime'))
+        );
+      `);
+    }
+
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_exec_script  ON execution_tracking(script);
+      CREATE INDEX IF NOT EXISTS idx_exec_start   ON execution_tracking(start_time);
+      CREATE INDEX IF NOT EXISTS idx_exec_status  ON execution_tracking(status);
+      CREATE INDEX IF NOT EXISTS idx_exec_trigger ON execution_tracking(trigger_source);
+    `);
+  }
+
+  _migrateAutomationLogs() {
+    const hasTable = this.db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='automation_logs'"
+    ).get();
+
+    if (hasTable) {
+      const cols = this._getColumnNames('automation_logs');
+      if (!cols.has('level'))        this.db.exec("ALTER TABLE automation_logs ADD COLUMN level TEXT DEFAULT 'INFO'");
+      if (!cols.has('execution_id')) this.db.exec('ALTER TABLE automation_logs ADD COLUMN execution_id INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL');
+    } else {
+      this.db.exec(`
+        CREATE TABLE automation_logs (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          timestamp       TEXT    NOT NULL,
+          script          TEXT    NOT NULL,
+          level           TEXT    DEFAULT 'INFO',
+          status          TEXT,
+          message         TEXT,
+          metadata        TEXT,
+          execution_id    INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL,
+          created_at      TEXT    DEFAULT (datetime('now','localtime'))
+        );
+      `);
+    }
+
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON automation_logs(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_logs_script    ON automation_logs(script);
+      CREATE INDEX IF NOT EXISTS idx_logs_execution ON automation_logs(execution_id);
+    `);
+  }
+
+  _migrateErrors() {
+    const hasTable = this.db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='errors'"
+    ).get();
+
+    if (hasTable) {
+      const cols = this._getColumnNames('errors');
+      if (!cols.has('error_code'))   this.db.exec('ALTER TABLE errors ADD COLUMN error_code TEXT');
+      if (!cols.has('severity'))     this.db.exec("ALTER TABLE errors ADD COLUMN severity TEXT DEFAULT 'error'");
+      if (!cols.has('execution_id')) this.db.exec('ALTER TABLE errors ADD COLUMN execution_id INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL');
+    } else {
+      this.db.exec(`
+        CREATE TABLE errors (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          timestamp       TEXT    NOT NULL,
+          script          TEXT    NOT NULL,
+          message         TEXT    NOT NULL,
+          stack_trace     TEXT,
+          error_code      TEXT,
+          severity        TEXT    DEFAULT 'error',
+          execution_id    INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL,
+          created_at      TEXT    DEFAULT (datetime('now','localtime'))
+        );
+      `);
+    }
+
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_errors_script    ON errors(script);
+      CREATE INDEX IF NOT EXISTS idx_errors_execution ON errors(execution_id);
+    `);
+  }
+
   _migrate() {
     const version = this.db.pragma('user_version', { simple: true });
 
     if (version < 1) {
       this.db.exec('BEGIN');
       try {
-        // --- execution_tracking ---
-        // Legacy table has a CHECK(status IN ('SUCCESS','FAIL')) that blocks
-        // RUNNING/TIMEOUT/KILLED.  Recreate without the constraint, keeping data.
-        const hasExecTable = this.db.prepare(
-          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='execution_tracking'"
-        ).get();
-
-        if (hasExecTable) {
-          this.db.exec(`
-            ALTER TABLE execution_tracking RENAME TO _execution_tracking_v0;
-
-            CREATE TABLE execution_tracking (
-              id              INTEGER PRIMARY KEY AUTOINCREMENT,
-              script          TEXT    NOT NULL,
-              variant         TEXT    DEFAULT 'js',
-              start_time      TEXT    NOT NULL,
-              end_time        TEXT,
-              status          TEXT,
-              exit_code       INTEGER,
-              error_message   TEXT,
-              trigger_source  TEXT    DEFAULT 'manual',
-              chain_id        TEXT,
-              chain_step      INTEGER,
-              schedule_id     TEXT,
-              attempt         INTEGER DEFAULT 1,
-              max_attempts    INTEGER DEFAULT 1,
-              runtime_ms      INTEGER,
-              stdout_lines    INTEGER DEFAULT 0,
-              stderr_lines    INTEGER DEFAULT 0,
-              script_hash     TEXT,
-              created_at      TEXT    DEFAULT (datetime('now','localtime'))
-            );
-
-            INSERT INTO execution_tracking (id, script, start_time, end_time, status, error_message)
-              SELECT id, script, start_time, end_time, status, error_message
-              FROM _execution_tracking_v0;
-
-            DROP TABLE _execution_tracking_v0;
-          `);
-        } else {
-          this.db.exec(`
-            CREATE TABLE execution_tracking (
-              id              INTEGER PRIMARY KEY AUTOINCREMENT,
-              script          TEXT    NOT NULL,
-              variant         TEXT    DEFAULT 'js',
-              start_time      TEXT    NOT NULL,
-              end_time        TEXT,
-              status          TEXT,
-              exit_code       INTEGER,
-              error_message   TEXT,
-              trigger_source  TEXT    DEFAULT 'manual',
-              chain_id        TEXT,
-              chain_step      INTEGER,
-              schedule_id     TEXT,
-              attempt         INTEGER DEFAULT 1,
-              max_attempts    INTEGER DEFAULT 1,
-              runtime_ms      INTEGER,
-              stdout_lines    INTEGER DEFAULT 0,
-              stderr_lines    INTEGER DEFAULT 0,
-              script_hash     TEXT,
-              created_at      TEXT    DEFAULT (datetime('now','localtime'))
-            );
-          `);
-        }
-
-        this.db.exec(`
-          CREATE INDEX IF NOT EXISTS idx_exec_script  ON execution_tracking(script);
-          CREATE INDEX IF NOT EXISTS idx_exec_start   ON execution_tracking(start_time);
-          CREATE INDEX IF NOT EXISTS idx_exec_status  ON execution_tracking(status);
-          CREATE INDEX IF NOT EXISTS idx_exec_trigger ON execution_tracking(trigger_source);
-        `);
-
-        // --- automation_logs ---
-        // Legacy table may exist with fewer columns; add the missing ones.
-        const hasLogsTable = this.db.prepare(
-          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='automation_logs'"
-        ).get();
-
-        if (hasLogsTable) {
-          const cols = this.db.prepare('PRAGMA table_info(automation_logs)').all().map(c => c.name);
-          if (!cols.includes('level'))        this.db.exec("ALTER TABLE automation_logs ADD COLUMN level TEXT DEFAULT 'INFO'");
-          if (!cols.includes('execution_id')) this.db.exec('ALTER TABLE automation_logs ADD COLUMN execution_id INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL');
-        } else {
-          this.db.exec(`
-            CREATE TABLE automation_logs (
-              id              INTEGER PRIMARY KEY AUTOINCREMENT,
-              timestamp       TEXT    NOT NULL,
-              script          TEXT    NOT NULL,
-              level           TEXT    DEFAULT 'INFO',
-              status          TEXT,
-              message         TEXT,
-              metadata        TEXT,
-              execution_id    INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL,
-              created_at      TEXT    DEFAULT (datetime('now','localtime'))
-            );
-          `);
-        }
-
-        this.db.exec(`
-          CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON automation_logs(timestamp);
-          CREATE INDEX IF NOT EXISTS idx_logs_script    ON automation_logs(script);
-          CREATE INDEX IF NOT EXISTS idx_logs_execution ON automation_logs(execution_id);
-        `);
-
-        // --- errors ---
-        const hasErrorsTable = this.db.prepare(
-          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='errors'"
-        ).get();
-
-        if (hasErrorsTable) {
-          const cols = this.db.prepare('PRAGMA table_info(errors)').all().map(c => c.name);
-          if (!cols.includes('error_code'))   this.db.exec('ALTER TABLE errors ADD COLUMN error_code TEXT');
-          if (!cols.includes('severity'))     this.db.exec("ALTER TABLE errors ADD COLUMN severity TEXT DEFAULT 'error'");
-          if (!cols.includes('execution_id')) this.db.exec('ALTER TABLE errors ADD COLUMN execution_id INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL');
-        } else {
-          this.db.exec(`
-            CREATE TABLE errors (
-              id              INTEGER PRIMARY KEY AUTOINCREMENT,
-              timestamp       TEXT    NOT NULL,
-              script          TEXT    NOT NULL,
-              message         TEXT    NOT NULL,
-              stack_trace     TEXT,
-              error_code      TEXT,
-              severity        TEXT    DEFAULT 'error',
-              execution_id    INTEGER REFERENCES execution_tracking(id) ON DELETE SET NULL,
-              created_at      TEXT    DEFAULT (datetime('now','localtime'))
-            );
-          `);
-        }
-
-        this.db.exec(`
-          CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);
-          CREATE INDEX IF NOT EXISTS idx_errors_script    ON errors(script);
-          CREATE INDEX IF NOT EXISTS idx_errors_execution ON errors(execution_id);
-        `);
+        this._migrateExecutionTracking();
+        this._migrateAutomationLogs();
+        this._migrateErrors();
 
         // --- schedule_audit (new table) ---
         this.db.exec(`
