@@ -28,7 +28,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "test": "node --test tests/db-scanner.test.js tests/db-credentials.test.js",
+    "test": "node --test tests/db-scanner.test.js tests/db-credentials.test.js modules/netops/tests/*.test.js modules/sql_visualizer/tests/*.test.js",
     "rebuild-natives": "node-gyp rebuild --target=41.0.4 --dist-url=https://electronjs.org/headers --directory node_modules/better-sqlite3",
     "lint": "echo \"No lint configured yet\"",
     "build": "electron-builder",

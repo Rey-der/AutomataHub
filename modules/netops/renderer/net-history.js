@@ -1,5 +1,5 @@
 /**
- * NetHistory — Phase 6: uptime analysis, Datadog-style timeline, event log.
+ * NetHistory — uptime analysis, Datadog-style timeline, and event log.
  * Mounted/destroyed by NetApp's view router.
  */
 

@@ -1,7 +1,7 @@
 /**
  * NetOps Data Store — centralized in-memory data management.
  * All monitored hosts, discovered networks, metrics, and status live here.
- * Future: swap arrays/maps for sql.js persistence.
+ * Persistence is handled by NetOpsPersistence (SQLite via sql.js).
  */
 const { randomInt } = require('node:crypto');
 
@@ -13,9 +13,7 @@ class NetOpsStore {
     this.statusCache = new Map();
     this.history = [];
     this.statusChanges = [];
-    this.networkMetrics = [];
     this.systemMetrics = [];
-    this.bufferMetrics = [];
     this.discoveredNetworks = [];
     this.discoveredHosts = [];
     this.alertRules = new Map();
@@ -311,16 +309,7 @@ class NetOpsStore {
 
   getAggregateMetrics(hostId, cutoffTime) {
     hostId = this._nid(hostId);
-    const net = this._filtered('network', hostId, cutoffTime);
     const sys = this._filtered('system', hostId, cutoffTime);
-    const buf = this._filtered('buffer', hostId, cutoffTime);
-
-    const network = net.length > 0 ? {
-      avg_traffic_in:   this._avg(net, 'traffic_in_mb'),
-      avg_traffic_out:  this._avg(net, 'traffic_out_mb'),
-      peak_traffic_in:  this._max(net, 'traffic_in_mb'),
-      peak_traffic_out: this._max(net, 'traffic_out_mb'),
-    } : {};
 
     const system = sys.length > 0 ? {
       avg_cpu_percent:    this._avg(sys, 'cpu_percent'),
@@ -329,25 +318,15 @@ class NetOpsStore {
       max_memory_percent: this._max(sys, 'memory_percent'),
     } : {};
 
-    const buffer = buf.length > 0 ? {
-      avg_hit_rate:      this._avg(buf, 'hit_rate'),
-      min_hit_rate:      this._min(buf, 'hit_rate'),
-      total_small_miss:  this._sum(buf, 'small_miss_mb'),
-      total_medium_miss: this._sum(buf, 'medium_miss_mb'),
-      total_large_miss:  this._sum(buf, 'large_miss_mb'),
-    } : {};
-
     const latestStatus = this.statusCache.get(hostId);
-    return { network, system, buffer, avg_latency_ms: latestStatus?.latency_ms || 0 };
+    return { system, avg_latency_ms: latestStatus?.latency_ms || 0 };
   }
 
   // --- Private helpers ---
 
   _metricsArray(type) {
-    const map = { network: this.networkMetrics, system: this.systemMetrics, buffer: this.bufferMetrics };
-    const arr = map[type];
-    if (!arr) throw new Error(`Unknown metrics type: ${type}`);
-    return arr;
+    if (type === 'system') return this.systemMetrics;
+    throw new Error(`Unknown metrics type: ${type}`);
   }
 
   _filtered(type, hostId, cutoff) {

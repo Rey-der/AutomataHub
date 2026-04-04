@@ -26,146 +26,6 @@ function getThemeColors() {
 }
 
 /**
- * Create a traffic line chart (In/Out bandwidth).
- */
-function createTrafficChart(canvasElement, data = {}) {
-  const colors = getThemeColors();
-  
-  const ctx = canvasElement.getContext('2d');
-  const Chart = globalThis.Chart;
-  
-  if (!Chart) {
-    console.error('[charts] Chart.js not loaded');
-    return null;
-  }
-
-  return new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels || [],
-      datasets: [
-        {
-          label: 'Traffic In (MB/s)',
-          data: data.trafficIn || [],
-          borderColor: colors.info,
-          backgroundColor: `rgba(${hexToRgb(colors.info)}, 0.05)`,
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 6,
-          fill: true
-        },
-        {
-          label: 'Traffic Out (MB/s)',
-          data: data.trafficOut || [],
-          borderColor: 'rgb(251, 146, 60)',
-          backgroundColor: 'rgba(251, 146, 60, 0.05)',
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 0,
-          fill: true
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { position: 'bottom', labels: { color: colors.text, usePointStyle: true } },
-        tooltip: { 
-          mode: 'index',
-          intersect: false,
-          backgroundColor: colors.surface,
-          titleColor: colors.text,
-          bodyColor: colors.text,
-          borderColor: colors.border,
-          borderWidth: 1
-        }
-      },
-      scales: {
-        y: { 
-          min: 0,
-          grace: '10%',
-          ticks: { color: colors.textDim },
-          grid: { color: `rgba(${hexToRgb(colors.border)}, 0.3)` }
-        },
-        x: {
-          ticks: { color: colors.textDim },
-          grid: { color: `rgba(${hexToRgb(colors.border)}, 0.3)` }
-        }
-      }
-    }
-  });
-}
-
-/**
- * Create packets area chart.
- */
-function createPacketsChart(canvasElement, data = {}) {
-  const colors = getThemeColors();
-  const ctx = canvasElement.getContext('2d');
-  const Chart = globalThis.Chart;
-  
-  if (!Chart) return null;
-
-  return new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels || [],
-      datasets: [
-        {
-          label: 'Received Packets',
-          data: data.packetsIn || [],
-          borderColor: colors.success,
-          backgroundColor: `rgba(${hexToRgb(colors.success)}, 0.2)`,
-          tension: 0.4,
-          borderWidth: 2,
-          fill: true
-        },
-        {
-          label: 'Transmitted Packets',
-          data: data.packetsOut || [],
-          borderColor: 'rgb(34, 197, 94)',
-          backgroundColor: 'rgba(34, 197, 94, 0.2)',
-          tension: 0.4,
-          borderWidth: 2,
-          fill: true
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { position: 'bottom', labels: { color: colors.text, usePointStyle: true } },
-        tooltip: { 
-          mode: 'index',
-          backgroundColor: colors.surface,
-          titleColor: colors.text,
-          bodyColor: colors.text,
-          borderColor: colors.border,
-          borderWidth: 1
-        }
-      },
-      scales: {
-        y: { 
-          min: 0,
-          grace: '10%',
-          ticks: { color: colors.textDim },
-          grid: { color: `rgba(${hexToRgb(colors.border)}, 0.3)` }
-        },
-        x: {
-          ticks: { color: colors.textDim },
-          grid: { color: `rgba(${hexToRgb(colors.border)}, 0.3)` }
-        }
-      }
-    }
-  });
-}
-
-/**
  * Create CPU usage area chart.
  */
 function createCpuChart(canvasElement, data = {}) {
@@ -286,63 +146,6 @@ function createMemoryChart(canvasElement, data = {}) {
 }
 
 /**
- * Create buffer miss distribution bar chart.
- */
-function createBufferMissChart(canvasElement, data = {}) {
-  const colors = getThemeColors();
-  const ctx = canvasElement.getContext('2d');
-  const Chart = globalThis.Chart;
-  
-  if (!Chart) return null;
-
-  return new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Small', 'Medium', 'Large'],
-      datasets: [
-        {
-          label: 'Buffer Misses (MB)',
-          data: data.misses || [0, 0, 0],
-          backgroundColor: [
-            'rgb(248, 113, 113)',
-            'rgb(251, 146, 60)',
-            'rgb(251, 191, 36)'
-          ],
-          borderColor: colors.border,
-          borderWidth: 1
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      indexAxis: 'x',
-      plugins: {
-        legend: { position: 'bottom', labels: { color: colors.text } },
-        tooltip: { 
-          backgroundColor: colors.surface,
-          titleColor: colors.text,
-          bodyColor: colors.text,
-          borderColor: colors.border,
-          borderWidth: 1
-        }
-      },
-      scales: {
-        y: {
-          min: 0,
-          ticks: { color: colors.textDim },
-          grid: { color: `rgba(${hexToRgb(colors.border)}, 0.3)` }
-        },
-        x: {
-          ticks: { color: colors.textDim },
-          grid: { display: false }
-        }
-      }
-    }
-  });
-}
-
-/**
  * Helper to convert hex color to RGB string.
  */
 function hexToRgb(hex) {
@@ -370,11 +173,8 @@ function generateTimeLabels(count = 24, intervalMinutes = 5) {
 // Export for browser (globalThis)
 if (typeof globalThis !== 'undefined') {
   globalThis.getThemeColors = getThemeColors;
-  globalThis.createTrafficChart = createTrafficChart;
-  globalThis.createPacketsChart = createPacketsChart;
   globalThis.createCpuChart = createCpuChart;
   globalThis.createMemoryChart = createMemoryChart;
-  globalThis.createBufferMissChart = createBufferMissChart;
   globalThis.hexToRgb = hexToRgb;
   globalThis.generateTimeLabels = generateTimeLabels;
 }
@@ -383,11 +183,8 @@ if (typeof globalThis !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     getThemeColors,
-    createTrafficChart,
-    createPacketsChart,
     createCpuChart,
     createMemoryChart,
-    createBufferMissChart,
     hexToRgb,
     generateTimeLabels
   };

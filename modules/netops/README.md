@@ -176,14 +176,6 @@ Trigger automation scripts on host status changes:
 5. Script runner module picks up event and executes configured script
 6. Result logged back to status_change_log
 
-## Development Roadmap
-
-See [TODO.md](./TODO.md) for 7-week implementation phases:
-- **Week 1-2**: Core infrastructure (polling, database, basic IPC)
-- **Week 3-4**: Live dashboard and scanner UI
-- **Week 5**: History view and analytics
-- **Week 6-7**: Automation integration and production polish
-
 ## Dashboard Sketches
 
 ### Main Dashboard
@@ -242,8 +234,7 @@ See [TODO.md](./TODO.md) for 7-week implementation phases:
 ## Notes
 
 - Polling happens automatically on module load
-- Each host can have custom check intervals in future versions
-- Port checking uses TCP socket timeout (currently hardcoded to 5s)
+- Port checking uses TCP socket timeout (default 5s, configurable via `HostMonitor` constructor)
 - CIDR expansion limited to 254 IPs to prevent excessive scanning
 - Status is cached in memory for real-time responsiveness
 - All timestamps stored in SQLite as local time (`datetime('now', 'localtime')`)

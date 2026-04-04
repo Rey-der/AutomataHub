@@ -240,24 +240,7 @@ async function loadModules() {
   console.log(`[hub] Loaded ${registry.getAll().length} module(s): ${registry.getAll().map((m) => m.id).join(', ') || '(none)'}`);
 }
 
-// --- Default Credentials (demo / GitHub) ---
-
-function initDefaultCredentials() {
-  const DEFAULT_PASSWORD = '0000';
-  try {
-    const rootDir = path.join(__dirname, '..');
-    const userDataDir = app.getPath('userData');
-    const dbs = dbScanner.scanForDatabases(rootDir, MODULES_DIR, userDataDir);
-    for (const db of dbs) {
-      if (!dbCredentials.hasCredential(db.path)) {
-        dbCredentials.setCredential(db.path, DEFAULT_PASSWORD);
-        console.log(`[hub] Set default credential for ${db.relativePath}`);
-      }
-    }
-  } catch (err) {
-    console.warn('[hub] Failed to init default credentials:', err.message);
-  }
-}
+// --- Credential Status Logging ---
 
 function logCredentialStatus() {
   try {
@@ -288,7 +271,6 @@ async function init() {
   }
 
   setupHubIPC();
-  initDefaultCredentials();
   await loadModules();
   logCredentialStatus();
   createWindow();

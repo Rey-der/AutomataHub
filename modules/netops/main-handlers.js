@@ -62,14 +62,8 @@ function setup(config) {
     try {
       const m = collector.collectAllMetrics(hostname);
       const now = new Date().toISOString();
-      if (m.network) {
-        store.pushMetric('network', { host_id: hostId, timestamp: m.network.timestamp, traffic_in_mb: m.network.traffic_in_mb, traffic_out_mb: m.network.traffic_out_mb, packets_in: m.network.packets_in, packets_out: m.network.packets_out, created_at: now });
-      }
       if (m.system) {
         store.pushMetric('system', { host_id: hostId, timestamp: m.system.timestamp, cpu_percent: m.system.cpu_percent, memory_percent: m.system.memory_percent, memory_used_mb: m.system.memory_used_mb, memory_total_mb: m.system.memory_total_mb, created_at: now });
-      }
-      if (m.buffer) {
-        store.pushMetric('buffer', { host_id: hostId, timestamp: m.buffer.timestamp, buffer_hits: m.buffer.buffer_hits, buffer_misses: m.buffer.buffer_misses, hit_rate: m.buffer.hit_rate, small_miss_mb: m.buffer.small_miss_mb, medium_miss_mb: m.buffer.medium_miss_mb, large_miss_mb: m.buffer.large_miss_mb, created_at: now });
       }
       emit('netops:metrics-updated', { host_id: hostId, metrics: m });
     } catch (err) {

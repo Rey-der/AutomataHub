@@ -132,9 +132,7 @@ class NetHostDetail {
         <div class="hd-metrics-section">
           <div class="hd-tabs">
             ${this._tab('response', 'Response Time')}
-            ${this._tab('traffic', 'Traffic')}
             ${this._tab('system', 'System')}
-            ${this._tab('buffer', 'Buffer')}
           </div>
           <div class="hd-chart-container" id="hd-chart-container">
             <canvas id="hd-chart-canvas"></canvas>
@@ -285,9 +283,7 @@ class NetHostDetail {
     try {
       switch (this.activeTab) {
         case 'response': await this._chartResponse(canvas); break;
-        case 'traffic':  await this._chartTraffic(canvas);  break;
         case 'system':   await this._chartSystem(canvas);   break;
-        case 'buffer':   await this._chartBuffer(canvas);   break;
       }
     } catch (err) {
       console.error('[netops] chart error:', err);
@@ -322,20 +318,6 @@ class NetHostDetail {
     });
   }
 
-  async _chartTraffic(canvas) {
-    const res = await API.invoke('netops:get-network-metrics', {
-      host_id: this.hostId, timeRange: this.timeRange
-    });
-    const metrics = res.metrics || [];
-    const labels = metrics.map(m => _hdTimeLabel(m.timestamp));
-    const data = {
-      labels,
-      trafficIn: metrics.map(m => m.traffic_in_mb),
-      trafficOut: metrics.map(m => m.traffic_out_mb),
-    };
-    this.chart = globalThis.createTrafficChart(canvas, data);
-  }
-
   async _chartSystem(canvas) {
     const res = await API.invoke('netops:get-system-metrics', {
       host_id: this.hostId, timeRange: this.timeRange
@@ -364,30 +346,6 @@ class NetHostDetail {
             tension: 0.3, borderWidth: 2, pointRadius: 0, fill: true,
           },
         ]
-      },
-      options: this._chartOpts(colors, { yMax: 100, yLabel: '%' }),
-    });
-  }
-
-  async _chartBuffer(canvas) {
-    const res = await API.invoke('netops:get-buffer-metrics', {
-      host_id: this.hostId, timeRange: this.timeRange
-    });
-    const metrics = res.metrics || [];
-    const labels = metrics.map(m => _hdTimeLabel(m.timestamp));
-    const colors = globalThis.getThemeColors ? getThemeColors() : {};
-
-    this.chart = new globalThis.Chart(canvas.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Hit Rate %',
-          data: metrics.map(m => m.hit_rate),
-          borderColor: colors.success || '#4ade80',
-          backgroundColor: 'rgba(74, 222, 128, 0.1)',
-          tension: 0.3, borderWidth: 2, pointRadius: 0, fill: true,
-        }]
       },
       options: this._chartOpts(colors, { yMax: 100, yLabel: '%' }),
     });

@@ -1,5 +1,5 @@
 /**
- * Script Runner — TopicList (Phase 1 Enhanced)
+ * Script Runner — TopicList
  * Sidebar component for topic selection and management.
  * 
  * Features:

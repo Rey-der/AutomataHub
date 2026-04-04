@@ -176,7 +176,7 @@ class NetOpsPersistence {
     }
 
     if (version < 2) {
-      // Phase 9: protocol-specific fields on monitored_hosts
+      // Protocol-specific fields on monitored_hosts
       const addCol = (col, type, dflt) => {
         try { this.db.run(`ALTER TABLE monitored_hosts ADD COLUMN ${col} ${type} DEFAULT ${dflt}`); } catch { /* column may already exist */ }
       };
@@ -189,7 +189,7 @@ class NetOpsPersistence {
     }
 
     if (version < 3) {
-      // Phase 10: alert rules + alert history
+      // Alert rules + alert history
       this.db.run(`CREATE TABLE IF NOT EXISTS alert_rules (
         id INTEGER PRIMARY KEY,
         host_id INTEGER,
@@ -220,7 +220,7 @@ class NetOpsPersistence {
     }
 
     if (version < 4) {
-      // Phase 11: enriched host metadata, discovery details, uptime + incidents
+      // Enriched host metadata, discovery details, uptime + incidents
 
       const addCol = (table, col, type, dflt) => {
         try { this.db.run(`ALTER TABLE ${table} ADD COLUMN ${col} ${type} DEFAULT ${dflt}`); } catch { /* column may already exist */ }

@@ -1,100 +1,88 @@
 /**
- * NetOps Metrics Collector — collects network, system, and buffer metrics.
- * 
- * This module provides simulated metrics collection (Phase 1).
- * Future phases can integrate with:
- * - SNMP (Simple Network Management Protocol) for device metrics
- * - SSH/WMI for system metrics
- * - Custom agents on monitored hosts
+ * NetOps Metrics Collector — collects real system metrics from the local machine.
+ * Uses Node.js `os` module for CPU and memory data.
+ * Metrics are only meaningful for the host running AutomataHub.
  */
 
-const { randomInt } = require('node:crypto');
+const os = require('node:os');
+
+/** Previous CPU sample for delta-based usage calculation. */
+let _prevCpuTimes = null;
 
 /**
- * Create a metrics collector instance.
+ * Read aggregate CPU times across all cores.
+ */
+function _readCpuTimes() {
+  const cpus = os.cpus();
+  const totals = { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 };
+  for (const cpu of cpus) {
+    totals.user += cpu.times.user;
+    totals.nice += cpu.times.nice;
+    totals.sys  += cpu.times.sys;
+    totals.idle += cpu.times.idle;
+    totals.irq  += cpu.times.irq;
+  }
+  return totals;
+}
+
+/**
+ * Calculate CPU usage percentage from two samples.
+ * Returns 0 on the first call (no previous sample yet).
+ */
+function _cpuPercent() {
+  const current = _readCpuTimes();
+  if (!_prevCpuTimes) {
+    _prevCpuTimes = current;
+    return 0;
+  }
+
+  const dUser = current.user - _prevCpuTimes.user;
+  const dNice = current.nice - _prevCpuTimes.nice;
+  const dSys  = current.sys  - _prevCpuTimes.sys;
+  const dIdle = current.idle - _prevCpuTimes.idle;
+  const dIrq  = current.irq  - _prevCpuTimes.irq;
+
+  const total = dUser + dNice + dSys + dIdle + dIrq;
+  _prevCpuTimes = current;
+
+  if (total === 0) return 0;
+  return Number.parseFloat((((total - dIdle) / total) * 100).toFixed(2));
+}
+
+/**
+ * Create a metrics collector that reads real OS data.
  */
 function createMetricsCollector() {
   return {
     /**
-     * Simulate network metrics collection.
-     * In Phase 2+, this would collect from SNMP or netflow data.
+     * Collect real CPU and memory metrics from the local machine.
      */
-    collectNetworkMetrics: function(hostname) {
-      // Simulated data - will be replaced with real SNMP/netflow in Phase 2+
-      const traffic_in = randomInt(10001) / 100; // MB/s, 0-100
-      const traffic_out = randomInt(8001) / 100;
-      const packets_in = randomInt(10000);
-      const packets_out = randomInt(8000);
+    collectSystemMetrics: function(_hostname) {
+      const totalMem = os.totalmem();
+      const freeMem = os.freemem();
+      const usedMem = totalMem - freeMem;
+      const memPercent = (usedMem / totalMem) * 100;
 
       return {
-        hostname,
-        traffic_in_mb: Number.parseFloat(traffic_in.toFixed(2)),
-        traffic_out_mb: Number.parseFloat(traffic_out.toFixed(2)),
-        packets_in,
-        packets_out,
-        timestamp: new Date().toISOString()
+        hostname: os.hostname(),
+        cpu_percent: _cpuPercent(),
+        memory_percent: Number.parseFloat(memPercent.toFixed(2)),
+        memory_used_mb: Math.round(usedMem / (1024 * 1024)),
+        memory_total_mb: Math.round(totalMem / (1024 * 1024)),
+        timestamp: new Date().toISOString(),
       };
     },
 
     /**
-     * Simulate system metrics collection.
-     * In Phase 2+, this would collect via SNMP, SSH, or Windows WMI.
-     */
-    collectSystemMetrics: function(hostname) {
-      // Simulated data - will be replaced with real system queries in Phase 2+
-      const cpu = randomInt(10001) / 100;
-      const memory = randomInt(10001) / 100;
-      const memoryUsed = Math.floor(memory * 32 / 100); // Assuming 32GB total
-      
-      return {
-        hostname,
-        cpu_percent: Number.parseFloat(cpu.toFixed(2)),
-        memory_percent: Number.parseFloat(memory.toFixed(2)),
-        memory_used_mb: memoryUsed,
-        memory_total_mb: 32000,
-        timestamp: new Date().toISOString()
-      };
-    },
-
-    /**
-     * Simulate buffer metrics collection.
-     * In Phase 2+, this would collect from /proc/meminfo, Windows perf counters, or SNMP.
-     */
-    collectBufferMetrics: function(hostname) {
-      // Simulated data - will be replaced with real buffer stats in Phase 2+
-      const hits = randomInt(1000000);
-      const misses = randomInt(100000);
-      const total = hits + misses;
-      const hitRate = total > 0 ? (hits / total * 100) : 0;
-
-      // Simulate miss distribution
-      const smallMiss = randomInt(1001) / 100;
-      const mediumMiss = randomInt(5001) / 100;
-      const largeMiss = randomInt(10001) / 100;
-
-      return {
-        hostname,
-        buffer_hits: hits,
-        buffer_misses: misses,
-        hit_rate: Number.parseFloat(hitRate.toFixed(2)),
-        small_miss_mb: Number.parseFloat(smallMiss.toFixed(2)),
-        medium_miss_mb: Number.parseFloat(mediumMiss.toFixed(2)),
-        large_miss_mb: Number.parseFloat(largeMiss.toFixed(2)),
-        timestamp: new Date().toISOString()
-      };
-    },
-
-    /**
-     * Collect all metrics for a host.
+     * Collect all available metrics for a host.
+     * Only system metrics (CPU + memory) are collected from real OS APIs.
      */
     collectAllMetrics: function(hostname) {
       return {
-        network: this.collectNetworkMetrics(hostname),
         system: this.collectSystemMetrics(hostname),
-        buffer: this.collectBufferMetrics(hostname),
-        collectTime: Date.now()
+        collectTime: Date.now(),
       };
-    }
+    },
   };
 }
 

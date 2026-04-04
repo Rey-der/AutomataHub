@@ -279,7 +279,7 @@ function setup(ctx) {
     };
   });
 
-  // --- Phase 2: Analytics IPC Handlers ---
+  // --- Analytics IPC Handlers ---
 
   ipcBridge.handle('sql-visualizer:get-execution-timeline', (_event, args) => {
     if (!_isAnalyticsActive()) return [];

@@ -1,8 +1,7 @@
 /**
  * NetApp — root layout component for NetOps Monitor.
  * Provides sidebar navigation, toolbar, status bar, and content routing.
- * Content views (Overview, Hosts, Discovery, History) are placeholders
- * until implemented in Phases 2–6.
+ * Content views: Overview, Hosts, Host Detail, Discovery, History, Alerts.
  */
 
 (function() {

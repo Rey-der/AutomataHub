@@ -13,7 +13,7 @@ const fs = require('node:fs');
 const { createStore, createTempDir, cleanup } = require('./helpers');
 
 // We need the register function from handlers/scripts.js, but it expects
-// an ipcBridge and deps. We build minimal stubs to extract getAvailableScripts.
+// an ipcBridge and deps. We build test fixtures for IPC infrastructure.
 
 function buildDeps(store, scriptsDir) {
   return {

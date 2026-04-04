@@ -673,7 +673,7 @@ const ScriptExecution = (() => {
     });
 
     globalThis.api.on('script-runner:log-saved', () => {
-      // Reserved for future external log triggers
+      // no-op: event available for external consumers
     });
   }
 

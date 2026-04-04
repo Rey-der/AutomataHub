@@ -16,22 +16,10 @@ function getTimeRangeCutoff(timeRange) {
 
 function register(ipcBridge, { store }) {
 
-  ipcBridge.handle('netops:get-network-metrics', async (_e, args) => {
-    const { host_id, timeRange = '24h', limit = 288 } = args || {};
-    if (!host_id) return { error: 'Missing host_id', metrics: [] };
-    return { success: true, metrics: store.getMetrics('network', host_id, getTimeRangeCutoff(timeRange), limit) };
-  });
-
   ipcBridge.handle('netops:get-system-metrics', async (_e, args) => {
     const { host_id, timeRange = '24h', limit = 288 } = args || {};
     if (!host_id) return { error: 'Missing host_id', metrics: [] };
     return { success: true, metrics: store.getMetrics('system', host_id, getTimeRangeCutoff(timeRange), limit) };
-  });
-
-  ipcBridge.handle('netops:get-buffer-metrics', async (_e, args) => {
-    const { host_id, timeRange = '24h', limit = 288 } = args || {};
-    if (!host_id) return { error: 'Missing host_id', metrics: [] };
-    return { success: true, metrics: store.getMetrics('buffer', host_id, getTimeRangeCutoff(timeRange), limit) };
   });
 
   ipcBridge.handle('netops:get-aggregate-metrics', async (_e, args) => {
