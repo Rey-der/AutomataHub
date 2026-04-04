@@ -3,6 +3,8 @@
  * Mounted/destroyed by NetApp's view router.
  */
 
+const EXAMPLE_CIDR = '192.168.1.0/24'; // NOSONAR — UI placeholder example
+
 class NetDiscovery {
   constructor(app) {
     this.app = app;
@@ -64,7 +66,7 @@ class NetDiscovery {
             <div class="disc-scan-fields">
               <label class="disc-field">
                 <span>CIDR Range</span>
-                <input type="text" name="cidr" required placeholder="192.168.1.0/24" />
+                <input type="text" name="cidr" required placeholder="${EXAMPLE_CIDR}" />
               </label>
               <label class="disc-field disc-field-sm">
                 <span>Port (optional)</span>

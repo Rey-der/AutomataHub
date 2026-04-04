@@ -18,8 +18,8 @@ describe('NetOpsStore', () => {
 
   describe('hosts', () => {
     it('adds and retrieves a host', () => {
-      store.addHost({ id: 1, hostname: '10.0.0.1', enabled: true });
-      assert.equal(store.getHost(1).hostname, '10.0.0.1');
+      store.addHost({ id: 1, hostname: '10.0.0.1', enabled: true }); // NOSONAR — test fixture
+      assert.equal(store.getHost(1).hostname, '10.0.0.1'); // NOSONAR
     });
 
     it('returns null for unknown host', () => {
@@ -27,7 +27,7 @@ describe('NetOpsStore', () => {
     });
 
     it('removes a host and its status cache', () => {
-      store.addHost({ id: 1, hostname: '10.0.0.1', enabled: true });
+      store.addHost({ id: 1, hostname: '10.0.0.1', enabled: true }); // NOSONAR — test fixture
       store.setStatus(1, { status: 'online', latency_ms: 5, timestamp: new Date().toISOString() });
       store.removeHost(1);
       assert.equal(store.getHost(1), null);
@@ -233,22 +233,22 @@ describe('NetOpsStore', () => {
 
   describe('discovered networks', () => {
     it('adds and finds network by CIDR', () => {
-      store.addDiscoveredNetwork({ id: 1, cidr: '192.168.1.0/24', name: 'LAN', discovered_at: new Date().toISOString() });
-      assert.equal(store.findDiscoveredNetwork('192.168.1.0/24').name, 'LAN');
+      store.addDiscoveredNetwork({ id: 1, cidr: '192.168.1.0/24', name: 'LAN', discovered_at: new Date().toISOString() }); // NOSONAR — test fixture
+      assert.equal(store.findDiscoveredNetwork('192.168.1.0/24').name, 'LAN'); // NOSONAR
     });
 
     it('computes host_count and online_count', () => {
-      store.addDiscoveredNetwork({ id: 1, cidr: '10.0.0.0/24', name: 'Net' });
-      store.addDiscoveredHost({ ip: '10.0.0.1', network_id: 1, status: 'online' });
-      store.addDiscoveredHost({ ip: '10.0.0.2', network_id: 1, status: 'offline' });
+      store.addDiscoveredNetwork({ id: 1, cidr: '10.0.0.0/24', name: 'Net' }); // NOSONAR — test fixture
+      store.addDiscoveredHost({ ip: '10.0.0.1', network_id: 1, status: 'online' }); // NOSONAR
+      store.addDiscoveredHost({ ip: '10.0.0.2', network_id: 1, status: 'offline' }); // NOSONAR
       const nets = store.getDiscoveredNetworks();
       assert.equal(nets[0].host_count, 2);
       assert.equal(nets[0].online_count, 1);
     });
 
     it('removeDiscoveredNetwork cascades to hosts', () => {
-      store.addDiscoveredNetwork({ id: 1, cidr: '10.0.0.0/24' });
-      store.addDiscoveredHost({ ip: '10.0.0.1', network_id: 1 });
+      store.addDiscoveredNetwork({ id: 1, cidr: '10.0.0.0/24' }); // NOSONAR — test fixture
+      store.addDiscoveredHost({ ip: '10.0.0.1', network_id: 1 }); // NOSONAR
       const result = store.removeDiscoveredNetwork(1);
       assert.equal(result.hostCount, 1);
       assert.equal(store.getDiscoveredHosts(1).length, 0);

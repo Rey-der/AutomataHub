@@ -280,7 +280,7 @@ class NetHostList {
           <form class="hl-modal-body" id="hl-add-form" autocomplete="off">
             <label class="hl-field">
               <span>Hostname <em>(required)</em></span>
-              <input type="text" name="hostname" required placeholder="e.g. 192.168.1.1 or myserver.local" />
+              <input type="text" name="hostname" required placeholder="e.g. myserver.local or 10.x.x.x" />
             </label>
             <label class="hl-field">
               <span>IP Address</span>
@@ -382,7 +382,7 @@ class NetHostList {
             <input type="hidden" name="host_id" />
             <label class="hl-field">
               <span>Hostname <em>(required)</em></span>
-              <input type="text" name="hostname" required placeholder="e.g. 192.168.1.1 or myserver.local" />
+              <input type="text" name="hostname" required placeholder="e.g. myserver.local or 10.x.x.x" />
             </label>
             <label class="hl-field">
               <span>IP Address</span>

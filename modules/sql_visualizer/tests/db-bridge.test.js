@@ -49,11 +49,11 @@ describe('db-bridge (sql.js fallback)', () => {
 
     it('getTableInfo returns column definitions', () => {
       const info = dbBridge.getTableInfo('automation_logs');
-      const names = info.map(c => c.name);
-      assert.ok(names.includes('id'));
-      assert.ok(names.includes('timestamp'));
-      assert.ok(names.includes('script'));
-      assert.ok(names.includes('status'));
+      const names = new Set(info.map(c => c.name));
+      assert.ok(names.has('id'));
+      assert.ok(names.has('timestamp'));
+      assert.ok(names.has('script'));
+      assert.ok(names.has('status'));
     });
 
     it('getRowCount returns correct count', () => {
