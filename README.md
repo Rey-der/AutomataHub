@@ -15,7 +15,7 @@
 
 ---
 
-> **Beta Software** — This is a functional beta release. A production-ready rewrite is currently in progress.
+> **Beta Software** — This is a functional beta release as a preview of the core functionality and overall concept. A production-ready rewrite is currently in progress.
 > If you are interested in the production version, feel free to [open an issue](https://github.com/Rey-der/AutomataHub/issues) or send me a DM.
 
 ---
