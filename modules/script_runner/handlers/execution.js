@@ -1,243 +1,27 @@
 /**
  * Script Runner — Execution Handler
- * Handles script execution, queue status, log saving, and workflow chaining.
+ * Handles script execution, queue status, and log saving.
  */
 
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
-const crypto = require('node:crypto');
-const { resolveExecutionOrder } = require('../core/dependency-resolver');
 
-function register(ipcBridge, { executor, store, send, paths, resolveInside, ensureDir, ERROR_MESSAGES, persistence, executionDb }) {
+function register(ipcBridge, { executor, send, paths, ensureDir, ERROR_MESSAGES }) {
   // Temp files written for per-run script overrides; cleaned up after completion
   const pendingCleanup = new Map();
 
-  // Active workflow chains keyed by tabId
-  const activeChains = new Map();
-  // Chains being cancelled — stop handler sets this so the general complete
-  // listener doesn't forward a raw completion while _runChain is still running.
-  const cancellingChains = new Set();
-
-  // --- Execution tracking state (per tabId) ---
-  const execState = new Map(); // tabId → { rowId, scriptName, stdoutLines, stderrLines, firstError }
-
-  function _startTracking(tabId, scriptName, extra = {}) {
-    if (!executionDb) return;
-    const rowId = executionDb.insertExecution({
-      script: scriptName,
-      startTime: new Date().toISOString(),
-      ...extra,
-    });
-    execState.set(tabId, { rowId, scriptName, stdoutLines: 0, stderrLines: 0, firstError: null });
-  }
-
-  function _finishTracking(tabId, data) {
-    if (!executionDb) return;
-    const state = execState.get(tabId);
-    if (!state) return;
-    execState.delete(tabId);
-
-    const status = data.exitCode === 0 ? 'SUCCESS' : (data.signal ? 'KILLED' : 'FAIL');
-    executionDb.completeExecution(state.rowId, {
-      endTime: new Date().toISOString(),
-      status,
-      exitCode: data.exitCode ?? 1,
-      errorMessage: state.firstError,
-      runtimeMs: data.runtime || 0,
-      stdoutLines: state.stdoutLines,
-      stderrLines: state.stderrLines,
-    });
-
-    // Write a summary log entry
-    executionDb.insertLog({
-      timestamp: new Date().toISOString(),
-      script: state.scriptName,
-      level: status === 'SUCCESS' ? 'INFO' : 'ERROR',
-      status,
-      message: status === 'SUCCESS'
-        ? `Completed in ${data.runtime || 0}ms`
-        : `Failed with exit code ${data.exitCode}` + (state.firstError ? `: ${state.firstError}` : ''),
-      executionId: state.rowId,
-    });
-  }
-
   // Forward executor events to renderer
-  executor.on('output', (data) => {
-    const state = execState.get(data.tabId);
-    if (state) state.stdoutLines++;
-    send('script-runner:output', data);
-  });
-  executor.on('error', (data) => {
-    const state = execState.get(data.tabId);
-    if (state) {
-      state.stderrLines++;
-      if (!state.firstError) state.firstError = data.text;
-      // Write to errors table
-      if (executionDb) {
-        executionDb.insertError({
-          timestamp: data.timestamp || new Date().toISOString(),
-          script: state.scriptName,
-          message: data.text,
-          executionId: state.rowId,
-        });
-      }
-    }
-    send('script-runner:error', data);
-  });
-  executor.on('retry', (data) => send('script-runner:retry', data));
+  executor.on('output', (data) => send('script-runner:output', data));
+  executor.on('error', (data) => send('script-runner:error', data));
   executor.on('complete', (data) => {
     if (pendingCleanup.has(data.tabId)) {
       try { fs.unlinkSync(pendingCleanup.get(data.tabId)); } catch { /* ignore */ }
       pendingCleanup.delete(data.tabId);
     }
-
-    // Finish tracking for this execution
-    _finishTracking(data.tabId, data);
-
-    // If this tab has an active chain, don't forward completion to renderer —
-    // the chain handler manages its own complete events.
-    if (activeChains.has(data.tabId) || cancellingChains.has(data.tabId)) return;
-
     send('script-runner:complete', data);
   });
   executor.on('queue-status', (data) => send('script-runner:queue-status', data));
-
-  // --- Workflow chain helpers ---
-
-  function _executeAndWait(scriptObj, tabId, trackingExtra = {}) {
-    _startTracking(tabId, scriptObj.name, trackingExtra);
-    return new Promise((resolve) => {
-      const onComplete = (data) => {
-        if (data.tabId === tabId) {
-          executor.removeListener('complete', onComplete);
-          resolve(data);
-        }
-      };
-      executor.on('complete', onComplete);
-      executor.execute({
-        scriptPath: scriptObj.scriptPath,
-        name: scriptObj.name,
-        tabId,
-        env: scriptObj.env || {},
-        retries: scriptObj.retries || 0,
-        retryDelayMs: scriptObj.retryDelayMs || 3000,
-      });
-    });
-  }
-
-  async function _runChain(chainScripts, tabId) {
-    const chainId = crypto.randomUUID();
-    const total = chainScripts.length;
-    activeChains.set(tabId, chainId);
-    let totalRuntime = 0;
-
-    send('script-runner:chain-progress', {
-      tabId, chainId, step: 0, total,
-      status: 'started',
-      scriptNames: chainScripts.map((s) => s.name),
-      timestamp: new Date().toISOString(),
-    });
-
-    for (let i = 0; i < total; i++) {
-      // If chain was cancelled (e.g. user stopped), bail out
-      if (!activeChains.has(tabId)) {
-        cancellingChains.delete(tabId);
-        return;
-      }
-
-      const script = chainScripts[i];
-
-      send('script-runner:chain-progress', {
-        tabId, chainId, step: i + 1, total,
-        scriptName: script.name,
-        status: 'running',
-        timestamp: new Date().toISOString(),
-      });
-
-      const result = await _executeAndWait(script, tabId, {
-        triggerSource: 'chain',
-        chainId,
-        chainStep: i + 1,
-      });
-      totalRuntime += result.runtime || 0;
-
-      // Re-check after await: chain may have been cancelled during execution
-      if (!activeChains.has(tabId)) {
-        cancellingChains.delete(tabId);
-        for (let j = i + 1; j < total; j++) {
-          send('script-runner:chain-skip', {
-            tabId, chainId, step: j + 1, total,
-            scriptName: chainScripts[j].name,
-            reason: 'chain stopped by user',
-            timestamp: new Date().toISOString(),
-          });
-        }
-        send('script-runner:complete', {
-          tabId,
-          exitCode: 1,
-          signal: result.signal || 'SIGTERM',
-          runtime: totalRuntime,
-          chainFailed: true,
-          chainStep: i + 1,
-          chainTotal: total,
-        });
-        return;
-      }
-
-      if (result.exitCode !== 0) {
-        send('script-runner:chain-progress', {
-          tabId, chainId, step: i + 1, total,
-          scriptName: script.name,
-          status: 'failed',
-          exitCode: result.exitCode,
-          runtime: result.runtime,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Skip remaining downstream scripts
-        for (let j = i + 1; j < total; j++) {
-          send('script-runner:chain-skip', {
-            tabId, chainId, step: j + 1, total,
-            scriptName: chainScripts[j].name,
-            reason: `dependency "${script.name}" failed`,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        activeChains.delete(tabId);
-        send('script-runner:complete', {
-          tabId,
-          exitCode: result.exitCode,
-          signal: null,
-          runtime: totalRuntime,
-          chainFailed: true,
-          chainStep: i + 1,
-          chainTotal: total,
-        });
-        return;
-      }
-
-      send('script-runner:chain-progress', {
-        tabId, chainId, step: i + 1, total,
-        scriptName: script.name,
-        status: 'completed',
-        exitCode: 0,
-        runtime: result.runtime,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    activeChains.delete(tabId);
-    send('script-runner:complete', {
-      tabId,
-      exitCode: 0,
-      signal: null,
-      runtime: totalRuntime,
-      chainComplete: true,
-      chainTotal: total,
-    });
-  }
 
   ipcBridge.handle('script-runner:run-script', (_event, args) => {
     try {
@@ -245,72 +29,17 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
       if (!scriptPath || typeof scriptPath !== 'string') throw new Error('Missing scriptPath');
       if (!tabId || typeof tabId !== 'string') throw new Error('Missing tabId');
 
-      // Validate path containment before any file operations
-      const safePath = resolveInside(scriptPath, paths.scriptsDir);
-
-      let effectivePath = safePath;
+      let effectivePath = scriptPath;
       if (scriptContent && typeof scriptContent === 'string') {
-        // Write edited content next to the original (inside scriptsDir — guaranteed by safePath above)
-        const ext = path.extname(safePath);
-        const tmpFile = path.join(path.dirname(safePath), `_tmp_run_${Date.now()}${ext}`);
+        // Write edited content next to the original (inside scriptsDir so resolveInside passes)
+        const ext = path.extname(scriptPath);
+        const tmpFile = path.join(path.dirname(scriptPath), `_tmp_run_${Date.now()}${ext}`);
         fs.writeFileSync(tmpFile, scriptContent, 'utf-8');
         effectivePath = tmpFile;
         pendingCleanup.set(tabId, tmpFile);
       }
 
-      // Look up script config from store using folder name as script ID
-      const scriptId = path.basename(path.dirname(safePath));
-      const stored = store.getScript(scriptId);
-      const retries = stored?.retries || 0;
-      const retryDelayMs = stored?.retryDelayMs || 3000;
-      const dependsOn = stored?.dependsOn || [];
-
-      // Script versioning: hash the original script file and record it
-      if (persistence) {
-        try {
-          const hashSource = scriptContent || fs.readFileSync(safePath, 'utf-8');
-          const hash = crypto.createHash('sha256').update(hashSource).digest('hex');
-          persistence.saveScriptHash(scriptId, hash);
-        } catch { /* non-critical — skip if file unreadable */ }
-      }
-
-      // If the script has dependencies, resolve and run the full chain
-      if (dependsOn.length > 0) {
-        try {
-          const orderedIds = resolveExecutionOrder(scriptId, (id) => store.getScript(id));
-
-          // Only chain if there are actual dependencies (more than just the target)
-          if (orderedIds.length > 1) {
-            const chainScripts = orderedIds.map((id) => {
-              const s = store.getScript(id);
-              return {
-                id,
-                name: s.name,
-                scriptPath: id === scriptId ? effectivePath : s.scriptPath,
-                env: id === scriptId ? perScriptEnv : (s.variants?.[0]?.env || {}),
-                retries: s.retries || 0,
-                retryDelayMs: s.retryDelayMs || 3000,
-              };
-            });
-
-            _runChain(chainScripts, tabId);
-            return { success: true, chain: true, steps: chainScripts.length };
-          }
-        } catch (err) {
-          console.error('[script-runner] Dependency resolution failed:', err.message);
-          return { success: false, error: err.message };
-        }
-      }
-
-      const resolvedName = scriptName || path.basename(scriptPath);
-      const triggerSource = tabId.startsWith('usched-') ? 'schedule' : 'manual';
-      _startTracking(tabId, resolvedName, {
-        triggerSource,
-        scriptHash: persistence ? (() => {
-          try { const src = scriptContent || fs.readFileSync(safePath, 'utf-8'); return crypto.createHash('sha256').update(src).digest('hex'); } catch { return null; }
-        })() : null,
-      });
-      executor.execute({ scriptPath: effectivePath, name: resolvedName, tabId, env: perScriptEnv, retries, retryDelayMs });
+      executor.execute({ scriptPath: effectivePath, name: scriptName || path.basename(scriptPath), tabId, env: perScriptEnv });
       return { success: true };
     } catch (err) {
       console.error('[script-runner] run-script error:', err.message);
@@ -322,15 +51,6 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
     try {
       const { tabId } = args || {};
       if (!tabId || typeof tabId !== 'string') throw new Error('Missing tabId');
-
-      // Cancel active chain so remaining steps are not executed.
-      // Add to cancellingChains so the general complete listener doesn't
-      // forward a raw completion — _runChain will send its own.
-      if (activeChains.has(tabId)) {
-        cancellingChains.add(tabId);
-        activeChains.delete(tabId);
-      }
-
       executor.stop(tabId);
       return { success: true };
     } catch (err) {
@@ -348,8 +68,7 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
     try {
       const { scriptPath } = args || {};
       if (!scriptPath || typeof scriptPath !== 'string') throw new Error('Missing scriptPath');
-      const safePath = resolveInside(scriptPath, paths.scriptsDir);
-      const content = fs.readFileSync(safePath, 'utf-8');
+      const content = fs.readFileSync(scriptPath, 'utf-8');
       return { success: true, content };
     } catch (err) {
       return { success: false, error: err.message };
@@ -365,7 +84,7 @@ function register(ipcBridge, { executor, store, send, paths, resolveInside, ensu
       ensureDir(logsDir);
 
       const now = new Date();
-      const datePart = now.toISOString().replaceAll('T', '_').replaceAll(':', '-').replaceAll(/\..+/g, '');
+      const datePart = now.toISOString().replace(/T/, '_').replaceAll(':', '-').replace(/\..+/, '');
       const safeName = String(scriptName || 'log').replaceAll(/[^a-z0-9_-]/gi, '_');
       const fileName = `${safeName}_${datePart}.txt`;
       const filePath = path.join(logsDir, fileName);

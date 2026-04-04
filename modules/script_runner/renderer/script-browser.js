@@ -81,7 +81,16 @@ class ScriptBrowser {
           </div>
         </div>
 
-        <div class="sr-variant-menu" id="variant-menu" style="display:none;"></div>
+        <div class="topic-picker-overlay" id="variant-picker-overlay" style="display:none">
+          <div class="topic-picker-backdrop" id="variant-picker-backdrop"></div>
+          <div class="topic-picker-modal" id="variant-picker-modal">
+            <div class="topic-picker-header">
+              <span id="variant-picker-title">Choose Variant</span>
+              <button class="topic-picker-close" id="btn-close-variant-picker">&#x2715;</button>
+            </div>
+            <div class="topic-picker-list" id="variant-picker-list"></div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -110,8 +119,8 @@ class ScriptBrowser {
 
   _renderScriptCard(script) {
     const topics = script.topics || [];
-    const topicDots = topics
-      .map((t) => `<span class="script-topic-dot" style="background: ${t.color || '#4A90E2'}" title="${this._escapeHtml(t.name)}"></span>`)
+    const topicTags = topics
+      .map((t) => `<span class="script-topic-tag" style="--topic-color: ${t.color || '#4A90E2'}">${this._escapeHtml(t.name)}</span>`)
       .join('');
 
     // Render variant language badges
@@ -120,67 +129,24 @@ class ScriptBrowser {
       .map((v) => `<span class="script-language">${this._escapeHtml(v.language || 'Unknown')}</span>`)
       .join('');
 
-    // Retry badge
-    const retryBadge = script.retries > 0
-      ? `<span class="script-retry-badge" title="Auto-retry: ${script.retries} retries, ${((script.retryDelayMs || 3000) / 1000).toFixed(0)}s delay">Retry x${script.retries}</span>`
-      : '';
-
-    // Schedule badge — only show when a user-defined schedule is active
     const scriptId = script.id || script.folder;
-    const userSchedules = this.app.scheduleListInstance?.schedules || [];
-    const hasActiveSchedule = userSchedules.some(s => s.target_id === scriptId && s.enabled);
-    const scheduleBadge = hasActiveSchedule
-      ? `<span class="script-schedule-badge" title="Scheduled (user)">Scheduled</span>`
-      : '';
-
-    // Dependency badge
-    const deps = script.dependsOn || [];
-    const depsBadge = deps.length > 0
-      ? `<span class="script-deps-badge" title="Depends on: ${deps.map((d) => this._escapeHtml(d)).join(', ')}">Depends</span>`
-      : '';
-    const chains = this.app.chainListInstance?.chains || [];
-    const chainNames = chains
-      .filter((c) => (c.script_ids || []).includes(scriptId))
-      .map((c) => c.name);
-    const chainBadge = chainNames.length > 0
-      ? `<span class="script-chain-badge" title="In chain: ${chainNames.map((n) => this._escapeHtml(n)).join(', ')}">&#9741; Chain</span>`
-      : '';
-
-    // Modified badge (script changed since last execution)
-    const modifiedBadge = script.modified
-      ? `<span class="script-modified-badge" title="Script modified since last run">Modified</span>`
-      : '';
-
-    // Dependency line below description
-    const depSpans = deps.map((d) => `<span class="script-dep-name">${this._escapeHtml(d)}</span>`).join(', ');
-    const depsLine = deps.length > 0
-      ? `<p class="script-deps-line">Depends on: ${depSpans}</p>`
-      : '';
-
-    const isFav = this.app.isFavorite(scriptId);
 
     return `
       <div class="script-card" data-script-id="${this._escapeHtml(scriptId)}" draggable="true" title="Drag to topic to assign">
         <div class="card-header">
           <h3 class="script-name">${this._escapeHtml(script.name)}</h3>
-          <div class="card-header-actions">
-            ${topicDots ? `<span class="script-topic-dots">${topicDots}</span>` : ''}
-            <button class="card-toggle toggle-favorite sc-fav-btn${isFav ? ' active' : ''}" data-script-id="${this._escapeHtml(scriptId)}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '&#9829;' : '&#9825;'}</button>
+          <div class="variant-badges">
+            ${languageTags}
           </div>
         </div>
-
-        ${languageTags || retryBadge || scheduleBadge || depsBadge || chainBadge || modifiedBadge
-          ? `<div class="variant-badges">${languageTags}${retryBadge}${scheduleBadge}${depsBadge}${chainBadge}${modifiedBadge}</div>`
-          : ''}
         
         ${script.description ? `<p class="script-description">${this._escapeHtml(script.description)}</p>` : ''}
-        ${depsLine}
         
-
+        ${topicTags ? `<div class="script-topics">${topicTags}</div>` : ''}
         
         <div class="card-footer">
           <button class="btn btn-primary" data-script-id="${this._escapeHtml(scriptId)}">
-            Run
+            Open
           </button>
           <button class="btn btn-secondary" data-script-id="${this._escapeHtml(scriptId)}" title="Add to topic">
             + Topic
@@ -251,21 +217,12 @@ class ScriptBrowser {
       });
     });
 
-    // Favorite buttons
-    this.container.querySelectorAll('.sc-fav-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.app.toggleFavorite(btn.dataset.scriptId);
-      });
-    });
-
     // Run buttons
     this.container.querySelectorAll('.card-footer .btn-primary').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        e.stopPropagation();
         const scriptId = btn.dataset.scriptId;
         const script = this.app.scripts.find((s) => s.id === scriptId || s.folder === scriptId);
-        if (script) this._handleRunScript(script, btn);
+        if (script) this._handleRunScript(script);
       });
     });
 
@@ -328,13 +285,7 @@ class ScriptBrowser {
       if (e.key === 'Escape') {
         this._closeTopicPicker();
         this._closeScriptDetail();
-        this._closeVariantMenu();
       }
-    });
-
-    // Click outside closes variant menu
-    document.addEventListener('click', () => {
-      this._closeVariantMenu();
     });
 
     // Remove zone (drag script here to remove from topic)
@@ -396,56 +347,70 @@ class ScriptBrowser {
     }
   }
 
-  async _handleRunScript(script, btn) {
+  async _handleRunScript(script) {
     const variants = script.variants || [];
+    let chosen = script;
 
     if (variants.length > 1) {
-      this._showVariantMenu(script, btn);
-      return;
+      chosen = await this._pickVariant(script);
+      if (!chosen) return; // user cancelled
+    } else if (variants.length === 1) {
+      chosen = variants[0];
     }
 
-    const chosen = variants.length === 1 ? variants[0] : script;
-    this._openExecution(script, chosen);
-  }
-
-  _openExecution(script, chosen) {
-    this.app.openExecution(script, chosen);
-  }
-
-  _showVariantMenu(script, btn) {
-    this._closeVariantMenu();
-    const menu = this.container.querySelector('#variant-menu');
-    if (!menu || !btn) return;
-
-    menu.innerHTML = (script.variants || []).map((v) => `
-      <button class="sr-variant-item" data-variant-label="${this._escapeHtml(v.label)}">
-        <span class="script-language">${this._escapeHtml(v.language || v.label)}</span>
-        <span class="sr-variant-name">${this._escapeHtml(v.label)}</span>
-      </button>
-    `).join('');
-
-    menu.querySelectorAll('.sr-variant-item').forEach((item) => {
-      item.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const chosen = script.variants.find((x) => x.label === item.dataset.variantLabel);
-        this._closeVariantMenu();
-        if (chosen) this._openExecution(script, chosen);
+    if (globalThis.tabManager) {
+      globalThis.tabManager.createTab('script-execution', `${script.name}`, {
+        scriptPath: chosen.scriptPath || script.scriptPath,
+        scriptName: script.name,
+        scriptId: script.id || script.folder,
+        scriptEnv: chosen.env || script.env || {},
       });
-    });
-
-    const rect = btn.getBoundingClientRect();
-    menu.style.top = `${rect.bottom + 4}px`;
-    menu.style.right = `${globalThis.innerWidth - rect.right}px`;
-    menu.style.left = '';
-    menu.style.display = 'block';
-
-    this._variantMenuOpen = true;
+    }
   }
 
-  _closeVariantMenu() {
-    const menu = this.container?.querySelector('#variant-menu');
-    if (menu) menu.style.display = 'none';
-    this._variantMenuOpen = false;
+  _pickVariant(script) {
+    return new Promise((resolve) => {
+      const overlay = this.container.querySelector('#variant-picker-overlay');
+      const titleEl = this.container.querySelector('#variant-picker-title');
+      const list = this.container.querySelector('#variant-picker-list');
+      const backdrop = this.container.querySelector('#variant-picker-backdrop');
+      const closeBtn = this.container.querySelector('#btn-close-variant-picker');
+      if (!overlay || !list) { resolve(null); return; }
+
+      if (titleEl) titleEl.textContent = `Run "${script.name}" — choose variant`;
+
+      list.innerHTML = (script.variants || []).map((v) => `
+        <button class="topic-picker-item" data-variant-label="${this._escapeHtml(v.label)}">
+          <span class="script-language">${this._escapeHtml(v.language || v.label)}</span>
+          <span class="topic-picker-name">${this._escapeHtml(v.label)}</span>
+        </button>
+      `).join('');
+
+      const close = (result) => {
+        overlay.style.display = 'none';
+        backdrop.removeEventListener('click', onBackdrop);
+        closeBtn.removeEventListener('click', onClose);
+        document.removeEventListener('keydown', onKey);
+        resolve(result);
+      };
+
+      const variantMap = new Map((script.variants || []).map((v) => [v.label, v]));
+      list.querySelectorAll('.topic-picker-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          close(variantMap.get(btn.dataset.variantLabel) ?? null);
+        });
+      });
+
+      const onBackdrop = () => close(null);
+      const onClose = () => close(null);
+      const onKey = (e) => { if (e.key === 'Escape') close(null); };
+
+      backdrop.addEventListener('click', onBackdrop);
+      closeBtn.addEventListener('click', onClose);
+      document.addEventListener('keydown', onKey);
+
+      overlay.style.display = 'flex';
+    });
   }
 
   _handleAddToTopic(script) {
@@ -577,7 +542,7 @@ class ScriptBrowser {
 
     return `
       <div class="language-filter-bar">
-        <button class="lang-chip ${this.filterLanguage ? '' : 'active'}" data-lang="">All</button>
+        <button class="lang-chip ${!this.filterLanguage ? 'active' : ''}" data-lang="">All</button>
         ${languages
           .map(
             (lang) =>
@@ -595,6 +560,14 @@ class ScriptBrowser {
     if (!overlay || !titleEl || !bodyEl) return;
 
     titleEl.textContent = script.name;
+
+    const topics =
+      (script.topics || [])
+        .map(
+          (t) =>
+            `<span class="script-topic-tag" style="--topic-color: ${t.color || '#4A90E2'}">${this._escapeHtml(t.name)}</span>`
+        )
+        .join('') || '<span class="detail-none">None</span>';
 
     const variants =
       (script.variants || [])
@@ -638,11 +611,11 @@ class ScriptBrowser {
     const isSuccess = run.status === 'success';
     const statusClass = isSuccess ? 'run-status-success' : 'run-status-error';
     const statusIcon = isSuccess ? 'OK' : 'ERR';
-    const duration = run.runtime == null ? '—' : this._formatRuntime(run.runtime);
+    const duration = run.runtime != null ? this._formatRuntime(run.runtime) : '—';
     const date = run.timestamp ? new Date(run.timestamp).toLocaleString(undefined, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     }) : '—';
-    const exitLabel = run.exitCode == null ? '' : `exit ${run.exitCode}`;
+    const exitLabel = run.exitCode != null ? `exit ${run.exitCode}` : '';
     return `
       <div class="run-entry">
         <span class="run-entry-status ${statusClass}" title="${exitLabel}">${statusIcon}</span>
@@ -672,6 +645,6 @@ class ScriptBrowser {
   }
 
   destroy() {
-    this._closeVariantMenu();
+    // Cleanup if needed
   }
 }

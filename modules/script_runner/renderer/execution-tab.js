@@ -1,7 +1,7 @@
 /**
- * Script Runner — execution tab / in-module session renderer.
+ * Script Runner — execution tab renderer.
  * Provides a live terminal view for running scripts.
- * Sessions are managed by ScriptApp; this module handles rendering and IPC.
+ * Registers the "script-execution" tab type with TabManager.
  */
 
 const ScriptExecution = (() => {
@@ -89,32 +89,34 @@ const ScriptExecution = (() => {
 
   // --- Rendering ---
 
-  function _loadScriptIntoEditArea(tab, state) {
-    if (state.scriptOverride !== null || !tab.scriptPath) return;
-    globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
-      .then((res) => {
-        const el = document.getElementById(`script-edit-${tab.id}`);
-        if (!el) return;
-        el.value = res.success ? res.content : `(Could not load: ${res.error})`;
-        if (res.success) state.scriptOverride = res.content;
-      }).catch(() => {});
+  function renderProgressRow(tab, state) {
+    const progressRow = document.createElement('div');
+    progressRow.className = 'execution-progress-row';
+    progressRow.id = `progress-row-${tab.id}`;
+
+    const progressBar = document.createElement('div');
+    progressBar.className = 'progress-bar';
+    progressBar.id = `progress-bar-${tab.id}`;
+    const progressFill = document.createElement('div');
+    progressFill.className = 'progress-fill';
+    if (state.isRunning) progressFill.classList.add('progress-indeterminate');
+    else if (state.runtime !== null) { progressFill.classList.add('progress-done'); progressFill.style.width = '100%'; }
+    progressBar.appendChild(progressFill);
+    progressRow.appendChild(progressBar);
+
+    const elapsed = document.createElement('span');
+    elapsed.className = 'elapsed-time';
+    elapsed.id = `elapsed-${tab.id}`;
+    if (state.isRunning && state.startTime) {
+      elapsed.textContent = formatElapsed(Date.now() - state.startTime);
+    } else if (state.runtime !== null) {
+      elapsed.textContent = formatElapsed(state.runtime);
+    }
+    progressRow.appendChild(elapsed);
+    return progressRow;
   }
 
-  function _loadScriptIntoPreview(tab, state) {
-    if (state.scriptOverride !== null || !tab.scriptPath) return;
-    globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
-      .then((res) => {
-        const el = document.getElementById(`script-preview-${tab.id}`);
-        if (!el) return;
-        if (res.success) el.textContent = res.content;
-        else { el.textContent = `(Could not load script: ${res.error})`; el.classList.add('script-preview-error'); }
-      }).catch(() => {
-        const el = document.getElementById(`script-preview-${tab.id}`);
-        if (el) { el.textContent = '(Failed to read script)'; el.classList.add('script-preview-error'); }
-      });
-  }
-
-  function _createPlaceholder(tab, state) {
+  function renderPlaceholder(tab, state) {
     const placeholder = document.createElement('div');
     placeholder.className = 'terminal-placeholder';
 
@@ -149,81 +151,61 @@ const ScriptExecution = (() => {
       ta.className = 'script-edit-area';
       ta.id = `script-edit-${tab.id}`;
       ta.spellcheck = false;
-      ta.value = state.scriptOverride ?? 'Loading\u2026';
+      ta.value = state.scriptOverride === null ? 'Loading\u2026' : state.scriptOverride;
       placeholder.appendChild(ta);
-      _loadScriptIntoEditArea(tab, state);
+      if (state.scriptOverride === null && tab.scriptPath) {
+        globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
+          .then((res) => {
+            const el = document.getElementById(`script-edit-${tab.id}`);
+            if (!el) return;
+            el.value = res.success ? res.content : `(Could not load: ${res.error})`;
+            if (res.success) state.scriptOverride = res.content;
+          }).catch(() => {});
+      }
       setTimeout(() => { const el = document.getElementById(`script-edit-${tab.id}`); if (el) el.focus(); }, 0);
     } else {
       const codeBlock = document.createElement('pre');
       codeBlock.className = 'script-preview' + (state.scriptOverride === null ? '' : ' script-preview-edited');
       codeBlock.id = `script-preview-${tab.id}`;
-      codeBlock.textContent = state.scriptOverride ?? 'Loading\u2026';
+      codeBlock.textContent = state.scriptOverride === null ? 'Loading\u2026' : state.scriptOverride;
       placeholder.appendChild(codeBlock);
-      _loadScriptIntoPreview(tab, state);
+      if (state.scriptOverride === null && tab.scriptPath) {
+        globalThis.api.invoke('script-runner:read-script', { scriptPath: tab.scriptPath })
+          .then((res) => {
+            const el = document.getElementById(`script-preview-${tab.id}`);
+            if (!el) return;
+            if (res.success) el.textContent = res.content;
+            else { el.textContent = `(Could not load script: ${res.error})`; el.classList.add('script-preview-error'); }
+          }).catch(() => {
+            const el = document.getElementById(`script-preview-${tab.id}`);
+            if (el) { el.textContent = '(Failed to read script)'; el.classList.add('script-preview-error'); }
+          });
+      }
     }
 
-    penBtn.addEventListener('click', () => _toggleEditMode(tab, state));
+    penBtn.addEventListener('click', () => {
+      const s = getState(tab.id);
+      if (s.editMode) {
+        const taEl = document.getElementById(`script-edit-${tab.id}`);
+        if (taEl) s.scriptOverride = taEl.value;
+        s.editMode = false;
+      } else {
+        if (s.scriptOverride === null) {
+          const preEl = document.getElementById(`script-preview-${tab.id}`);
+          const raw = preEl ? preEl.textContent : '';
+          if (raw && raw !== 'Loading\u2026') s.scriptOverride = raw;
+        }
+        s.editMode = true;
+      }
+      if (globalThis.tabManager.getActiveTabId() === tab.id) {
+        render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
+      }
+    });
 
     return placeholder;
   }
 
-  function _saveEditContent(tab, state) {
-    const taEl = document.getElementById(`script-edit-${tab.id}`);
-    if (taEl) state.scriptOverride = taEl.value;
-  }
-
-  function _loadPreviewContent(tab, state) {
-    if (state.scriptOverride !== null) return;
-    const preEl = document.getElementById(`script-preview-${tab.id}`);
-    const raw = preEl ? preEl.textContent : '';
-    if (raw && raw !== 'Loading\u2026') state.scriptOverride = raw;
-  }
-
-  function _toggleEditMode(tab, state) {
-    if (state.editMode) {
-      _saveEditContent(tab, state);
-    } else {
-      _loadPreviewContent(tab, state);
-    }
-    state.editMode = !state.editMode;
-
-    // Re-render the active in-module session view
-    const app = _getApp();
-    if (app && app.activeSessionId === tab.id) {
-      const content = app.container?.querySelector('#sr-content');
-      if (content) render(tab, content);
-    }
-  }
-
-  // Helper: get current ScriptApp instance
-  function _getApp() {
-    const tm = globalThis.tabManager;
-    if (!tm) return null;
-    const homeTabs = tm.getTabsByType?.('script-home') || [];
-    return homeTabs[0]?._appInstance || null;
-  }
-
-  // Helper: notify ScriptApp that a session status changed
-  function _notifyStatus(sessionId, status) {
-    const app = _getApp();
-    if (!app) return;
-    const session = app.sessions.get(sessionId);
-    if (session) {
-      session.status = status;
-      app.onSessionStatusChange(sessionId);
-    }
-  }
-
-  // Helper: get the rendering container for the active in-module session
-  function _getActiveContainer(sessionId) {
-    const app = _getApp();
-    if (app && app.activeSessionId === sessionId) {
-      return app.container?.querySelector('#sr-content') || null;
-    }
-    return null;
-  }
-
-  function _createToolbar(tab, state) {
+  function renderToolbar(tab, state) {
     const toolbar = document.createElement('footer');
     toolbar.className = 'execution-toolbar';
 
@@ -302,46 +284,20 @@ const ScriptExecution = (() => {
     wrapper.appendChild(header);
 
     const state = getState(tab.id);
+    wrapper.appendChild(renderProgressRow(tab, state));
 
-    // Progress bar + elapsed time
-    const progressRow = document.createElement('div');
-    progressRow.className = 'execution-progress-row';
-    progressRow.id = `progress-row-${tab.id}`;
-
-    const progressBar = document.createElement('div');
-    progressBar.className = 'progress-bar';
-    progressBar.id = `progress-bar-${tab.id}`;
-    const progressFill = document.createElement('div');
-    progressFill.className = 'progress-fill';
-    if (state.isRunning) progressFill.classList.add('progress-indeterminate');
-    else if (state.runtime !== null) { progressFill.classList.add('progress-done'); progressFill.style.width = '100%'; }
-    progressBar.appendChild(progressFill);
-    progressRow.appendChild(progressBar);
-
-    const elapsed = document.createElement('span');
-    elapsed.className = 'elapsed-time';
-    elapsed.id = `elapsed-${tab.id}`;
-    if (state.isRunning && state.startTime) {
-      elapsed.textContent = formatElapsed(Date.now() - state.startTime);
-    } else if (state.runtime !== null) {
-      elapsed.textContent = formatElapsed(state.runtime);
-    }
-    progressRow.appendChild(elapsed);
-    wrapper.appendChild(progressRow);
-
-    // Terminal
     const terminal = document.createElement('div');
     terminal.className = 'terminal';
     terminal.id = `terminal-${tab.id}`;
 
     if (state.lines.length === 0) {
-      terminal.appendChild(_createPlaceholder(tab, state));
+      terminal.appendChild(renderPlaceholder(tab, state));
     } else {
       renderLines(terminal, state);
     }
 
     wrapper.appendChild(terminal);
-    wrapper.appendChild(_createToolbar(tab, state));
+    wrapper.appendChild(renderToolbar(tab, state));
     container.appendChild(wrapper);
 
     // Auto-run on first render if requested (deferred to avoid reentrant render)
@@ -418,7 +374,7 @@ const ScriptExecution = (() => {
     state.startTime = Date.now();
 
     startTimer(tab.id);
-    _notifyStatus(tab.id, 'running');
+    globalThis.tabManager.updateTabStatus(tab.id, 'running');
 
     globalThis.api.invoke('script-runner:run-script', {
       scriptPath: tab.scriptPath,
@@ -429,13 +385,14 @@ const ScriptExecution = (() => {
     }).catch(() => {
       state.isRunning = false;
       stopTimer(tab.id);
-      _notifyStatus(tab.id, 'error');
-      globalThis.ui?.showNotification?.('Failed to start script', 'error');
+      globalThis.tabManager.updateTabStatus(tab.id, 'error');
+      globalThis.ui.showNotification('Failed to start script', 'error');
     });
 
-    // Re-render if this session is currently viewed
-    const container = _getActiveContainer(tab.id);
-    if (container) render(tab, container);
+    // Re-render if this tab is active to update button states
+    if (globalThis.tabManager.getActiveTabId() === tab.id) {
+      render(globalThis.tabManager.getTab(tab.id), document.getElementById('tab-content'));
+    }
   }
 
   function handleStop(tabId) {
@@ -480,38 +437,33 @@ const ScriptExecution = (() => {
 
     globalThis.api.invoke('script-runner:clear-terminal', { tabId });
 
-    const container = _getActiveContainer(tabId);
-    const app = _getApp();
-    const session = app?.sessions.get(tabId);
-    if (container && session) render(session, container);
+    if (globalThis.tabManager.getActiveTabId() === tabId) {
+      const tab = globalThis.tabManager.getTab(tabId);
+      if (tab) render(tab, document.getElementById('tab-content'));
+    }
   }
 
   // --- Live append (called from IPC listeners) ---
 
-  function _truncateHead(state, terminal) {
-    const overflow = state.lines.length - MAX_LINES;
-    state.lines.splice(0, overflow);
-
-    if (!terminal) return;
-
+  function truncateDom(terminal, state, overflow) {
     const children = terminal.querySelectorAll('.terminal-line');
     for (let i = 0; i < overflow && i < children.length; i++) {
       children[i].remove();
     }
-
-    if (state.truncated) return;
-    state.truncated = true;
-    const notice = document.createElement('div');
-    notice.className = 'terminal-line terminal-system';
-    const ts = document.createElement('span');
-    ts.className = 'timestamp';
-    ts.textContent = '';
-    notice.appendChild(ts);
-    const c = document.createElement('span');
-    c.className = 'content';
-    c.textContent = `--- Earlier output truncated (showing last ${MAX_LINES} lines) ---`;
-    notice.appendChild(c);
-    terminal.insertBefore(notice, terminal.firstChild);
+    if (!state.truncated) {
+      state.truncated = true;
+      const notice = document.createElement('div');
+      notice.className = 'terminal-line terminal-system';
+      const ts = document.createElement('span');
+      ts.className = 'timestamp';
+      ts.textContent = '';
+      notice.appendChild(ts);
+      const c = document.createElement('span');
+      c.className = 'content';
+      c.textContent = `--- Earlier output truncated (showing last ${MAX_LINES} lines) ---`;
+      notice.appendChild(c);
+      terminal.insertBefore(notice, terminal.firstChild);
+    }
   }
 
   function appendOutput(tabId, text, timestamp, type = 'stdout') {
@@ -528,14 +480,18 @@ const ScriptExecution = (() => {
       if (tip) {
         tipEntry = { text: `Tip: ${tip}`, timestamp, type: 'system' };
         state.lines.push(tipEntry);
+        // tipEntry not counted in lineCount — it's metadata, not script output
       }
     }
 
-    const isActive = _getApp()?.activeSessionId === tabId;
+    const isActive = globalThis.tabManager.getActiveTabId() === tabId;
     const terminal = isActive ? document.getElementById(`terminal-${tabId}`) : null;
 
+    // Truncate head if exceeding limit
     if (state.lines.length > MAX_LINES) {
-      _truncateHead(state, terminal);
+      const overflow = state.lines.length - MAX_LINES;
+      state.lines.splice(0, overflow);
+      if (terminal) truncateDom(terminal, state, overflow);
     }
 
     if (!terminal) return;
@@ -545,16 +501,18 @@ const ScriptExecution = (() => {
     if (placeholder) placeholder.remove();
 
     terminal.appendChild(createLineEl(entry));
+    // Append tip inline after the error line if it's still in state (not truncated away)
     if (tipEntry && state.lines.includes(tipEntry)) {
       terminal.appendChild(createLineEl(tipEntry));
     }
     terminal.scrollTop = terminal.scrollHeight;
 
+    // Update toolbar info
     const info = document.getElementById(`toolbar-info-${tabId}`);
     if (info) info.textContent = buildInfoText(state);
   }
 
-  function onComplete(tabId, exitCode, runtime, signal, attempt, maxAttempts, chainInfo) {
+  function onComplete(tabId, exitCode, runtime, signal) {
     const state = getState(tabId);
     state.isRunning = false;
     state.exitCode = exitCode;
@@ -573,31 +531,21 @@ const ScriptExecution = (() => {
     if (elapsedEl) elapsedEl.textContent = formatElapsed(runtime);
 
     const status = exitCode === 0 ? 'success' : 'error';
-    _notifyStatus(tabId, status);
+    globalThis.tabManager.updateTabStatus(tabId, status);
 
-    let msg;
-    if (chainInfo?.chainComplete) {
-      msg = `[CHAIN] Workflow complete — ${chainInfo.chainTotal}/${chainInfo.chainTotal} steps succeeded (${formatElapsed(runtime)})`;
-    } else if (chainInfo?.chainFailed) {
-      msg = `[CHAIN] Workflow failed at step ${chainInfo.chainStep}/${chainInfo.chainTotal} (${formatElapsed(runtime)})`;
-    } else if (signal) {
-      msg = `Process terminated (signal: ${signal})`;
-    } else if (attempt && maxAttempts) {
-      msg = `Process exited with code ${exitCode} on attempt ${attempt}/${maxAttempts} (${formatElapsed(runtime)})`;
-    } else {
-      msg = `Process exited with code ${exitCode} (${formatElapsed(runtime)})`;
-    }
+    const msg = signal
+      ? `Process terminated (signal: ${signal})`
+      : `Process exited with code ${exitCode} (${formatElapsed(runtime)})`;
     appendOutput(tabId, msg, new Date().toISOString(), 'system');
 
-    // Re-render toolbar to show / hide Retry button
-    const container = _getActiveContainer(tabId);
-    const app = _getApp();
-    const session = app?.sessions.get(tabId);
-    if (container && session) render(session, container);
+    if (globalThis.tabManager.getActiveTabId() === tabId) {
+      const tab = globalThis.tabManager.getTab(tabId);
+      if (tab) render(tab, document.getElementById('tab-content'));
+    }
   }
 
   function onQueueStatus(tabId, position) {
-    _notifyStatus(tabId, 'queued');
+    globalThis.tabManager.updateTabStatus(tabId, 'queued');
     appendOutput(tabId, `Queued at position ${position}`, new Date().toISOString(), 'system');
   }
 
@@ -613,82 +561,39 @@ const ScriptExecution = (() => {
     });
 
     globalThis.api.on('script-runner:complete', (data) => {
-      const chainInfo = (data.chainComplete || data.chainFailed)
-        ? { chainComplete: data.chainComplete, chainFailed: data.chainFailed, chainStep: data.chainStep, chainTotal: data.chainTotal }
-        : undefined;
-      onComplete(data.tabId, data.exitCode, data.runtime, data.signal, data.attempt, data.maxAttempts, chainInfo);
+      onComplete(data.tabId, data.exitCode, data.runtime, data.signal);
     });
 
     globalThis.api.on('script-runner:queue-status', (data) => {
       onQueueStatus(data.tabId, data.position);
     });
 
-    globalThis.api.on('script-runner:retry', (data) => {
-      const delaySec = ((data.delayMs || 0) / 1000).toFixed(1);
-      const msg = `[RETRY] Attempt ${data.attempt}/${data.maxAttempts} failed — retrying in ${delaySec}s`;
-      appendOutput(data.tabId, msg, data.timestamp, 'system');
-    });
-
-    globalThis.api.on('script-runner:scheduled-run', (data) => {
-      // Register a background session so output is tracked and history entry is created on completion
-      const app = _getApp();
-      if (app && !app.sessions.has(data.tabId)) {
-        app.sessions.set(data.tabId, {
-          id: data.tabId,
-          scriptId: data.scriptId || data.chainId,
-          scriptName: data.name,
-          title: data.name,
-          status: 'running',
-          autoRun: false,
-        });
-        const state = getState(data.tabId);
-        state.isRunning = true;
-        state.startTime = Date.now();
-        app._updateSidebarSections();
-      }
-      appendOutput(data.tabId, `[SCHEDULED] Auto-executing "${data.name}" (cron: ${data.schedule})`, data.timestamp, 'system');
-      globalThis.ui?.showNotification?.(`Scheduled: ${data.name}`, 'info');
-    });
-
-    globalThis.api.on('script-runner:chain-progress', (data) => {
-      const { tabId, step, total, scriptName, status, runtime, timestamp } = data;
-      let msg;
-      if (status === 'started') {
-        const names = (data.scriptNames || []).join(' -> ');
-        msg = `[CHAIN] Workflow started — ${total} steps: ${names}`;
-      } else if (status === 'running') {
-        msg = `[CHAIN] Step ${step}/${total} — Running "${scriptName}"`;
-      } else if (status === 'completed') {
-        const rt = runtime == null ? '' : ` (${formatElapsed(runtime)})`;
-        msg = `[CHAIN] Step ${step}/${total} — "${scriptName}" completed${rt}`;
-      } else if (status === 'failed') {
-        msg = `[CHAIN] Step ${step}/${total} — "${scriptName}" FAILED`;
-      }
-      if (msg) appendOutput(tabId, msg, timestamp, 'system');
-    });
-
-    globalThis.api.on('script-runner:chain-skip', (data) => {
-      const msg = `[CHAIN] SKIPPED "${data.scriptName}" — ${data.reason}`;
-      appendOutput(data.tabId, msg, data.timestamp, 'system');
-    });
-
     globalThis.api.on('script-runner:log-saved', () => {
-      // no-op: event available for external consumers
+      // Reserved for future external log triggers
     });
   }
 
-  return { render, getState, removeState, appendOutput, onComplete, setupListeners, handleRun, handleStop };
+  return { render, getState, removeState, appendOutput, onComplete, setupListeners };
 })();
 
-// --- Setup IPC listeners as soon as the module loads ---
+// --- Register with TabManager ---
 
-(function setup() {
-  function doSetup() {
-    if (!globalThis.api) {
-      setTimeout(doSetup, 0);
+(function register() {
+  function doRegister() {
+    if (!globalThis.tabManager) {
+      setTimeout(doRegister, 0);
       return;
     }
+
+    globalThis.tabManager.registerTabType('script-execution', {
+      render: ScriptExecution.render,
+      onClose: (tab) => ScriptExecution.removeState(tab.id),
+      maxTabs: 4,
+    });
+
+    // Setup IPC event listeners for live output
     ScriptExecution.setupListeners();
   }
-  doSetup();
+
+  doRegister();
 })();

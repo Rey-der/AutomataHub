@@ -5,11 +5,10 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
-const crypto = require('node:crypto');
 const { dialog } = require('electron');
 
 const EXECUTABLE_EXTENSIONS = new Set(['.sh', '.bash', '.py', '.py3', '.js', '.mjs', '.rb', '.pl', '.csx', '.cs']);
-const IGNORED_ENTRIES = new Set(['.DS_Store', 'Thumbs.db', '.git', 'node_modules', '__pycache__', '.idea', '.vscode', '_lib']);
+const IGNORED_ENTRIES = new Set(['.DS_Store', 'Thumbs.db', '.git', 'node_modules', '__pycache__', '.idea', '.vscode']);
 
 const EXTENSION_LANGUAGE_MAP = {
   '.sh': 'Bash',
@@ -53,19 +52,19 @@ function importScriptFolder(sourcePath, scriptsDir) {
   }
 }
 
-function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInside, ensureDir, readJsonConfig, ERROR_MESSAGES, persistence }) {
+function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInside, ensureDir, readJsonConfig, ERROR_MESSAGES }) {
   // --- Script Discovery ---
 
   function discoverVariants(folderPath, folderName) {
     const variants = [];
     const configPath = path.join(folderPath, 'config.json');
-    const meta = readJsonConfig(configPath, () => {
+    const meta = readJsonConfig(configPath, {}, () => {
       console.warn(`[script-runner] Malformed config in ${folderName}`);
     });
 
     const parentEnv = meta.env || {};
     const files = fs.readdirSync(folderPath);
-    const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.has(path.extname(f).toLowerCase()));
+    const executables = files.filter((f) => EXECUTABLE_EXTENSIONS.includes(path.extname(f).toLowerCase()));
 
     if (executables.length > 0) {
       const mainScript = meta.mainScript || meta.main || executables[0];
@@ -90,7 +89,7 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
 
       const subPath = path.join(folderPath, sub.name);
       const subConfig = path.join(subPath, 'config.json');
-      const subMeta = readJsonConfig(subConfig, () => {});
+      const subMeta = readJsonConfig(subConfig, {}, () => {});
 
       const subFiles = fs.readdirSync(subPath);
       const subExecs = subFiles.filter((f) => EXECUTABLE_EXTENSIONS.has(path.extname(f).toLowerCase()));
@@ -111,22 +110,6 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
     }
 
     return { meta, variants };
-  }
-
-  function enrichWithVersioning(scripts) {
-    const lastHashes = persistence ? persistence.getAllLastHashes() : new Map();
-    for (const script of scripts) {
-      try {
-        const content = fs.readFileSync(script.scriptPath, 'utf-8');
-        script.currentHash = crypto.createHash('sha256').update(content).digest('hex');
-      } catch {
-        script.currentHash = null;
-      }
-      script.lastExecutionHash = lastHashes.get(script.id) || null;
-      script.modified = script.currentHash !== null
-        && script.lastExecutionHash !== null
-        && script.currentHash !== script.lastExecutionHash;
-    }
   }
 
   function getAvailableScripts(scriptsDir) {
@@ -158,10 +141,6 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
           scriptPath: primary.scriptPath,
           executables: variants.map((v) => v.mainScript),
           variants,
-          retries: Number(meta.retries) || 0,
-          retryDelayMs: Number(meta.retryDelayMs) || 3000,
-          schedule: meta.schedule || null,
-          dependsOn: Array.isArray(meta.dependsOn) ? meta.dependsOn : [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -170,9 +149,10 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
       scripts.push(existing);
     }
 
-    enrichWithVersioning(scripts);
     return scripts;
   }
+
+  // --- Import/Remove ---
 
   function removeScriptFolder(scriptId, scriptsDir) {
     const folderPath = path.join(scriptsDir, scriptId);
@@ -197,18 +177,12 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
   ipcBridge.handle('script-runner:get-scripts', async (_e, args) => {
     try {
       const scriptsDir = path.join(paths.root, 'modules', 'script_runner', 'automation_scripts');
-      let scripts;
+      const scripts = getAvailableScripts(scriptsDir);
 
       // Filter by topic if requested
       if (args?.topic_id) {
-        scripts = store.getTopicScripts(args.topic_id);
-      } else {
-        scripts = getAvailableScripts(scriptsDir);
-      }
-
-      // Enrich each script with its topic associations
-      for (const script of scripts) {
-        script.topics = store.getScriptTopics(script.id || script.folder) || [];
+        const topicScripts = store.getTopicScripts(args.topic_id);
+        return { scripts: topicScripts };
       }
 
       return { scripts };
@@ -302,8 +276,6 @@ function register(ipcBridge, { store, emit, send, mainWindow, paths, resolveInsi
       return { success: false, message: err.message };
     }
   });
-
-  return { getAvailableScripts };
 }
 
 module.exports = { register };

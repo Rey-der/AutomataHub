@@ -37,7 +37,6 @@ class ScriptExecutor extends EventEmitter {
     this.currentJob = null;
     this.queue = [];
     this._killTimer = null;
-    this._retryTimer = null;
     this.resolveInside = opts.resolveInside;
     this.friendlyError = opts.friendlyError;
     this.ERROR_MESSAGES = opts.ERROR_MESSAGES || {};
@@ -139,13 +138,12 @@ class ScriptExecutor extends EventEmitter {
 
     const startTime = Date.now();
 
-    const isWin = process.platform === 'win32';
     const child = spawn(command, args, {
       cwd: path.dirname(resolvedPath),
       env: { ...process.env, ...this.extraEnv, ...job.env },
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
-      detached: !isWin,
+      detached: false,
     });
 
     this.currentProcess = child;
@@ -217,100 +215,45 @@ class ScriptExecutor extends EventEmitter {
         });
       }
       this._cleanup();
-
-      const runtime = Date.now() - startTime;
-      const failed = exitCode !== 0 && signal === null;
-      const retriesLeft = job._retriesLeft ?? job.retries ?? 0;
-      const maxRetries = job.retries ?? 0;
-      const attempt = maxRetries - retriesLeft + 1;
-
-      if (failed && retriesLeft > 0) {
-        const delayMs = job.retryDelayMs ?? 3000;
-        this.emit('retry', {
-          tabId: job.tabId,
-          attempt,
-          maxAttempts: maxRetries + 1,
-          delayMs,
-          timestamp: new Date().toISOString(),
-        });
-        this._retryTimer = setTimeout(() => {
-          this._retryTimer = null;
-          const retryJob = { ...job, _retriesLeft: retriesLeft - 1 };
-          this._spawn(retryJob);
-        }, delayMs);
-        return;
-      }
-
       this.emit('complete', {
         tabId: job.tabId,
         exitCode: exitCode ?? 1,
         signal: signal || null,
-        runtime,
-        attempt: maxRetries > 0 ? attempt : undefined,
-        maxAttempts: maxRetries > 0 ? maxRetries + 1 : undefined,
+        runtime: Date.now() - startTime,
       });
       this._processNext();
     });
   }
 
   stop(tabId) {
-    // Cancel a pending retry timer for this tab
-    if (this._retryTimer && this.currentJob?.tabId === tabId) {
-      clearTimeout(this._retryTimer);
-      this._retryTimer = null;
-      const runtime = this.currentJob._startTime ? Date.now() - this.currentJob._startTime : 0;
-      const job = this.currentJob;
-      this._cleanup();
-      this.emit('complete', { tabId: job.tabId, exitCode: 1, signal: 'SIGTERM', runtime });
-      this._processNext();
-      return;
-    }
+    if (!this.currentProcess || !this.currentJob) return;
 
-    // Remove from queue if not the active job
-    if (!this.currentProcess || !this.currentJob || this.currentJob.tabId !== tabId) {
-      const queued = this.queue.find((j) => j.tabId === tabId);
+    if (this.currentJob.tabId !== tabId) {
       this.queue = this.queue.filter((j) => j.tabId !== tabId);
-      if (queued) {
-        this.emit('complete', { tabId, exitCode: 1, signal: 'SIGTERM', runtime: 0 });
-      }
       return;
     }
 
     const child = this.currentProcess;
-    const pid = child.pid;
 
-    // Kill the process group on POSIX, or just the process on Windows
     try {
-      if (process.platform !== 'win32' && pid) {
-        process.kill(-pid, 'SIGTERM');
-      } else {
-        child.kill('SIGTERM');
-      }
+      child.kill('SIGTERM');
     } catch {
       return;
     }
 
     this._killTimer = setTimeout(() => {
       try {
-        if (process.platform !== 'win32' && pid) {
-          process.kill(-pid, 'SIGKILL');
-        } else {
-          child.kill('SIGKILL');
-        }
+        child.kill('SIGKILL');
       } catch {
-        // Ignore — process already exited
+        // Ignore
       }
-    }, 2000);
+    }, 5000);
   }
 
   _cleanup() {
     if (this._killTimer) {
       clearTimeout(this._killTimer);
       this._killTimer = null;
-    }
-    if (this._retryTimer) {
-      clearTimeout(this._retryTimer);
-      this._retryTimer = null;
     }
     this.currentProcess = null;
     this.currentJob = null;
@@ -326,13 +269,8 @@ class ScriptExecutor extends EventEmitter {
   killAll() {
     this.queue = [];
     if (this.currentProcess) {
-      const pid = this.currentProcess.pid;
       try {
-        if (process.platform !== 'win32' && pid) {
-          process.kill(-pid, 'SIGKILL');
-        } else {
-          this.currentProcess.kill('SIGKILL');
-        }
+        this.currentProcess.kill('SIGKILL');
       } catch {
         // Ignore
       }
